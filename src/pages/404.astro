@@ -1,0 +1,29 @@
+---
+import Base from '../layouts/Base.astro';
+import Nav from '../components/Nav.astro';
+import Footer from '../components/Footer.astro';
+---
+<Base title="Page not found — Find My Pet Cyprus" description="That page couldn't be found.">
+  <Nav />
+  <div class="wrap">
+    <div class="four">
+      <div class="paw">🐾</div>
+      <h1>This trail went cold</h1>
+      <p>We couldn't find that page. But if a pet's missing or found, you're in the right place.</p>
+      <div class="row">
+        <a class="btn btn-primary" href="/search">Search the map</a>
+        <a class="btn btn-secondary" href="/submit">Report a pet</a>
+      </div>
+    </div>
+    <Footer />
+  </div>
+  <style>
+    .wrap { max-width: 1080px; margin: 0 auto; padding: 0 var(--edge, clamp(16px, 4vw, 48px)); }
+    .four { text-align: center; padding: calc(4 * var(--space-6)) 0 calc(3 * var(--space-6)); }
+    .four .paw { font-size: 44px; margin-bottom: var(--space-3); }
+    .four h1 { font-family: var(--font-heading); font-weight: var(--font-heading-weight); font-size: clamp(30px, 5vw, 44px); margin: 0 0 var(--space-2); }
+    .four p { font-size: 16px; color: color-mix(in srgb, var(--color-text) 75%, transparent); max-width: 42ch; margin: 0 auto var(--space-4); }
+    .four .row { display: flex; gap: var(--space-3); justify-content: center; flex-wrap: wrap; }
+    .four .row .btn { min-height: 44px; padding-inline: var(--space-4); }
+  </style>
+</Base>

@@ -1,0 +1,136 @@
+---
+import Base from '../layouts/Base.astro';
+import Nav from '../components/Nav.astro';
+// Admin-only moderation dashboard. Auth + authorization happen client-side
+// against the signed-in user's profile.is_admin, and every action runs under
+// that user's session so Row Level Security enforces admin-only writes.
+---
+<Base title="Moderation — Find My Pet Cyprus" description="Admin moderation queue.">
+  <Nav />
+  <div class="wrap">
+    <div id="loading" class="muted-center">Loading…</div>
+    <div id="demo" class="muted-center" hidden>Moderation switches on once the site is connected to its database.</div>
+    <div id="need-signin" class="muted-center" hidden>Please <a href="/account">sign in</a> as an administrator.</div>
+    <div id="not-admin" class="muted-center" hidden>This account isn’t an administrator.</div>
+
+    <div id="board" hidden>
+      <h1>Moderation</h1>
+
+      <div class="block">
+        <div class="block-head"><h2>Pending review <span class="count" id="pending-count"></span></h2></div>
+        <div id="pending"></div>
+      </div>
+
+      <div class="block">
+        <div class="block-head"><h2>Flagged listings <span class="count" id="flag-count"></span></h2></div>
+        <div id="flags"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    import { getSupabase } from '../lib/supabase';
+
+    type Row = Record<string, any>;
+    const $ = (id: string) => document.getElementById(id)!;
+    const show = (id: string, on = true) => { ($(id) as HTMLElement).hidden = !on; };
+    const esc = (s: any) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c] as string));
+
+    (async function () {
+      const client = getSupabase();
+      show('loading', false);
+      if (!client) { show('demo'); return; }
+      const supabase = client;
+
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) { show('need-signin'); return; }
+
+      const { data: profile } = await supabase.from('profiles').select('is_admin').eq('id', session.user.id).single();
+      if (!profile?.is_admin) { show('not-admin'); return; }
+
+      show('board');
+      await Promise.all([loadPending(), loadFlags()]);
+
+      // ── pending queue ─────────────────────────────────────────────────────────
+      async function loadPending() {
+        const { data } = await supabase.from('pets').select('*').eq('moderation_status', 'pending').order('created_at', { ascending: true });
+        $('pending-count').textContent = data ? `(${data.length})` : '';
+        const el = $('pending');
+        if (!data || !data.length) { el.innerHTML = '<p class="empty">Nothing waiting. 🎉</p>'; return; }
+        el.innerHTML = data.map((p: Row) => `
+          <div class="mod-card" data-id="${p.id}">
+            <img src="${esc(p.photo_url || '/assets/photo.jpg')}" alt="${esc(p.name)}">
+            <div class="mod-body">
+              <div class="mod-top"><span class="tag ${p.status === 'missing' ? 'tag-accent' : 'tag-accent-2'}">${esc(p.status)}</span>
+                <strong>${esc(p.name)}</strong> · ${esc(p.species)} · ${esc(p.area)}</div>
+              <div class="mod-desc">${esc(p.description)}</div>
+              <div class="mod-meta">Seen ${esc(p.date_seen)} · Contact: ${esc(p.contact_name || '—')} ${esc(p.contact_phone || p.contact_email || '')}</div>
+              <div class="mod-actions">
+                <button class="btn btn-primary" data-approve="${p.id}">Approve</button>
+                <button class="btn btn-secondary" data-reject="${p.id}">Reject</button>
+              </div>
+            </div>
+          </div>`).join('');
+        el.querySelectorAll<HTMLElement>('[data-approve]').forEach((b) => b.addEventListener('click', async () => {
+          await supabase.from('pets').update({ moderation_status: 'approved' }).eq('id', b.dataset.approve);
+          loadPending();
+        }));
+        el.querySelectorAll<HTMLElement>('[data-reject]').forEach((b) => b.addEventListener('click', async () => {
+          const reason = prompt('Reason for rejection (optional):') || null;
+          await supabase.from('pets').update({ moderation_status: 'rejected', reject_reason: reason }).eq('id', b.dataset.reject);
+          loadPending();
+        }));
+      }
+
+      // ── flagged listings ──────────────────────────────────────────────────────
+      async function loadFlags() {
+        const { data } = await supabase.from('reports').select('*, pets(*)').eq('resolved', false).order('created_at', { ascending: true });
+        $('flag-count').textContent = data ? `(${data.length})` : '';
+        const el = $('flags');
+        if (!data || !data.length) { el.innerHTML = '<p class="empty">No open flags.</p>'; return; }
+        el.innerHTML = data.map((r: Row) => {
+          const p = r.pets || {};
+          return `<div class="mod-card">
+            <img src="${esc(p.photo_url || '/assets/photo.jpg')}" alt="">
+            <div class="mod-body">
+              <div class="mod-top"><span class="tag tag-outline">${esc(r.reason)}</span> <strong>${esc(p.name || 'listing')}</strong> · ${esc(p.area || '')}</div>
+              <div class="mod-desc">${esc(r.note || 'No note.')}</div>
+              <div class="mod-actions">
+                <a class="btn btn-ghost" href="/listing/${esc(p.id)}" target="_blank" rel="noopener">View</a>
+                <button class="btn btn-secondary" data-dismiss="${r.id}">Dismiss flag</button>
+                <button class="btn btn-primary" data-remove="${p.id}" data-flag="${r.id}">Remove listing</button>
+              </div>
+            </div>
+          </div>`;
+        }).join('');
+        el.querySelectorAll<HTMLElement>('[data-dismiss]').forEach((b) => b.addEventListener('click', async () => {
+          await supabase.from('reports').update({ resolved: true }).eq('id', b.dataset.dismiss);
+          loadFlags();
+        }));
+        el.querySelectorAll<HTMLElement>('[data-remove]').forEach((b) => b.addEventListener('click', async () => {
+          if (!confirm('Delete this listing? This cannot be undone.')) return;
+          await supabase.from('pets').delete().eq('id', b.dataset.remove);
+          loadFlags();
+        }));
+      }
+    })();
+  </script>
+
+  <style>
+    .wrap { max-width: 860px; margin: 0 auto; padding: calc(2 * var(--space-6)) var(--edge, clamp(16px, 4vw, 48px)) calc(4 * var(--space-6)); }
+    .wrap > h1 { font-family: var(--font-heading); font-weight: var(--font-heading-weight); font-size: 32px; margin: 0 0 var(--space-6); }
+    .muted-center { text-align: center; color: color-mix(in srgb, var(--color-text) 60%, transparent); padding: calc(3 * var(--space-6)) 0; font-size: 15px; }
+    .block { margin-bottom: calc(2 * var(--space-6)); }
+    .block-head h2 { font-family: var(--font-heading); font-weight: var(--font-heading-weight); font-size: 21px; margin: 0 0 var(--space-3); }
+    .block-head .count { color: color-mix(in srgb, var(--color-text) 55%, transparent); font-size: 15px; }
+    .empty { color: color-mix(in srgb, var(--color-text) 55%, transparent); font-size: 14px; }
+    .mod-card { display: flex; gap: var(--space-4); background: var(--color-surface); border-radius: var(--radius-lg); padding: var(--space-3); margin-bottom: var(--space-3); }
+    .mod-card img { width: 96px; height: 96px; border-radius: var(--radius-md); object-fit: cover; flex: none; }
+    .mod-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+    .mod-top { font-size: 14.5px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .mod-desc { font-size: 13.5px; color: color-mix(in srgb, var(--color-text) 75%, transparent); }
+    .mod-meta { font-size: 12px; color: color-mix(in srgb, var(--color-text) 55%, transparent); }
+    .mod-actions { display: flex; gap: var(--space-2); margin-top: 4px; flex-wrap: wrap; }
+    .mod-actions .btn { min-height: 38px; }
+  </style>
+</Base>

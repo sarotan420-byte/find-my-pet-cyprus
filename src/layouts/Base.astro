@@ -1,0 +1,83 @@
+---
+export interface Props {
+  title: string;
+  description?: string;
+  /** load Leaflet CSS/JS on pages that show a map */
+  leaflet?: boolean;
+  /** absolute or root-relative image for social share cards */
+  ogImage?: string;
+  /** schema.org JSON-LD object(s) for this page */
+  jsonLd?: object | object[];
+}
+const {
+  title,
+  description = 'Search a live map of missing and found pets across Cyprus, or report one in minutes. Every listing is checked before it goes public.',
+  leaflet = false,
+  ogImage = '/assets/photo.jpg',
+  jsonLd,
+} = Astro.props;
+
+const canonical = new URL(Astro.url.pathname, Astro.site).toString();
+const ogImageAbs = new URL(ogImage, Astro.site).toString();
+const jsonLdList = jsonLd ? (Array.isArray(jsonLd) ? jsonLd : [jsonLd]) : [];
+---
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+
+    <!-- Open Graph / Twitter (rich previews when shared on social) -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Find My Pet Cyprus" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:image" content={ogImageAbs} />
+    <meta property="og:url" content={canonical} />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="theme-color" content="#f5ead8" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    {leaflet && <link rel="preconnect" href="https://unpkg.com" />}
+    {leaflet && <link rel="preconnect" href="https://tile.openstreetmap.org" />}
+
+    {jsonLdList.map((obj) => (
+      <script type="application/ld+json" is:inline set:html={JSON.stringify(obj)} />
+    ))}
+
+    <link rel="stylesheet" href="/styles.css" />
+    {leaflet && (
+      <>
+        <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+        <script is:inline src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+      </>
+    )}
+    <style is:global>
+      body { margin: 0; text-wrap: pretty; overflow-x: clip; }
+      .nav {
+        display: flex; align-items: center; gap: var(--space-3);
+        padding: var(--space-3) var(--edge, clamp(16px, 4vw, 48px));
+        position: sticky; top: 0; z-index: 30;
+        background: color-mix(in srgb, var(--color-bg) 92%, transparent);
+        backdrop-filter: blur(6px);
+      }
+      .nav-brand {
+        font-family: var(--font-heading); font-weight: var(--font-heading-weight);
+        font-size: 18px; text-decoration: none; color: var(--color-text);
+      }
+      .nav .links { display: flex; gap: var(--space-4); margin-right: auto; margin-left: var(--space-4); }
+      .nav .links a { white-space: nowrap; text-decoration: none; color: var(--color-text); }
+      .nav .links a[aria-current="page"] { color: var(--color-accent-700); }
+      .nav .actions { display: flex; align-items: center; gap: var(--space-3); margin-left: auto; }
+      .nav .actions a:not(.btn) { text-decoration: none; color: var(--color-text); font-size: 14px; }
+      @media (max-width: 620px) { .nav .links { display: none; } }
+    </style>
+  </head>
+  <body>
+    <slot />
+  </body>
+</html>

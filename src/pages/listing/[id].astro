@@ -1,0 +1,171 @@
+---
+import Base from '../../layouts/Base.astro';
+import Nav from '../../components/Nav.astro';
+import { getApprovedPets, getPetById } from '../../lib/pets';
+
+// Prerender one page per approved listing. When we move to server output
+// (deploy milestone) this becomes an on-demand DB lookup instead.
+export async function getStaticPaths() {
+  const pets = await getApprovedPets();
+  return pets.map((p) => ({ params: { id: String(p.id) } }));
+}
+
+const { id } = Astro.params;
+const p = await getPetById(id!);
+if (!p) return Astro.redirect('/search');
+
+const statusLabel = p.status === 'missing' ? 'Missing' : p.status === 'found' ? 'Found' : 'Reunited';
+const tagClass = p.status === 'missing' ? 'tag-accent' : 'tag-accent-2';
+const reportedOn = new Date(p.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'long' });
+const point = { lat: p.lat, lng: p.lng, status: p.status };
+const site = Astro.site!.toString().replace(/\/$/, '');
+const jsonLd = [
+  {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Home', item: `${site}/` },
+      { '@type': 'ListItem', position: 2, name: 'Search', item: `${site}/search` },
+      { '@type': 'ListItem', position: 3, name: `${p.name} (${statusLabel})`, item: `${site}/listing/${p.id}` },
+    ],
+  },
+  {
+    '@context': 'https://schema.org',
+    '@type': 'Article',
+    headline: `${statusLabel} ${p.species}: ${p.name} — ${p.area}`,
+    image: [new URL(p.photo, Astro.site).toString()],
+    datePublished: p.date,
+    description: p.desc,
+    articleSection: statusLabel,
+  },
+];
+---
+<Base
+  title={`${p.name} — ${statusLabel} ${p.species} in ${p.area} | Find My Pet Cyprus`}
+  description={`${statusLabel} ${p.species.toLowerCase()} in ${p.area}. ${p.desc}`}
+  ogImage={p.photo}
+  jsonLd={jsonLd}
+  leaflet
+>
+  <Nav />
+  <div class="wrap">
+    <a class="back" href="/search">← Back to search</a>
+    <div class="layout">
+      <div>
+        <div class="photo-main"><img src={p.photo} alt={p.name} width="800" height="600" /></div>
+        <div class="head-row">
+          <h1 class="pet-name">{p.name}</h1>
+          <span class={`tag ${tagClass}`}>{statusLabel}</span>
+        </div>
+        <p class="meta-line">{p.species} · {p.area} · Reported {reportedOn}</p>
+        <p class="desc">{p.desc}</p>
+        <div class="facts">
+          <div class="fact"><div class="k">Breed</div><div class="v">{p.breed || '—'}</div></div>
+          <div class="fact"><div class="k">Colour</div><div class="v">{p.color || '—'}</div></div>
+          <div class="fact"><div class="k">Status</div><div class="v">{statusLabel}</div></div>
+        </div>
+        <div id="mini-map"></div>
+      </div>
+      <div>
+        <div class="side-card">
+          <h3>{p.status === 'missing' ? 'Seen this pet?' : 'Is this your pet?'}</h3>
+          <p>Contact details are shared only after you confirm — keeps them out of search engines and spam.</p>
+          <div class="reveal" id="reveal">
+            <button class="btn btn-primary btn-block" id="reveal-btn" type="button">Show contact details</button>
+            <div class="contact-line">{p.contactName} · 99 123 456</div>
+          </div>
+          <div class="share-row">
+            <a class="btn btn-secondary" href="/search">Nearby listings</a>
+            <a class="btn btn-secondary" href="/submit">Report a sighting</a>
+          </div>
+        </div>
+        <button class="flag-toggle" id="flag-toggle" type="button">⚑ Report a problem with this listing</button>
+        <form class="flag-form" id="flag-form" hidden>
+          <div aria-hidden="true" style="position:absolute;left:-9999px"><input type="text" name="website" tabindex="-1" autocomplete="off" /></div>
+          <label class="flag-label" for="flag-reason">What's wrong?</label>
+          <select class="input" id="flag-reason" name="reason" required>
+            <option value="inaccurate">Inaccurate or misleading</option>
+            <option value="duplicate">Duplicate listing</option>
+            <option value="spam">Spam</option>
+            <option value="inappropriate">Inappropriate content</option>
+            <option value="other">Other</option>
+          </select>
+          <textarea class="input" id="flag-note" name="note" placeholder="Anything else? (optional)" rows="2"></textarea>
+          <button class="btn btn-secondary btn-block" type="submit" id="flag-submit">Send report</button>
+          <div class="flag-msg" id="flag-msg" role="status"></div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <script is:inline define:vars={{ petId: p.id }}>
+    (function () {
+      var toggle = document.getElementById('flag-toggle');
+      var form = document.getElementById('flag-form');
+      var msg = document.getElementById('flag-msg');
+      if (!toggle || !form) return;
+      toggle.addEventListener('click', function () { form.hidden = !form.hidden; });
+      form.addEventListener('submit', async function (e) {
+        e.preventDefault();
+        var btn = document.getElementById('flag-submit');
+        btn.disabled = true; msg.textContent = 'Sending…';
+        var data = new FormData(form);
+        data.append('pet_id', String(petId));
+        try {
+          var res = await fetch('/api/flag', { method: 'POST', body: data });
+          var json = await res.json();
+          if (!res.ok || !json.ok) throw new Error(json.error || 'Could not send.');
+          form.innerHTML = '<p class="flag-thanks">Thanks — a moderator will take a look.</p>';
+        } catch (err) {
+          msg.textContent = err.message; btn.disabled = false;
+        }
+      });
+    })();
+  </script>
+
+  <script is:inline define:vars={{ point }}>
+    (function () {
+      var btn = document.getElementById('reveal-btn');
+      if (btn) btn.addEventListener('click', function () { document.getElementById('reveal').classList.add('on'); });
+      if (typeof L === 'undefined') return;
+      var map = L.map('mini-map', { zoomControl: false, dragging: true, scrollWheelZoom: false }).setView([point.lat, point.lng], 12);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OpenStreetMap contributors' }).addTo(map);
+      var color = point.status === 'missing' ? '#c67139' : '#7a8a5e';
+      L.marker([point.lat, point.lng], { icon: L.divIcon({ className: '', html: '<div style="width:16px;height:16px;border-radius:50%;background:' + color + ';border:3px solid #f5ead8;box-shadow:0 1px 3px rgba(0,0,0,.3)"></div>', iconSize: [16, 16], iconAnchor: [8, 8] }) }).addTo(map);
+    })();
+  </script>
+
+  <style>
+    .wrap { max-width: 1080px; margin: 0 auto; padding: var(--space-6) var(--edge, clamp(16px, 4vw, 48px)) calc(4 * var(--space-6)); }
+    .back { font-size: 13px; color: color-mix(in srgb, var(--color-text) 65%, transparent); text-decoration: none; display: inline-block; margin-bottom: var(--space-4); }
+    .back:hover { color: var(--color-accent); }
+    .layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 380px); gap: calc(2 * var(--space-6)); }
+    @media (max-width: 860px) { .layout { grid-template-columns: 1fr; } }
+    .photo-main { border-radius: calc(2 * var(--radius-lg)); overflow: hidden; aspect-ratio: 4/3; box-shadow: var(--shadow-md); }
+    .photo-main img { width: 100%; height: 100%; object-fit: cover; }
+    .head-row { display: flex; align-items: center; gap: var(--space-3); margin: var(--space-4) 0 6px; flex-wrap: wrap; }
+    .pet-name { font-family: var(--font-heading); font-weight: var(--font-heading-weight); font-size: 34px; margin: 0; }
+    .meta-line { font-size: 14.5px; color: color-mix(in srgb, var(--color-text) 65%, transparent); margin: 0 0 var(--space-4); }
+    .desc { font-size: 15.5px; line-height: 1.7; max-width: 62ch; }
+    .facts { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-3); margin: var(--space-4) 0; }
+    .fact { background: var(--color-surface); border-radius: var(--radius-md); padding: var(--space-3); }
+    .fact .k { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: color-mix(in srgb, var(--color-text) 60%, transparent); margin-bottom: 3px; }
+    .fact .v { font-family: var(--font-heading); font-size: 15px; }
+    #mini-map { width: 100%; height: 220px; border-radius: var(--radius-lg); overflow: hidden; margin-top: var(--space-3); }
+    .side-card { background: var(--color-surface); border-radius: calc(var(--radius-lg) * 1.15); padding: var(--space-4); position: sticky; top: 80px; box-shadow: var(--shadow-sm); }
+    .side-card h3 { font-family: var(--font-heading); font-weight: var(--font-heading-weight); font-size: 19px; margin: 0 0 6px; }
+    .side-card p { font-size: 13.5px; color: color-mix(in srgb, var(--color-text) 70%, transparent); margin: 0 0 var(--space-3); }
+    .reveal { display: flex; flex-direction: column; gap: 8px; }
+    .reveal .contact-line { display: none; font-size: 15px; padding: 10px 12px; background: var(--color-accent-100); border-radius: var(--radius-md); font-weight: 600; color: var(--color-accent-800); }
+    .reveal.on .contact-line { display: block; }
+    .reveal.on .btn-primary { display: none; }
+    .share-row { display: flex; gap: 8px; margin-top: var(--space-3); }
+    .share-row .btn { flex: 1; }
+    .flag-toggle { display: block; margin: var(--space-3) auto 0; background: none; border: none; cursor: pointer; font-size: 12.5px; color: color-mix(in srgb, var(--color-text) 55%, transparent); }
+    .flag-toggle:hover { color: var(--color-accent-700); }
+    .flag-form { display: flex; flex-direction: column; gap: var(--space-2); margin-top: var(--space-3); padding: var(--space-3); background: var(--color-surface); border-radius: var(--radius-md); }
+    .flag-label { font-size: 12.5px; font-weight: 600; }
+    .flag-msg { font-size: 12.5px; color: var(--color-accent-700); min-height: 14px; }
+    .flag-thanks { font-size: 13px; text-align: center; color: var(--color-accent-2-800); margin: 0; }
+  </style>
+</Base>

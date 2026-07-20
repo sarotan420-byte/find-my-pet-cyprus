@@ -1,0 +1,30 @@
+---
+import type { Pet } from '../lib/types';
+export interface Props { pet: Pet; }
+const { pet } = Astro.props;
+const isMissing = pet.status === 'missing';
+const label = isMissing ? 'Missing' : pet.status === 'found' ? 'Found' : 'Reunited';
+const tagClass = isMissing ? 'tag-accent' : 'tag-accent-2';
+---
+<a class="pet-card" href={`/listing/${pet.id}`}>
+  <div class="photo">
+    <img src={pet.photo} alt={pet.name} loading="lazy" width="400" height="300" />
+    <span class={`tag ${tagClass}`}>{label}</span>
+  </div>
+  <div class="body">
+    <span class="name">{pet.name}</span>
+    <span class="meta">{pet.species} · {pet.area}</span>
+  </div>
+</a>
+<style>
+  .pet-card { text-decoration: none; color: inherit; display: flex; flex-direction: column;
+    border-radius: calc(var(--radius-lg) * 1.15); overflow: hidden; background: var(--color-surface);
+    box-shadow: var(--shadow-sm); transition: box-shadow .15s, transform .15s; }
+  .pet-card:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); }
+  .pet-card .photo { aspect-ratio: 4/3; overflow: hidden; position: relative; }
+  .pet-card .photo img { width: 100%; height: 100%; object-fit: cover; }
+  .pet-card .photo .tag { position: absolute; top: 10px; left: 10px; }
+  .pet-card .body { padding: var(--space-3) var(--space-4) var(--space-4); display: flex; flex-direction: column; gap: 4px; flex: 1; }
+  .pet-card .name { font-family: var(--font-heading); font-weight: var(--font-heading-weight); font-size: 18px; }
+  .pet-card .meta { font-size: 12.5px; color: color-mix(in srgb, var(--color-text) 65%, transparent); }
+</style>

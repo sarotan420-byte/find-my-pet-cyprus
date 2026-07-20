@@ -1,0 +1,168 @@
+---
+import Base from '../layouts/Base.astro';
+import Nav from '../components/Nav.astro';
+// Auth runs client-side (Supabase Auth), so this page is a static shell that
+// hydrates into either the sign-in gate or the dashboard. Nothing here is
+// SEO-relevant, and keeping it client-side lets the site stay static + cheap.
+---
+<Base title="Account — Find My Pet Cyprus" description="Sign in to save searches and manage your listings.">
+  <Nav current="account" />
+  <div class="wrap">
+    <div id="loading" class="muted-center">Loading…</div>
+
+    <!-- demo notice (no Supabase configured yet) -->
+    <div class="gate" id="demo" hidden>
+      <h1>Accounts coming online</h1>
+      <p>Sign-in switches on the moment the site is connected to its database. Everything else — searching and reporting — already works.</p>
+      <a class="btn btn-primary btn-block" href="/search">Search the map</a>
+    </div>
+
+    <!-- sign-in gate -->
+    <div class="gate" id="gate" hidden>
+      <h1>Sign in</h1>
+      <p>Save searches so new listings in your area are easy to check back on, and manage the pets you've reported. We'll email you a secure sign-in link — no password to remember.</p>
+      <div class="field"><label for="email">Email</label><input class="input" id="email" type="email" placeholder="you@example.com" autocomplete="email" /></div>
+      <button class="btn btn-primary btn-block" id="signin" type="button">Email me a link</button>
+      <div class="gate-msg" id="gate-msg" role="status"></div>
+    </div>
+
+    <!-- signed-in dashboard -->
+    <div id="dash" hidden>
+      <div class="head-row">
+        <h1>Your account</h1>
+        <div class="head-actions">
+          <a class="btn btn-secondary" id="admin-link" href="/admin" hidden>Moderation</a>
+          <button class="btn btn-secondary" id="signout" type="button">Sign out</button>
+        </div>
+      </div>
+      <p class="who" id="who"></p>
+
+      <div class="block">
+        <h2 class="section-title">Saved searches</h2>
+        <div id="saved"><p class="empty-note">No saved searches yet. Save one from the map to check back quickly.</p></div>
+      </div>
+
+      <div class="block">
+        <h2 class="section-title">Your listings</h2>
+        <div id="mine"><p class="empty-note">You haven't reported any pets yet.</p></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    import { getSupabase } from '../lib/supabase';
+
+    type Row = Record<string, any>;
+    const $ = (id: string) => document.getElementById(id)!;
+    const show = (id: string, on = true) => { ($(id) as HTMLElement).hidden = !on; };
+    const esc = (s: string) => (s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c] as string));
+
+    (async function () {
+      const client = getSupabase();
+      show('loading', false);
+
+      if (!client) { show('demo'); return; }
+      const supabase = client; // non-null below
+
+      async function refresh(user: Row) {
+        show('gate', false); show('demo', false); show('dash');
+        ($('who') as HTMLElement).textContent = user.email ? `Signed in as ${user.email}` : '';
+        supabase.from('profiles').select('is_admin').eq('id', user.id).single()
+          .then(({ data }) => { if (data?.is_admin) show('admin-link'); });
+        await Promise.all([loadSaved(), loadMine(user.id)]);
+      }
+
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) await refresh(session.user); else show('gate');
+      supabase.auth.onAuthStateChange((_e, s) => { if (s) refresh(s.user); else { show('dash', false); show('gate'); } });
+
+      // ── sign in (magic link) ────────────────────────────────────────────────
+      $('signin').addEventListener('click', async () => {
+        const email = ($('email') as HTMLInputElement).value.trim();
+        const msg = $('gate-msg');
+        if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { msg.textContent = 'Please enter a valid email.'; return; }
+        (msg as HTMLElement).textContent = 'Sending…';
+        const { error } = await supabase.auth.signInWithOtp({ email, options: { emailRedirectTo: location.origin + '/account' } });
+        msg.textContent = error ? error.message : 'Check your email for a sign-in link.';
+      });
+      $('signout').addEventListener('click', () => supabase.auth.signOut());
+
+      // ── saved searches ──────────────────────────────────────────────────────
+      async function loadSaved() {
+        const { data } = await supabase.from('saved_searches').select('*').order('created_at', { ascending: false });
+        const el = $('saved');
+        if (!data || !data.length) { el.innerHTML = '<p class="empty-note">No saved searches yet. Save one from the map to check back quickly.</p>'; return; }
+        el.innerHTML = data.map((s: Row) => {
+          const qs = new URLSearchParams();
+          const f = s.filters || {};
+          for (const k of ['status', 'species', 'area', 'query']) if (f[k]) qs.set(k === 'query' ? 'q' : k, f[k]);
+          if (f.center) { qs.set('lat', f.center.lat); qs.set('lng', f.center.lng); qs.set('radius', f.radiusKm || 15); }
+          return `<div class="search-card"><div><div class="desc">${esc(s.label)}</div>` +
+            `<div class="meta">Saved ${new Date(s.created_at).toLocaleDateString('en-GB')}</div></div>` +
+            `<div class="actions"><a class="btn btn-ghost" href="/search?${qs}">Open</a>` +
+            `<button class="btn btn-icon" data-del-search="${s.id}" title="Remove">✕</button></div></div>`;
+        }).join('');
+        el.querySelectorAll<HTMLElement>('[data-del-search]').forEach((b) =>
+          b.addEventListener('click', async () => { await supabase.from('saved_searches').delete().eq('id', b.dataset.delSearch); loadSaved(); })
+        );
+      }
+
+      // ── my listings ─────────────────────────────────────────────────────────
+      async function loadMine(uid: string) {
+        const { data } = await supabase.from('pets').select('*').eq('reporter_id', uid).order('created_at', { ascending: false });
+        const el = $('mine');
+        if (!data || !data.length) { el.innerHTML = '<p class="empty-note">You haven’t reported any pets yet.</p>'; return; }
+        el.innerHTML = data.map((p: Row) => {
+          const pill = p.moderation_status === 'approved'
+            ? (p.status === 'reunited' ? '<span class="status-pill live">Reunited 🎉</span>' : '<span class="status-pill live">Live</span>')
+            : p.moderation_status === 'rejected' ? '<span class="status-pill rejected">Not approved</span>'
+            : '<span class="status-pill pending">In review</span>';
+          const canReunite = p.moderation_status === 'approved' && p.status !== 'reunited';
+          return `<div class="mine-card"><img src="${esc(p.photo_url || '/assets/photo.jpg')}" alt="${esc(p.name)}">` +
+            `<div class="info"><div class="name">${esc(p.name)}</div><div class="meta">${esc(p.species)} · ${esc(p.area)}</div></div>` +
+            `<div class="mine-actions">${pill}` +
+            (canReunite ? `<button class="btn btn-ghost" data-reunite="${p.id}">Mark reunited</button>` : '') +
+            `<button class="btn btn-icon" data-del-pet="${p.id}" title="Delete">✕</button></div></div>`;
+        }).join('');
+        el.querySelectorAll<HTMLElement>('[data-reunite]').forEach((b) =>
+          b.addEventListener('click', async () => { await supabase.from('pets').update({ status: 'reunited', reunited_at: new Date().toISOString() }).eq('id', b.dataset.reunite); loadMine(uid); })
+        );
+        el.querySelectorAll<HTMLElement>('[data-del-pet]').forEach((b) =>
+          b.addEventListener('click', async () => { if (confirm('Delete this listing?')) { await supabase.from('pets').delete().eq('id', b.dataset.delPet); loadMine(uid); } })
+        );
+      }
+    })();
+  </script>
+
+  <style>
+    .wrap { max-width: 720px; margin: 0 auto; padding: calc(2 * var(--space-6)) var(--edge, clamp(16px, 4vw, 48px)) calc(4 * var(--space-6)); }
+    .muted-center { text-align: center; color: color-mix(in srgb, var(--color-text) 55%, transparent); padding: calc(3 * var(--space-6)) 0; font-size: 14px; }
+    .gate { max-width: 380px; margin: calc(2 * var(--space-6)) auto 0; display: flex; flex-direction: column; gap: var(--space-3); text-align: center; }
+    .gate h1 { font-family: var(--font-heading); font-weight: var(--font-heading-weight); font-size: 30px; margin: 0 0 4px; }
+    .gate p { font-size: 14.5px; color: color-mix(in srgb, var(--color-text) 70%, transparent); margin: 0 0 var(--space-3); }
+    .gate .field { text-align: left; }
+    .gate .field label { display: block; font-size: 13px; margin-bottom: 5px; font-weight: 600; }
+    .gate-msg { font-size: 13.5px; color: var(--color-accent-700); min-height: 18px; }
+    .head-row { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); margin-bottom: 4px; }
+    .head-row h1 { font-family: var(--font-heading); font-weight: var(--font-heading-weight); font-size: 30px; margin: 0; }
+    .head-actions { display: flex; gap: var(--space-2); }
+    .who { font-size: 13px; color: color-mix(in srgb, var(--color-text) 60%, transparent); margin: 0 0 var(--space-6); }
+    .section-title { font-family: var(--font-heading); font-weight: var(--font-heading-weight); font-size: 19px; margin: 0 0 var(--space-3); }
+    .block { margin-bottom: calc(2 * var(--space-6)); }
+    .search-card { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); background: var(--color-surface); border-radius: var(--radius-lg); padding: var(--space-3) var(--space-4); margin-bottom: var(--space-2); }
+    .search-card .desc { font-size: 14px; }
+    .search-card .meta { font-size: 12px; color: color-mix(in srgb, var(--color-text) 60%, transparent); }
+    .search-card .actions { display: flex; gap: 8px; align-items: center; }
+    .mine-card { display: flex; gap: var(--space-3); align-items: center; padding: var(--space-2); border-radius: var(--radius-lg); margin-bottom: 6px; }
+    .mine-card img { width: 56px; height: 56px; border-radius: var(--radius-md); object-fit: cover; }
+    .mine-card .info { flex: 1; min-width: 0; }
+    .mine-card .name { font-family: var(--font-heading); font-size: 15px; }
+    .mine-card .meta { font-size: 12px; color: color-mix(in srgb, var(--color-text) 60%, transparent); }
+    .mine-actions { display: flex; align-items: center; gap: 6px; }
+    .status-pill { font-size: 11px; padding: 3px 10px; border-radius: 999px; white-space: nowrap; }
+    .status-pill.pending { background: var(--color-neutral-200); color: var(--color-neutral-800); }
+    .status-pill.live { background: var(--color-accent-2-100); color: var(--color-accent-2-800); }
+    .status-pill.rejected { background: var(--color-accent-100); color: var(--color-accent-800); }
+    .empty-note { font-size: 13.5px; color: color-mix(in srgb, var(--color-text) 60%, transparent); padding: var(--space-3) 0; }
+  </style>
+</Base>

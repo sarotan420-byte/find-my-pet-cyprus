@@ -1,0 +1,17 @@
+---
+export interface Props {
+  current?: 'search' | 'submit' | 'account' | null;
+}
+const { current = null } = Astro.props;
+---
+<nav class="nav">
+  <a class="nav-brand" href="/">Find My Pet Cyprus</a>
+  <span class="links">
+    <a href="/search" aria-current={current === 'search' ? 'page' : undefined}>Search map</a>
+    <a href="/submit" aria-current={current === 'submit' ? 'page' : undefined}>Report a pet</a>
+  </span>
+  <span class="actions">
+    <a href="/account" aria-current={current === 'account' ? 'page' : undefined}>Sign in</a>
+    <a href="/submit" class="btn btn-primary">Report a pet</a>
+  </span>
+</nav>

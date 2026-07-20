@@ -1,0 +1,90 @@
+---
+import Base from '../../layouts/Base.astro';
+import Nav from '../../components/Nav.astro';
+import Footer from '../../components/Footer.astro';
+import PetCard from '../../components/PetCard.astro';
+import { getApprovedPets } from '../../lib/pets';
+import { DISTRICTS, petMatchesDistrict } from '../../lib/areas';
+
+export async function getStaticPaths() {
+  return DISTRICTS.map((d) => ({ params: { slug: d.slug }, props: { district: d } }));
+}
+
+const { district } = Astro.props;
+const all = await getApprovedPets();
+const pets = all.filter((p) => petMatchesDistrict(p.area, district));
+const missing = pets.filter((p) => p.status === 'missing').length;
+const found = pets.filter((p) => p.status === 'found').length;
+
+const title = `Missing & found pets in ${district.short}, Cyprus — Find My Pet Cyprus`;
+const description = `Browse missing and found pets reported in ${district.short}, Cyprus. Search by postcode, area or radius, or report a lost or found pet — every listing is checked before it goes public.`;
+const site = Astro.site!.toString().replace(/\/$/, '');
+
+const jsonLd = [
+  {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Home', item: `${site}/` },
+      { '@type': 'ListItem', position: 2, name: `Pets in ${district.short}`, item: `${site}/area/${district.slug}` },
+    ],
+  },
+  {
+    '@context': 'https://schema.org',
+    '@type': 'CollectionPage',
+    name: title,
+    description,
+    url: `${site}/area/${district.slug}`,
+  },
+];
+---
+<Base title={title} description={description} jsonLd={jsonLd}>
+  <Nav current="search" />
+  <div class="wrap">
+    <nav class="crumbs"><a href="/">Home</a> · <span>{district.short}</span></nav>
+    <h1>Missing &amp; found pets in {district.short}</h1>
+    <p class="intro">
+      {pets.length > 0
+        ? `${pets.length} listing${pets.length === 1 ? '' : 's'} in ${district.short} — ${missing} missing, ${found} found. Search by postcode, area or radius, or report a pet.`
+        : `No current listings in ${district.short}. If you've lost or found a pet here, report it — it takes a few minutes and helps someone nearby.`}
+    </p>
+    <div class="cta-row">
+      <a class="btn btn-primary" href={`/search?area=${encodeURIComponent(district.label)}`}>See {district.short} on the map</a>
+      <a class="btn btn-secondary" href="/submit">Report a pet</a>
+    </div>
+
+    {pets.length > 0 && (
+      <div class="pet-grid">
+        {pets.map((pet) => <PetCard pet={pet} />)}
+      </div>
+    )}
+
+    <section class="area-links">
+      <h2>Other areas</h2>
+      <div class="links">
+        {DISTRICTS.filter((d) => d.slug !== district.slug).map((d) => (
+          <a href={`/area/${d.slug}`}>{d.short}</a>
+        ))}
+      </div>
+    </section>
+
+    <Footer />
+  </div>
+
+  <style>
+    .wrap { max-width: 1080px; margin: 0 auto; padding: var(--space-6) var(--edge, clamp(16px, 4vw, 48px)) 0; }
+    .crumbs { font-size: 12.5px; color: color-mix(in srgb, var(--color-text) 55%, transparent); margin-bottom: var(--space-3); }
+    .crumbs a { color: inherit; }
+    h1 { font-family: var(--font-heading); font-weight: var(--font-heading-weight); font-size: clamp(30px, 4vw, 42px); margin: 0 0 var(--space-3); }
+    .intro { font-size: 16px; line-height: 1.6; max-width: 60ch; color: color-mix(in srgb, var(--color-text) 80%, transparent); margin: 0 0 var(--space-4); }
+    .cta-row { display: flex; gap: var(--space-3); flex-wrap: wrap; margin-bottom: calc(2 * var(--space-6)); }
+    .cta-row .btn { min-height: 44px; padding-inline: var(--space-4); }
+    .pet-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-4); margin-bottom: calc(2 * var(--space-6)); }
+    @media (max-width: 980px) { .pet-grid { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 620px) { .pet-grid { grid-template-columns: 1fr; } }
+    .area-links { border-top: 1px solid var(--color-divider); padding-top: var(--space-4); margin-bottom: calc(2 * var(--space-6)); }
+    .area-links h2 { font-family: var(--font-heading); font-weight: var(--font-heading-weight); font-size: 18px; margin: 0 0 var(--space-3); }
+    .area-links .links { display: flex; flex-wrap: wrap; gap: var(--space-3); }
+    .area-links .links a { font-size: 14px; }
+  </style>
+</Base>

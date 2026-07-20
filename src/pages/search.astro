@@ -1,0 +1,339 @@
+---
+import Base from '../layouts/Base.astro';
+import Nav from '../components/Nav.astro';
+import { AREAS } from '../lib/areas';
+---
+<Base title="Search map — Find My Pet Cyprus" description="Filter missing and found pet listings across Cyprus by area, postcode, or a point and radius on the map." leaflet>
+  <Nav current="search" />
+
+  <div class="layout" data-view="list">
+    <div class="panel">
+      <div class="filters">
+        <div class="seg" role="group" aria-label="Pet status">
+          <label class="seg-opt"><input type="radio" name="status" value="all" checked /><span>All</span></label>
+          <label class="seg-opt"><input type="radio" name="status" value="missing" /><span>Missing</span></label>
+          <label class="seg-opt"><input type="radio" name="status" value="found" /><span>Found</span></label>
+        </div>
+        <div class="filter-row">
+          <div class="field">
+            <label for="f-area">Area / town</label>
+            <select class="input" id="f-area">
+              <option value="">All of Cyprus</option>
+              {AREAS.map((a) => <option value={a}>{a}</option>)}
+            </select>
+          </div>
+          <div class="field">
+            <label for="f-species">Species</label>
+            <select class="input" id="f-species">
+              <option value="">Any</option>
+              <option value="Dog">Dog</option>
+              <option value="Cat">Cat</option>
+            </select>
+          </div>
+        </div>
+        <div class="field">
+          <label for="f-postcode">Postcode or place name</label>
+          <div class="geo-row">
+            <input class="input" id="f-postcode" type="text" placeholder="e.g. 3021, or “Kato Paphos harbour”" autocomplete="off" />
+            <button class="btn btn-primary" id="f-go" type="button" title="Search this point">Go</button>
+          </div>
+          <div class="geo-hint" id="geo-hint"></div>
+        </div>
+        <div class="field" id="radius-field" hidden>
+          <label for="f-radius">Radius from that point</label>
+          <div class="radius-row">
+            <input type="range" id="f-radius" min="1" max="50" step="1" value="15" />
+            <span class="radius-val" id="f-radius-val">15 km</span>
+          </div>
+        </div>
+        <div class="point-actions">
+          <button class="btn btn-ghost" id="f-locate" type="button">📍 Use my location</button>
+          <button class="btn btn-ghost" id="f-clear" type="button" hidden>Clear point</button>
+        </div>
+        <button class="btn btn-secondary btn-block" id="f-save" type="button">☆ Save this search</button>
+        <div class="save-msg" id="save-msg" role="status"></div>
+      </div>
+      <div class="count-row">
+        <span id="result-count">…</span>
+        <div class="map-toggle" style="border:none;padding:0">
+          <button class="btn btn-secondary" id="btn-list" type="button">List</button>
+          <button class="btn btn-secondary" id="btn-map" type="button">Map</button>
+        </div>
+      </div>
+      <div class="results" id="results"><div class="empty">Loading listings…</div></div>
+    </div>
+    <div id="map"></div>
+  </div>
+
+  <script>
+    import { getSupabase } from '../lib/supabase';
+
+    type Pet = {
+      id: number | string; status: string; species: string; name: string;
+      area: string; lat: number; lng: number; desc: string; photo: string;
+    };
+
+    (function () {
+      const L = (window as any).L;
+      if (!L) return;
+      const layout = document.querySelector('.layout') as HTMLElement;
+      const resultsEl = document.getElementById('results')!;
+      const countEl = document.getElementById('result-count')!;
+      const hintEl = document.getElementById('geo-hint')!;
+      const radiusField = document.getElementById('radius-field') as HTMLElement;
+      const radiusInput = document.getElementById('f-radius') as HTMLInputElement;
+      const radiusVal = document.getElementById('f-radius-val')!;
+      const clearBtn = document.getElementById('f-clear') as HTMLButtonElement;
+
+      const map = L.map('map', { zoomControl: true }).setView([34.98, 33.15], 9);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap contributors', maxZoom: 18,
+      }).addTo(map);
+
+      const petLayer = L.layerGroup().addTo(map);
+      let centerMarker: any = null;
+      let radiusCircle: any = null;
+      let center: { lat: number; lng: number } | null = null;
+      let markers: Record<string, any> = {};
+      const color = (s: string) => (s === 'missing' ? '#c67139' : '#7a8a5e');
+
+      function setActive(id: string) {
+        document.querySelectorAll('.result-card').forEach((c) =>
+          c.classList.toggle('active', (c as HTMLElement).dataset.id === id)
+        );
+        const card = document.querySelector(`.result-card[data-id="${id}"]`);
+        if (card) card.scrollIntoView({ block: 'nearest' });
+        const m = markers[id];
+        if (m) { map.panTo(m.getLatLng()); m.openPopup(); }
+      }
+
+      function renderPets(pets: Pet[]) {
+        petLayer.clearLayers();
+        markers = {};
+        pets.forEach((p) => {
+          const icon = L.divIcon({
+            className: '',
+            html: `<div style="width:16px;height:16px;border-radius:50%;background:${color(p.status)};border:3px solid #f5ead8;box-shadow:0 1px 3px rgba(0,0,0,.3)"></div>`,
+            iconSize: [16, 16], iconAnchor: [8, 8],
+          });
+          const m = L.marker([p.lat, p.lng], { icon }).addTo(petLayer);
+          m.bindPopup(`<div class="popup-card"><span class="name">${p.name}</span><span style="font-size:12px;opacity:.7">${p.species} · ${p.area}</span><a href="/listing/${p.id}">View listing →</a></div>`);
+          m.on('click', () => setActive(String(p.id)));
+          markers[String(p.id)] = m;
+        });
+
+        countEl.textContent = `${pets.length} ${pets.length === 1 ? 'listing' : 'listings'}`;
+        if (!pets.length) {
+          resultsEl.innerHTML = '<div class="empty">No listings match those filters yet.<br>Try widening the area or radius.</div>';
+          return;
+        }
+        resultsEl.innerHTML = pets.map((p) =>
+          `<a class="result-card" data-id="${p.id}" href="/listing/${p.id}">` +
+            `<img src="${p.photo}" alt="${p.name}" loading="lazy">` +
+            `<div class="info"><div class="top"><span class="name">${p.name}</span>` +
+            `<span class="tag ${p.status === 'missing' ? 'tag-accent' : 'tag-accent-2'}">${p.status === 'missing' ? 'Missing' : 'Found'}</span></div>` +
+            `<span class="meta">${p.species} · ${p.area}</span>` +
+            `<span class="desc">${p.desc}</span></div></a>`
+        ).join('');
+        resultsEl.querySelectorAll<HTMLElement>('.result-card').forEach((card) =>
+          card.addEventListener('mouseenter', () => setActive(card.dataset.id!))
+        );
+      }
+
+      function drawCenter() {
+        if (centerMarker) { map.removeLayer(centerMarker); centerMarker = null; }
+        if (radiusCircle) { map.removeLayer(radiusCircle); radiusCircle = null; }
+        clearBtn.hidden = !center;
+        radiusField.hidden = !center;
+        if (!center) return;
+        centerMarker = L.marker([center.lat, center.lng], {
+          icon: L.divIcon({ className: '', html: '<div style="width:14px;height:14px;border-radius:50%;background:#201e1d;border:3px solid #f5ead8"></div>', iconSize: [14, 14], iconAnchor: [7, 7] }),
+        }).addTo(map);
+        const km = Number(radiusInput.value);
+        radiusCircle = L.circle([center.lat, center.lng], {
+          radius: km * 1000, color: '#c67139', weight: 1.5, fillColor: '#c67139', fillOpacity: 0.08,
+        }).addTo(map);
+        map.fitBounds(radiusCircle.getBounds(), { padding: [30, 30] });
+      }
+
+      let t: any;
+      function scheduleFetch() { clearTimeout(t); t = setTimeout(fetchAndRender, 200); }
+
+      async function fetchAndRender() {
+        const params = new URLSearchParams();
+        params.set('status', (document.querySelector('input[name="status"]:checked') as HTMLInputElement).value);
+        const species = (document.getElementById('f-species') as HTMLSelectElement).value;
+        const area = (document.getElementById('f-area') as HTMLSelectElement).value;
+        if (species) params.set('species', species);
+        if (area) params.set('area', area);
+        if (center) {
+          params.set('lat', String(center.lat));
+          params.set('lng', String(center.lng));
+          params.set('radius', radiusInput.value);
+        } else {
+          const q = (document.getElementById('f-postcode') as HTMLInputElement).value.trim();
+          if (q) params.set('q', q);
+        }
+        try {
+          const res = await fetch(`/api/search?${params}`);
+          const json = await res.json();
+          renderPets(json.pets || []);
+        } catch {
+          resultsEl.innerHTML = '<div class="empty">Could not load listings. Please retry.</div>';
+        }
+      }
+
+      async function geocodeAndSearch() {
+        const q = (document.getElementById('f-postcode') as HTMLInputElement).value.trim();
+        if (!q) { center = null; drawCenter(); fetchAndRender(); return; }
+        hintEl.textContent = 'Locating…';
+        try {
+          const res = await fetch(`/api/geocode?q=${encodeURIComponent(q)}`);
+          if (!res.ok) { hintEl.textContent = 'Couldn’t find that place — showing text matches instead.'; center = null; drawCenter(); fetchAndRender(); return; }
+          const g = await res.json();
+          center = { lat: g.lat, lng: g.lng };
+          hintEl.textContent = `Showing within ${radiusInput.value} km of ${String(g.label).split(',')[0]}`;
+          drawCenter();
+          fetchAndRender();
+        } catch {
+          hintEl.textContent = 'Location lookup failed — showing text matches.';
+          center = null; drawCenter(); fetchAndRender();
+        }
+      }
+
+      // events
+      document.querySelectorAll('input[name="status"]').forEach((r) => r.addEventListener('change', scheduleFetch));
+      document.getElementById('f-area')!.addEventListener('change', scheduleFetch);
+      document.getElementById('f-species')!.addEventListener('change', scheduleFetch);
+      document.getElementById('f-go')!.addEventListener('click', geocodeAndSearch);
+      document.getElementById('f-postcode')!.addEventListener('keydown', (e) => {
+        if ((e as KeyboardEvent).key === 'Enter') { e.preventDefault(); geocodeAndSearch(); }
+      });
+      radiusInput.addEventListener('input', () => {
+        radiusVal.textContent = `${radiusInput.value} km`;
+        if (center) { drawCenter(); scheduleFetch(); }
+      });
+      clearBtn.addEventListener('click', () => {
+        center = null; hintEl.textContent = ''; drawCenter();
+        (document.getElementById('f-postcode') as HTMLInputElement).value = '';
+        fetchAndRender();
+      });
+      document.getElementById('f-locate')!.addEventListener('click', () => {
+        if (!navigator.geolocation) { hintEl.textContent = 'Location not available on this device.'; return; }
+        hintEl.textContent = 'Getting your location…';
+        navigator.geolocation.getCurrentPosition(
+          (pos) => {
+            center = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+            hintEl.textContent = `Showing within ${radiusInput.value} km of your location`;
+            drawCenter(); fetchAndRender();
+          },
+          () => { hintEl.textContent = 'Couldn’t get your location.'; }
+        );
+      });
+
+      document.getElementById('btn-list')!.addEventListener('click', () => { layout.dataset.view = 'list'; });
+      document.getElementById('btn-map')!.addEventListener('click', () => {
+        layout.dataset.view = 'map';
+        setTimeout(() => map.invalidateSize(), 50);
+      });
+
+      // ── Save this search ──────────────────────────────────────────────────────
+      function currentLabel(): string {
+        const status = (document.querySelector('input[name="status"]:checked') as HTMLInputElement).value;
+        const species = (document.getElementById('f-species') as HTMLSelectElement).value;
+        const area = (document.getElementById('f-area') as HTMLSelectElement).value;
+        const noun = species ? species.toLowerCase() + 's' : 'pets';
+        const st = status === 'all' ? 'All' : status[0].toUpperCase() + status.slice(1);
+        let where = area || 'all of Cyprus';
+        if (center) where = `within ${radiusInput.value} km of a point`;
+        return `${st} ${noun} · ${where}`;
+      }
+      function currentFilters() {
+        const f: any = {
+          status: (document.querySelector('input[name="status"]:checked') as HTMLInputElement).value,
+          species: (document.getElementById('f-species') as HTMLSelectElement).value,
+          area: (document.getElementById('f-area') as HTMLSelectElement).value,
+          query: center ? '' : (document.getElementById('f-postcode') as HTMLInputElement).value.trim(),
+        };
+        if (center) { f.center = center; f.radiusKm = Number(radiusInput.value); }
+        return f;
+      }
+      const saveMsg = document.getElementById('save-msg')!;
+      document.getElementById('f-save')!.addEventListener('click', async () => {
+        const supabase = getSupabase();
+        if (!supabase) { saveMsg.innerHTML = 'Saving searches needs an account — <a href="/account">sign in</a>.'; return; }
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) { saveMsg.innerHTML = '<a href="/account">Sign in</a> to save this search.'; return; }
+        saveMsg.textContent = 'Saving…';
+        const { error } = await supabase.from('saved_searches').insert({ user_id: session.user.id, label: currentLabel(), filters: currentFilters() });
+        saveMsg.textContent = error ? error.message : 'Saved ✓ — find it in your account.';
+      });
+
+      // ── Initialise from URL (shared links / opening a saved search) ───────────
+      (function initFromUrl() {
+        const p = new URLSearchParams(location.search);
+        const st = p.get('status'); if (st) { const el = document.querySelector(`input[name="status"][value="${st}"]`) as HTMLInputElement; if (el) el.checked = true; }
+        const sp = p.get('species'); if (sp) (document.getElementById('f-species') as HTMLSelectElement).value = sp;
+        const ar = p.get('area'); if (ar) (document.getElementById('f-area') as HTMLSelectElement).value = ar;
+        const q = p.get('q'); if (q) (document.getElementById('f-postcode') as HTMLInputElement).value = q;
+        const lat = p.get('lat'), lng = p.get('lng'), rad = p.get('radius');
+        if (lat && lng) {
+          if (rad) { radiusInput.value = rad; radiusVal.textContent = `${rad} km`; }
+          center = { lat: Number(lat), lng: Number(lng) };
+          drawCenter();
+        }
+      })();
+
+      fetchAndRender();
+    })();
+  </script>
+
+  <style>
+    .layout { display: grid; grid-template-columns: 380px 1fr; height: calc(100dvh - 57px); }
+    @media (max-width: 900px) { .layout { grid-template-columns: 1fr; height: auto; } }
+    .panel { border-right: 1px solid var(--color-divider); display: flex; flex-direction: column; overflow: hidden; }
+    @media (max-width: 900px) { .panel { border-right: none; border-bottom: 1px solid var(--color-divider); } }
+    .filters { padding: var(--space-4); display: flex; flex-direction: column; gap: var(--space-3); border-bottom: 1px solid var(--color-divider); }
+    .filters .seg { width: 100%; }
+    .filters .seg-opt { flex: 1; justify-content: center; }
+    .filter-row { display: flex; gap: var(--space-2); }
+    .filter-row .field { flex: 1; }
+    .field label { display: block; font-size: 12px; margin-bottom: 4px; color: color-mix(in srgb, var(--color-text) 70%, transparent); }
+    .geo-row { display: flex; gap: var(--space-2); }
+    .geo-row .input { flex: 1; }
+    .geo-row .btn { min-height: 40px; padding-inline: var(--space-4); }
+    .geo-hint { font-size: 12px; color: var(--color-accent-700); margin-top: 5px; min-height: 15px; }
+    .radius-row { display: flex; align-items: center; gap: var(--space-3); }
+    .radius-row input[type="range"] { flex: 1; accent-color: var(--color-accent); }
+    .radius-val { font-size: 13px; font-weight: 600; min-width: 52px; text-align: right; font-family: var(--font-heading); }
+    .point-actions { display: flex; justify-content: space-between; gap: var(--space-2); }
+    .point-actions .btn { font-size: 12.5px; }
+    #f-save { font-size: 13px; }
+    .save-msg { font-size: 12.5px; color: var(--color-accent-700); min-height: 15px; text-align: center; }
+    .save-msg a { color: var(--color-accent-700); }
+    .count-row { padding: var(--space-3) var(--space-4); font-size: 13px; color: color-mix(in srgb, var(--color-text) 70%, transparent); border-bottom: 1px solid var(--color-divider); display: flex; justify-content: space-between; align-items: center; }
+    .results { overflow-y: auto; flex: 1; padding: var(--space-3) var(--space-3) var(--space-4); display: flex; flex-direction: column; gap: var(--space-3); }
+    .result-card { text-decoration: none; color: inherit; display: flex; gap: var(--space-3); padding: var(--space-2); border-radius: calc(var(--radius-lg) * 1.15); cursor: pointer; border: 1.5px solid transparent; }
+    .result-card:hover, .result-card.active { background: var(--color-surface); }
+    .result-card.active { border-color: var(--color-accent); }
+    .result-card img { width: 84px; height: 84px; border-radius: var(--radius-md); object-fit: cover; flex: none; }
+    .result-card .info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+    .result-card .top { display: flex; align-items: center; gap: 8px; }
+    .result-card .name { font-family: var(--font-heading); font-size: 16px; }
+    .result-card .meta { font-size: 12.5px; color: color-mix(in srgb, var(--color-text) 65%, transparent); }
+    .result-card .desc { font-size: 12.5px; color: color-mix(in srgb, var(--color-text) 60%, transparent); overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+    .empty { padding: var(--space-6) var(--space-4); text-align: center; color: color-mix(in srgb, var(--color-text) 55%, transparent); font-size: 14px; }
+    #map { width: 100%; height: 100%; min-height: 420px; }
+    :global(.leaflet-popup-content-wrapper) { border-radius: var(--radius-md); font-family: var(--font-body); }
+    :global(.popup-card) { display: flex; flex-direction: column; gap: 4px; min-width: 160px; }
+    :global(.popup-card .name) { font-family: var(--font-heading); font-size: 15px; }
+    :global(.popup-card a) { font-size: 12.5px; }
+    .map-toggle { display: none; }
+    @media (max-width: 900px) {
+      .map-toggle { display: flex; justify-content: center; padding: var(--space-2); gap: var(--space-2); }
+      #map, .results { display: none; }
+      .layout[data-view="map"] #map { display: block; height: 60vh; }
+      .layout[data-view="list"] .results { display: flex; }
+    }
+  </style>
+</Base>
