@@ -1,4 +1,4 @@
-# Find My Pet Cyprus
+# Find My Pet Cyprus 
 
 The real, buildable website — your prototype's design ported onto **Astro** (fast, SEO-strong, cheap to host), ready to connect to a database.
 
