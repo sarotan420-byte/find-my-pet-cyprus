@@ -7,10 +7,16 @@ import { getSupabaseAdmin } from './supabase-admin';
 // Every page/route reads listings through these functions, so swapping demo
 // data for the live database (Milestone 2) happens here and nowhere else.
 
-/** All publicly visible (moderation-approved) listings, newest first. */
+const demoSorted = () =>
+  [...DEMO_PETS].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+/** All publicly visible (moderation-approved) listings, newest first.
+ *  Fails soft: if the database is unreachable, returns demo data rather than
+ *  throwing (keeps builds and pages resilient). */
 export async function getApprovedPets(): Promise<Pet[]> {
   const supabase = getSupabase();
-  if (supabase) {
+  if (!supabase) return demoSorted();
+  try {
     const { data, error } = await supabase
       .from('pets')
       .select('*')
@@ -18,16 +24,15 @@ export async function getApprovedPets(): Promise<Pet[]> {
       .order('date_seen', { ascending: false });
     if (error) throw error;
     return (data ?? []).map(rowToPet);
+  } catch {
+    return demoSorted();
   }
-  // Fallback: demo data
-  return [...DEMO_PETS].sort(
-    (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
-  );
 }
 
 export async function getPetById(id: string | number): Promise<Pet | null> {
   const supabase = getSupabase();
-  if (supabase) {
+  if (!supabase) return DEMO_PETS.find((p) => String(p.id) === String(id)) ?? null;
+  try {
     const { data, error } = await supabase
       .from('pets')
       .select('*')
@@ -36,8 +41,9 @@ export async function getPetById(id: string | number): Promise<Pet | null> {
       .maybeSingle();
     if (error) throw error;
     return data ? rowToPet(data) : null;
+  } catch {
+    return DEMO_PETS.find((p) => String(p.id) === String(id)) ?? null;
   }
-  return DEMO_PETS.find((p) => String(p.id) === String(id)) ?? null;
 }
 
 /** Search approved listings by attributes + optional point/radius.

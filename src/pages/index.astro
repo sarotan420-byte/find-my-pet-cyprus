@@ -6,6 +6,9 @@ import PetCard from '../components/PetCard.astro';
 import { getApprovedPets } from '../lib/pets';
 import { DISTRICTS } from '../lib/areas';
 
+// Live so "recently reported" reflects approvals immediately.
+export const prerender = false;
+
 const pets = await getApprovedPets();
 const recent = pets.slice(0, 3);
 const mapPoints = pets.map((p) => ({ lat: p.lat, lng: p.lng, name: p.name, status: p.status }));

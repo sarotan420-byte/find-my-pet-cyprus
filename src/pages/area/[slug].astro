@@ -4,13 +4,13 @@ import Nav from '../../components/Nav.astro';
 import Footer from '../../components/Footer.astro';
 import PetCard from '../../components/PetCard.astro';
 import { getApprovedPets } from '../../lib/pets';
-import { DISTRICTS, petMatchesDistrict } from '../../lib/areas';
+import { districtBySlug, petMatchesDistrict } from '../../lib/areas';
 
-export async function getStaticPaths() {
-  return DISTRICTS.map((d) => ({ params: { slug: d.slug }, props: { district: d } }));
-}
+// Live so area listings/counts reflect approvals immediately.
+export const prerender = false;
 
-const { district } = Astro.props;
+const district = districtBySlug(Astro.params.slug!);
+if (!district) return Astro.redirect('/search');
 const all = await getApprovedPets();
 const pets = all.filter((p) => petMatchesDistrict(p.area, district));
 const missing = pets.filter((p) => p.status === 'missing').length;

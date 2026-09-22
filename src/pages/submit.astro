@@ -2,303 +2,324 @@
 import Base from '../layouts/Base.astro';
 import Nav from '../components/Nav.astro';
 import { AREAS } from '../lib/areas';
-
-// Turnstile widget only renders when a site key is configured (added at deploy).
-const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY as string | undefined;
 ---
 <Base title="Report a pet — Find My Pet Cyprus" description="Report a missing or found pet in Cyprus. A moderator checks every listing before it goes public.">
   <Nav current="submit" />
-  <div class="wrap">
-    <h1 class="title">Report a pet</h1>
-    <p class="lede">A few minutes, and it goes to a moderator before it's public. The more detail you give, the faster someone can recognize it.</p>
 
-    <div class="progress" id="progress"></div>
+  <div class="reporter">
+    <div id="loading" class="r-loading">Loading…</div>
 
-    <form id="form" novalidate>
-      <!-- honeypot: hidden from humans, tempting to bots -->
-      <div aria-hidden="true" style="position:absolute;left:-9999px;top:-9999px;opacity:0;height:0;overflow:hidden">
-        <label>Website<input type="text" name="website" tabindex="-1" autocomplete="off" /></label>
+    <!-- sign-in gate: reporting requires an account -->
+    <section id="gate" class="r-gate" hidden>
+      <div class="gate-card">
+        <div class="gate-badge">🐾</div>
+        <h1>Sign in to report a pet</h1>
+        <p>Reports are tied to an account so we can keep the map trustworthy and let you manage your listing later. We'll email you a one-tap sign-in link — no password.</p>
+        <div class="field"><label for="email">Email</label><input class="input" id="email" type="email" placeholder="you@example.com" autocomplete="email" /></div>
+        <button class="btn btn-primary btn-block" id="signin" type="button">Email me a link</button>
+        <div class="gate-msg" id="gate-msg" role="status"></div>
       </div>
+    </section>
 
-      <div class="step active" data-step="0">
-        <span class="step-label">Step 1 of 4 · Type</span>
-        <div class="type-choice">
-          <label class="type-opt"><input type="radio" name="type" value="missing" checked /><span class="t">Missing</span><span class="d">This is my pet, or someone's pet I know, and they're gone.</span></label>
-          <label class="type-opt"><input type="radio" name="type" value="found" /><span class="t">Found</span><span class="d">I've found a pet that isn't mine and don't know whose it is.</span></label>
+    <!-- the guided flow -->
+    <section id="flow" class="r-flow" hidden>
+      <header class="flow-head">
+        <div class="flow-title">
+          <span class="kicker">Report a pet</span>
+          <h1 id="flow-h1">Missing or found?</h1>
         </div>
-        <div class="field">
-          <label for="species">Species</label>
-          <select class="input" id="species" name="species" required>
-            <option value="Dog">Dog</option>
-            <option value="Cat">Cat</option>
-            <option value="Other">Other</option>
-          </select>
-        </div>
-        <div class="actions-row">
-          <span></span>
-          <button type="button" class="btn btn-primary" data-next>Continue</button>
-        </div>
-      </div>
+        <ol class="stepper" id="stepper">
+          <li data-s="0"><span class="dot">1</span><span class="lbl">Type</span></li>
+          <li data-s="1"><span class="dot">2</span><span class="lbl">Details</span></li>
+          <li data-s="2"><span class="dot">3</span><span class="lbl">Photos &amp; place</span></li>
+          <li data-s="3"><span class="dot">4</span><span class="lbl">Contact</span></li>
+        </ol>
+      </header>
 
-      <div class="step" data-step="1">
-        <span class="step-label">Step 2 of 4 · Details</span>
-        <div class="field-grid">
-          <div class="field"><label for="name">Name <span class="hint">(if known)</span></label><input class="input" id="name" name="name" placeholder="e.g. Bella" /></div>
-          <div class="field"><label for="breed">Breed</label><input class="input" id="breed" name="breed" placeholder="e.g. Mixed breed, medium" /></div>
-          <div class="field"><label for="color">Colour / markings</label><input class="input" id="color" name="color" placeholder="e.g. Brown & white" /></div>
-          <div class="field"><label for="date">Date seen</label><input class="input" id="date" name="date" type="date" required /></div>
-        </div>
-        <div class="field">
-          <label for="desc">Description</label>
-          <textarea class="input" id="desc" name="desc" placeholder="Temperament, collar, microchip, anything distinctive — and how you'd like to be contacted." required></textarea>
-        </div>
-        <div class="actions-row">
-          <button type="button" class="btn btn-secondary" data-back>Back</button>
-          <button type="button" class="btn btn-primary" data-next>Continue</button>
-        </div>
-      </div>
-
-      <div class="step" data-step="2">
-        <span class="step-label">Step 3 of 4 · Photos &amp; location</span>
-        <div class="field">
-          <label>Photos <span class="hint">(clear, well-lit — helps the most)</span></label>
-          <div class="photo-row" id="photo-row">
-            <label class="photo-tile"><input type="file" accept="image/*" hidden data-slot="0" /><span class="ph">＋<br>Add photo</span></label>
-            <label class="photo-tile"><input type="file" accept="image/*" hidden data-slot="1" /><span class="ph">＋<br>Add photo</span></label>
-            <label class="photo-tile"><input type="file" accept="image/*" hidden data-slot="2" /><span class="ph">＋<br>Add photo</span></label>
+      <form id="form" class="flow-body" novalidate>
+        <div class="step active" data-step="0" data-h="Missing or found?">
+          <div class="type-choice">
+            <label class="type-opt"><input type="radio" name="type" value="missing" checked /><span class="t">🔎 Missing</span><span class="d">My pet, or one I know, has gone.</span></label>
+            <label class="type-opt"><input type="radio" name="type" value="found" /><span class="t">🏠 Found</span><span class="d">I found a pet that isn't mine.</span></label>
           </div>
-        </div>
-        <div class="field-grid">
-          <div class="field"><label for="area">Area / town last seen</label>
-            <select class="input" id="area" name="area" required>
-              <option value="">Select an area</option>
-              {AREAS.map((a) => <option value={a}>{a}</option>)}
+          <div class="field">
+            <label for="species">Species</label>
+            <select class="input" id="species" name="species" required>
+              <option value="Dog">Dog</option>
+              <option value="Cat">Cat</option>
+              <option value="Other">Other</option>
             </select>
           </div>
-          <div class="field"><label for="postcode">Postcode <span class="hint">(optional)</span></label><input class="input" id="postcode" name="postcode" placeholder="e.g. 3021" /></div>
+          <div class="actions-row"><span></span><button type="button" class="btn btn-primary" data-next>Continue →</button></div>
         </div>
-        <div class="actions-row">
-          <button type="button" class="btn btn-secondary" data-back>Back</button>
-          <button type="button" class="btn btn-primary" data-next>Continue</button>
-        </div>
-      </div>
 
-      <div class="step" data-step="3">
-        <span class="step-label">Step 4 of 4 · Contact &amp; review</span>
-        <div class="field-grid">
-          <div class="field"><label for="cname">Your name</label><input class="input" id="cname" name="cname" required /></div>
-          <div class="field"><label for="cphone">Phone or email</label><input class="input" id="cphone" name="cphone" required /></div>
+        <div class="step" data-step="1" data-h="Describe the pet">
+          <div class="field-grid">
+            <div class="field"><label for="name">Name <span class="hint">(if known)</span></label><input class="input" id="name" name="name" placeholder="e.g. Bella" /></div>
+            <div class="field"><label for="breed">Breed</label><input class="input" id="breed" name="breed" placeholder="e.g. Mixed, medium" /></div>
+            <div class="field"><label for="color">Colour / markings</label><input class="input" id="color" name="color" placeholder="e.g. Brown & white" /></div>
+            <div class="field"><label for="date">Date seen</label><input class="input" id="date" name="date" type="date" required /></div>
+          </div>
+          <div class="field">
+            <label for="desc">Description</label>
+            <textarea class="input" id="desc" name="desc" rows="3" placeholder="Temperament, collar, microchip, anything distinctive." required></textarea>
+          </div>
+          <div class="actions-row"><button type="button" class="btn btn-secondary" data-back>← Back</button><button type="button" class="btn btn-primary" data-next>Continue →</button></div>
         </div>
-        <div class="review-list" id="review"></div>
-        <label class="radio" style="margin-top:4px"><input type="checkbox" id="agree" required /><span class="dot"></span>I confirm this listing is accurate to the best of my knowledge.</label>
-        {turnstileSiteKey && (
-          <div class="cf-turnstile" data-sitekey={turnstileSiteKey} data-theme="light" style="margin-top:4px"></div>
-        )}
-        <div class="form-error" id="form-error" role="alert"></div>
-        <div class="actions-row">
-          <button type="button" class="btn btn-secondary" data-back>Back</button>
-          <button type="submit" class="btn btn-primary" id="submit-btn">Submit for review</button>
-        </div>
-      </div>
-    </form>
 
-    <div class="success" id="success" style="display:none">
+        <div class="step" data-step="2" data-h="Photos & where it was seen">
+          <div class="field">
+            <label>Photos <span class="hint">(clear, well-lit — helps the most)</span></label>
+            <div class="photo-row">
+              <label class="photo-tile"><input type="file" accept="image/*" hidden data-slot="0" /><span class="ph">＋<br>Add</span></label>
+              <label class="photo-tile"><input type="file" accept="image/*" hidden data-slot="1" /><span class="ph">＋<br>Add</span></label>
+              <label class="photo-tile"><input type="file" accept="image/*" hidden data-slot="2" /><span class="ph">＋<br>Add</span></label>
+            </div>
+          </div>
+          <div class="field-grid">
+            <div class="field"><label for="area">Area / town last seen</label>
+              <select class="input" id="area" name="area" required>
+                <option value="">Select an area</option>
+                {AREAS.map((a) => <option value={a}>{a}</option>)}
+              </select>
+            </div>
+            <div class="field"><label for="postcode">Postcode <span class="hint">(optional)</span></label><input class="input" id="postcode" name="postcode" placeholder="e.g. 3021" /></div>
+          </div>
+          <div class="actions-row"><button type="button" class="btn btn-secondary" data-back>← Back</button><button type="button" class="btn btn-primary" data-next>Continue →</button></div>
+        </div>
+
+        <div class="step" data-step="3" data-h="How can people reach you?">
+          <div class="field-grid">
+            <div class="field"><label for="cname">Contact name</label><input class="input" id="cname" name="cname" required /></div>
+            <div class="field"><label for="cphone">Phone or email <span class="hint">(shown to finders)</span></label><input class="input" id="cphone" name="cphone" required /></div>
+          </div>
+          <div class="review-list" id="review"></div>
+          <label class="agree"><input type="checkbox" id="agree" required /> I confirm this listing is accurate to the best of my knowledge.</label>
+          <div class="form-error" id="form-error" role="alert"></div>
+          <div class="actions-row"><button type="button" class="btn btn-secondary" data-back>← Back</button><button type="submit" class="btn btn-primary" id="submit-btn">Submit for review</button></div>
+        </div>
+      </form>
+    </section>
+
+    <!-- success -->
+    <section id="success" class="r-success" hidden>
       <div class="circle">🐾</div>
       <h2>Sent for review</h2>
-      <p>A moderator checks new listings before they go live — usually within a few hours. You'll be able to manage this listing from your account once it's approved.</p>
-      <a href="/" class="btn btn-primary">Back to homepage</a>
-    </div>
+      <p>A moderator checks new listings before they go live — usually within a few hours. You can manage it any time from your account.</p>
+      <div class="s-actions"><a href="/account" class="btn btn-primary">Go to my account</a><a href="/submit" class="btn btn-secondary" id="report-another">Report another</a></div>
+    </section>
   </div>
-
-  {turnstileSiteKey && (
-    <script is:inline src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
-  )}
 
   <script>
     import { getSupabase } from '../lib/supabase';
+    import { centroidForArea } from '../lib/areas';
 
-    // ── client-side image compression ─────────────────────────────────────────
+    const $ = (id: string) => document.getElementById(id)!;
+    const show = (id: string, on = true) => { ($(id) as HTMLElement).hidden = !on; };
+
     async function compressImage(file: File): Promise<File> {
       const MAX = 1600;
       const bitmap = await createImageBitmap(file).catch(() => null);
       if (!bitmap) return file;
       let { width, height } = bitmap;
-      if (width > MAX || height > MAX) {
-        const scale = MAX / Math.max(width, height);
-        width = Math.round(width * scale);
-        height = Math.round(height * scale);
-      }
-      const canvas = document.createElement('canvas');
-      canvas.width = width;
-      canvas.height = height;
-      const ctx = canvas.getContext('2d');
-      if (!ctx) return file;
+      if (width > MAX || height > MAX) { const s = MAX / Math.max(width, height); width = Math.round(width * s); height = Math.round(height * s); }
+      const canvas = document.createElement('canvas'); canvas.width = width; canvas.height = height;
+      const ctx = canvas.getContext('2d'); if (!ctx) return file;
       ctx.drawImage(bitmap, 0, 0, width, height);
-      const blob: Blob | null = await new Promise((res) =>
-        canvas.toBlob((b) => res(b), 'image/jpeg', 0.82)
-      );
-      if (!blob) return file;
-      return new File([blob], (file.name.replace(/\.[^.]+$/, '') || 'photo') + '.jpg', {
-        type: 'image/jpeg',
-      });
+      const blob: Blob | null = await new Promise((res) => canvas.toBlob((b) => res(b), 'image/jpeg', 0.82));
+      return blob ? new File([blob], 'photo.jpg', { type: 'image/jpeg' }) : file;
     }
 
-    (function () {
-      const form = document.getElementById('form') as HTMLFormElement;
-      const steps = Array.from(document.querySelectorAll('.step')) as HTMLElement[];
-      const progress = document.getElementById('progress')!;
-      const errorEl = document.getElementById('form-error')!;
-      const submitBtn = document.getElementById('submit-btn') as HTMLButtonElement;
-      const photos: (File | null)[] = [null, null, null];
-      let current = 0;
+    (async function () {
+      const client = getSupabase();
+      show('loading', false);
+      if (!client) { show('gate'); return; }
+      const supabase = client;
 
-      steps.forEach(() => { const d = document.createElement('div'); d.className = 'seg-dot'; progress.appendChild(d); });
-      function paintProgress() {
-        progress.querySelectorAll('.seg-dot').forEach((d, i) => {
-          d.className = 'seg-dot' + (i < current ? ' done' : i === current ? ' current' : '');
-        });
-      }
-      function show(i: number) {
-        steps.forEach((s) => s.classList.remove('active'));
-        steps[i].classList.add('active');
-        current = i;
-        paintProgress();
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-      }
-      function validStep(el: HTMLElement) {
-        const inputs = el.querySelectorAll('[required]') as NodeListOf<HTMLInputElement>;
-        for (const inp of inputs) { if (!inp.reportValidity()) return false; }
-        return true;
-      }
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) startFlow(session.user); else show('gate');
+      supabase.auth.onAuthStateChange((_e, s) => { if (s && !$('flow').hidden === false) location.reload(); });
 
-      document.querySelectorAll('[data-next]').forEach((btn) =>
-        btn.addEventListener('click', () => {
-          if (!validStep(steps[current])) return;
-          if (current < steps.length - 1) show(current + 1);
-          if (current === 3) buildReview();
-        })
-      );
-      document.querySelectorAll('[data-back]').forEach((btn) =>
-        btn.addEventListener('click', () => { if (current > 0) show(current - 1); })
-      );
-
-      // photo tiles
-      document.querySelectorAll<HTMLInputElement>('.photo-tile input[type=file]').forEach((input) => {
-        const tile = input.closest('.photo-tile') as HTMLElement;
-        input.addEventListener('change', async () => {
-          const file = input.files?.[0];
-          if (!file) return;
-          const slot = Number(input.dataset.slot);
-          tile.classList.add('loading');
-          const compressed = await compressImage(file);
-          photos[slot] = compressed;
-          const url = URL.createObjectURL(compressed);
-          tile.style.backgroundImage = `url(${url})`;
-          tile.classList.remove('loading');
-          tile.classList.add('has-photo');
-        });
+      // ── sign-in gate ─────────────────────────────────────────────────────────
+      $('signin').addEventListener('click', async () => {
+        const email = ($('email') as HTMLInputElement).value.trim();
+        const msg = $('gate-msg');
+        if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { msg.textContent = 'Please enter a valid email.'; return; }
+        msg.textContent = 'Sending…';
+        const { error } = await supabase.auth.signInWithOtp({ email, options: { emailRedirectTo: location.origin + '/submit' } });
+        msg.textContent = error ? error.message : 'Check your email for a sign-in link, then come back here.';
       });
 
-      function buildReview() {
-        const g = (id: string) => (document.getElementById(id) as HTMLInputElement)?.value;
-        const type = (document.querySelector('input[name="type"]:checked') as HTMLInputElement).value;
-        const rows: [string, string][] = [
-          ['Type', type === 'missing' ? 'Missing' : 'Found'],
-          ['Species', g('species')],
-          ['Name', g('name') || '—'],
-          ['Breed', g('breed') || '—'],
-          ['Colour', g('color') || '—'],
-          ['Area', g('area') || '—'],
-          ['Date seen', g('date') || '—'],
-          ['Photos', String(photos.filter(Boolean).length)],
-        ];
-        document.getElementById('review')!.innerHTML = rows
-          .map((r) => `<div class="review-row"><span class="k">${r[0]}</span><span class="v">${r[1]}</span></div>`)
-          .join('');
-      }
+      // ── flow ─────────────────────────────────────────────────────────────────
+      function startFlow(user: any) {
+        show('gate', false); show('flow');
+        const form = $('form') as HTMLFormElement;
+        const steps = Array.from(document.querySelectorAll('.step')) as HTMLElement[];
+        const stepper = $('stepper');
+        const errorEl = $('form-error');
+        const submitBtn = $('submit-btn') as HTMLButtonElement;
+        const photos: (File | null)[] = [null, null, null];
+        let current = 0;
 
-      form.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        errorEl.textContent = '';
-        if (!validStep(steps[current])) return;
-
-        const data = new FormData();
-        ['type', 'species', 'name', 'breed', 'color', 'date', 'desc', 'area', 'postcode', 'cname', 'cphone', 'website'].forEach((k) => {
-          const el = form.elements.namedItem(k) as HTMLInputElement | null;
-          if (el) data.append(k, el.value);
-        });
-        photos.filter(Boolean).forEach((f) => data.append('photos', f as File));
-        const ts = form.querySelector('[name="cf-turnstile-response"]') as HTMLInputElement | null;
-        if (ts) data.append('cf-turnstile-response', ts.value);
-
-        submitBtn.disabled = true;
-        submitBtn.textContent = 'Submitting…';
-        try {
-          // if signed in, attach token so the listing links to the account
-          const headers: Record<string, string> = {};
-          const supabase = getSupabase();
-          if (supabase) {
-            const { data: { session } } = await supabase.auth.getSession();
-            if (session) headers.Authorization = `Bearer ${session.access_token}`;
-          }
-          const res = await fetch('/api/report', { method: 'POST', body: data, headers });
-          const json = await res.json();
-          if (!res.ok || !json.ok) throw new Error(json.error || 'Submission failed.');
-          form.style.display = 'none';
-          document.querySelector('.progress')!.setAttribute('style', 'display:none');
-          document.getElementById('success')!.style.display = 'block';
-          window.scrollTo({ top: 0, behavior: 'smooth' });
-        } catch (err) {
-          errorEl.textContent = (err as Error).message;
-          submitBtn.disabled = false;
-          submitBtn.textContent = 'Submit for review';
+        function paint() {
+          steps.forEach((s, i) => s.classList.toggle('active', i === current));
+          stepper.querySelectorAll('li').forEach((li, i) => {
+            li.classList.toggle('done', i < current);
+            li.classList.toggle('current', i === current);
+          });
+          $('flow-h1').textContent = steps[current].dataset.h || '';
         }
-      });
+        function go(i: number) { current = i; paint(); window.scrollTo({ top: 0, behavior: 'smooth' }); }
+        function valid(el: HTMLElement) {
+          for (const inp of el.querySelectorAll('[required]') as NodeListOf<HTMLInputElement>) if (!inp.reportValidity()) return false;
+          return true;
+        }
+        document.querySelectorAll('[data-next]').forEach((b) => b.addEventListener('click', () => {
+          if (!valid(steps[current])) return;
+          if (current < steps.length - 1) go(current + 1);
+          if (current === 3) review();
+        }));
+        document.querySelectorAll('[data-back]').forEach((b) => b.addEventListener('click', () => { if (current > 0) go(current - 1); }));
 
-      show(0);
+        document.querySelectorAll<HTMLInputElement>('.photo-tile input[type=file]').forEach((input) => {
+          const tile = input.closest('.photo-tile') as HTMLElement;
+          input.addEventListener('change', async () => {
+            const file = input.files?.[0]; if (!file) return;
+            tile.classList.add('loading');
+            const c = await compressImage(file);
+            photos[Number(input.dataset.slot)] = c;
+            tile.style.backgroundImage = `url(${URL.createObjectURL(c)})`;
+            tile.classList.remove('loading'); tile.classList.add('has-photo');
+          });
+        });
+
+        function review() {
+          const g = (id: string) => (document.getElementById(id) as HTMLInputElement)?.value;
+          const type = (document.querySelector('input[name="type"]:checked') as HTMLInputElement).value;
+          const rows: [string, string][] = [
+            ['Type', type === 'missing' ? 'Missing' : 'Found'], ['Species', g('species')],
+            ['Name', g('name') || '—'], ['Area', g('area') || '—'], ['Date', g('date') || '—'],
+            ['Photos', String(photos.filter(Boolean).length)],
+          ];
+          $('review').innerHTML = rows.map((r) => `<div class="review-row"><span class="k">${r[0]}</span><span class="v">${r[1]}</span></div>`).join('');
+        }
+
+        async function uploadPhotos(): Promise<string[]> {
+          const urls: string[] = [];
+          for (const f of photos.filter(Boolean) as File[]) {
+            const path = `${user.id}/${Date.now()}-${Math.random().toString(36).slice(2)}.jpg`;
+            const { error } = await supabase.storage.from('pet-photos').upload(path, f, { contentType: 'image/jpeg' });
+            if (error) throw new Error('Photo upload failed: ' + error.message);
+            urls.push(supabase.storage.from('pet-photos').getPublicUrl(path).data.publicUrl);
+          }
+          return urls;
+        }
+
+        form.addEventListener('submit', async (e) => {
+          e.preventDefault();
+          errorEl.textContent = '';
+          if (!valid(steps[current])) return;
+          const g = (id: string) => (document.getElementById(id) as HTMLInputElement).value.trim();
+          submitBtn.disabled = true; submitBtn.textContent = 'Submitting…';
+          try {
+            const photoUrls = await uploadPhotos();
+            const area = g('area');
+            const { lat, lng } = centroidForArea(area);
+            const contact = g('cphone');
+            const isEmail = contact.includes('@');
+            const { error } = await supabase.from('pets').insert({
+              status: (document.querySelector('input[name="type"]:checked') as HTMLInputElement).value,
+              species: g('species'),
+              name: g('name') || 'Unnamed',
+              breed: g('breed'), color: g('color'), area, postcode: g('postcode') || null,
+              lat, lng, date_seen: g('date'), description: g('desc'),
+              photos: photoUrls, photo_url: photoUrls[0] || null,
+              contact_name: g('cname'),
+              contact_phone: isEmail ? null : contact,
+              contact_email: isEmail ? contact : null,
+              reporter_id: user.id,
+              moderation_status: 'pending',
+            });
+            if (error) throw new Error(error.message);
+            show('flow', false); show('success');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          } catch (err) {
+            errorEl.textContent = (err as Error).message;
+            submitBtn.disabled = false; submitBtn.textContent = 'Submit for review';
+          }
+        });
+
+        paint();
+      }
     })();
   </script>
 
   <style>
-    .wrap { max-width: 640px; margin: 0 auto; padding: var(--space-6) var(--edge, clamp(16px, 4vw, 48px)) calc(4 * var(--space-6)); }
-    h1.title { font-family: var(--font-heading); font-weight: var(--font-heading-weight); font-size: 34px; margin: 0 0 6px; }
-    .lede { font-size: 15px; color: color-mix(in srgb, var(--color-text) 70%, transparent); margin: 0 0 var(--space-6); max-width: 52ch; }
-    .progress { display: flex; gap: 8px; margin-bottom: var(--space-6); }
-    .progress .seg-dot { flex: 1; height: 6px; border-radius: 999px; background: var(--color-neutral-300); }
-    .progress .seg-dot.done { background: var(--color-accent-2); }
-    .progress .seg-dot.current { background: var(--color-accent); }
-    .step-label { font-size: 12px; letter-spacing: .06em; text-transform: uppercase; font-weight: 600; color: var(--color-accent-700); margin-bottom: var(--space-2); display: block; }
+    .reporter { max-width: 720px; margin: 0 auto; padding: var(--space-6) var(--edge, clamp(16px, 4vw, 48px)) calc(4 * var(--space-6)); }
+    .r-loading { text-align: center; color: color-mix(in srgb, var(--color-text) 55%, transparent); padding: calc(3 * var(--space-6)) 0; }
+
+    /* gate */
+    .r-gate { display: flex; justify-content: center; padding-top: var(--space-6); }
+    .gate-card { max-width: 420px; text-align: center; background: var(--color-surface); border-radius: calc(var(--radius-lg) * 1.2); padding: var(--space-8) var(--space-6); box-shadow: var(--shadow-md); display: flex; flex-direction: column; gap: var(--space-3); }
+    .gate-badge { width: 56px; height: 56px; border-radius: 50%; background: var(--color-accent-2-200); display: flex; align-items: center; justify-content: center; font-size: 26px; margin: 0 auto; }
+    .gate-card h1 { font-family: var(--font-heading); font-weight: var(--font-heading-weight); font-size: 26px; margin: 0; }
+    .gate-card p { font-size: 14px; color: color-mix(in srgb, var(--color-text) 72%, transparent); margin: 0; }
+    .gate-card .field { text-align: left; }
+    .gate-card label { display: block; font-size: 13px; margin-bottom: 5px; font-weight: 600; }
+    .gate-msg { font-size: 13px; color: var(--color-accent-700); min-height: 16px; }
+
+    /* flow panel — visually distinct card */
+    .r-flow { background: var(--color-surface); border-radius: calc(var(--radius-lg) * 1.2); box-shadow: var(--shadow-md); overflow: hidden; }
+    .flow-head { padding: var(--space-6) var(--space-6) var(--space-4); border-bottom: 1px solid var(--color-divider); background: linear-gradient(180deg, var(--color-accent-2-100), transparent); }
+    .flow-title .kicker { font-size: 12px; letter-spacing: .07em; text-transform: uppercase; font-weight: 700; color: var(--color-accent-700); }
+    .flow-title h1 { font-family: var(--font-heading); font-weight: var(--font-heading-weight); font-size: clamp(24px, 4vw, 30px); margin: 4px 0 var(--space-4); }
+    .stepper { list-style: none; display: flex; gap: 6px; margin: 0; padding: 0; }
+    .stepper li { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; position: relative; }
+    .stepper li::before { content: ''; position: absolute; top: 13px; left: -50%; width: 100%; height: 2px; background: var(--color-neutral-300); z-index: 0; }
+    .stepper li:first-child::before { display: none; }
+    .stepper li.done::before, .stepper li.current::before { background: var(--color-accent-2); }
+    .stepper .dot { width: 28px; height: 28px; border-radius: 50%; background: var(--color-neutral-300); color: var(--color-neutral-700); display: flex; align-items: center; justify-content: center; font-family: var(--font-heading); font-size: 14px; z-index: 1; }
+    .stepper li.done .dot { background: var(--color-accent-2); color: #fff; }
+    .stepper li.current .dot { background: var(--color-accent); color: #fff; }
+    .stepper .lbl { font-size: 11px; color: color-mix(in srgb, var(--color-text) 60%, transparent); text-align: center; }
+    .stepper li.current .lbl { color: var(--color-text); font-weight: 600; }
+    @media (max-width: 480px) { .stepper .lbl { display: none; } }
+
+    .flow-body { padding: var(--space-6); }
     .step { display: none; flex-direction: column; gap: var(--space-4); }
     .step.active { display: flex; }
     .type-choice { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-3); }
-    .type-opt { cursor: pointer; border: 2px solid var(--color-divider); border-radius: calc(var(--radius-lg) * 1.15); padding: var(--space-4); display: flex; flex-direction: column; gap: 6px; position: relative; }
+    @media (max-width: 480px) { .type-choice, .field-grid { grid-template-columns: 1fr; } }
+    .type-opt { cursor: pointer; border: 2px solid var(--color-divider); border-radius: var(--radius-lg); padding: var(--space-4); display: flex; flex-direction: column; gap: 4px; position: relative; background: var(--color-bg); }
     .type-opt:hover { border-color: var(--color-accent); }
-    .type-opt input { position: absolute; opacity: 0; width: 0; height: 0; }
+    .type-opt input { position: absolute; opacity: 0; }
     .type-opt:has(input:checked) { border-color: var(--color-accent); background: var(--color-accent-100); }
-    .type-opt .t { font-family: var(--font-heading); font-size: 19px; }
-    .type-opt .d { font-size: 13px; color: color-mix(in srgb, var(--color-text) 70%, transparent); }
+    .type-opt .t { font-family: var(--font-heading); font-size: 18px; }
+    .type-opt .d { font-size: 12.5px; color: color-mix(in srgb, var(--color-text) 70%, transparent); }
     .field-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-3); }
-    @media (max-width: 480px) { .field-grid, .type-choice { grid-template-columns: 1fr; } }
     .field label { display: block; font-size: 13px; margin-bottom: 5px; font-weight: 600; }
-    .field .hint { font-weight: 400; font-size: 12px; color: color-mix(in srgb, var(--color-text) 60%, transparent); margin-left: 4px; }
+    .field .hint { font-weight: 400; font-size: 12px; color: color-mix(in srgb, var(--color-text) 60%, transparent); }
     .photo-row { display: flex; gap: var(--space-3); flex-wrap: wrap; }
-    .photo-tile { width: 110px; height: 110px; border-radius: var(--radius-md); border: 2px dashed var(--color-neutral-400); background: var(--color-surface); background-size: cover; background-position: center; display: flex; align-items: center; justify-content: center; cursor: pointer; text-align: center; color: color-mix(in srgb, var(--color-text) 55%, transparent); font-size: 12px; line-height: 1.3; transition: border-color .15s; }
+    .photo-tile { width: 104px; height: 104px; border-radius: var(--radius-md); border: 2px dashed var(--color-neutral-400); background: var(--color-bg); background-size: cover; background-position: center; display: flex; align-items: center; justify-content: center; cursor: pointer; text-align: center; color: color-mix(in srgb, var(--color-text) 55%, transparent); font-size: 12px; }
     .photo-tile:hover { border-color: var(--color-accent); }
     .photo-tile.has-photo { border-style: solid; border-color: var(--color-accent-2); }
     .photo-tile.has-photo .ph { display: none; }
     .photo-tile.loading { opacity: .6; }
-    .actions-row { display: flex; justify-content: space-between; align-items: center; margin-top: var(--space-3); }
-    .actions-row .btn { min-height: 42px; padding-inline: var(--space-4); }
-    .review-list { display: flex; flex-direction: column; gap: var(--space-2); border: 1px solid var(--color-divider); border-radius: var(--radius-lg); padding: var(--space-4); }
-    .review-row { display: flex; justify-content: space-between; gap: var(--space-3); font-size: 14px; padding: 6px 0; border-bottom: 1px solid var(--color-divider); }
+    .actions-row { display: flex; justify-content: space-between; gap: var(--space-3); margin-top: var(--space-2); }
+    .actions-row .btn { min-height: 44px; padding-inline: var(--space-5, 22px); }
+    .review-list { display: flex; flex-direction: column; background: var(--color-bg); border-radius: var(--radius-md); padding: var(--space-3) var(--space-4); }
+    .review-row { display: flex; justify-content: space-between; gap: var(--space-3); font-size: 14px; padding: 7px 0; border-bottom: 1px solid var(--color-divider); }
     .review-row:last-child { border-bottom: none; }
     .review-row .k { color: color-mix(in srgb, var(--color-text) 60%, transparent); }
-    .review-row .v { text-align: right; max-width: 60%; }
-    .form-error { color: var(--color-accent-800); background: var(--color-accent-100); border-radius: var(--radius-md); font-size: 13.5px; min-height: 0; }
+    .agree { display: flex; gap: 8px; align-items: flex-start; font-size: 13.5px; }
+    .form-error { color: var(--color-accent-800); background: var(--color-accent-100); border-radius: var(--radius-md); font-size: 13.5px; }
     .form-error:not(:empty) { padding: 10px 12px; }
-    .success { text-align: center; padding: calc(3 * var(--space-6)) 0; }
-    .success .circle { width: 72px; height: 72px; border-radius: 50%; background: var(--color-accent-2-200); display: flex; align-items: center; justify-content: center; margin: 0 auto var(--space-4); font-size: 30px; }
-    .success h2 { font-family: var(--font-heading); font-weight: var(--font-heading-weight); font-size: 26px; margin: 0 0 8px; }
-    .success p { font-size: 14.5px; color: color-mix(in srgb, var(--color-text) 70%, transparent); max-width: 42ch; margin: 0 auto var(--space-4); }
+
+    /* success */
+    .r-success { text-align: center; background: var(--color-surface); border-radius: calc(var(--radius-lg) * 1.2); padding: calc(2 * var(--space-6)) var(--space-6); box-shadow: var(--shadow-md); }
+    .r-success .circle { width: 72px; height: 72px; border-radius: 50%; background: var(--color-accent-2-200); display: flex; align-items: center; justify-content: center; margin: 0 auto var(--space-4); font-size: 30px; }
+    .r-success h2 { font-family: var(--font-heading); font-weight: var(--font-heading-weight); font-size: 26px; margin: 0 0 8px; }
+    .r-success p { font-size: 14.5px; color: color-mix(in srgb, var(--color-text) 72%, transparent); max-width: 44ch; margin: 0 auto var(--space-4); }
+    .s-actions { display: flex; gap: var(--space-3); justify-content: center; flex-wrap: wrap; }
   </style>
 </Base>

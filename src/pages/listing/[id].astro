@@ -1,14 +1,10 @@
 ---
 import Base from '../../layouts/Base.astro';
 import Nav from '../../components/Nav.astro';
-import { getApprovedPets, getPetById } from '../../lib/pets';
+import { getPetById } from '../../lib/pets';
 
-// Prerender one page per approved listing. When we move to server output
-// (deploy milestone) this becomes an on-demand DB lookup instead.
-export async function getStaticPaths() {
-  const pets = await getApprovedPets();
-  return pets.map((p) => ({ params: { id: String(p.id) } }));
-}
+// Rendered on demand so a listing exists the moment it's approved (no rebuild).
+export const prerender = false;
 
 const { id } = Astro.params;
 const p = await getPetById(id!);

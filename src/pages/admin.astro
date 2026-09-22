@@ -1,36 +1,54 @@
 ---
 import Base from '../layouts/Base.astro';
 import Nav from '../components/Nav.astro';
-// Admin-only moderation dashboard. Auth + authorization happen client-side
-// against the signed-in user's profile.is_admin, and every action runs under
-// that user's session so Row Level Security enforces admin-only writes.
+// Admin-only moderation console. Auth + authorization happen client-side against
+// profile.is_admin; every write runs under the admin's session (RLS-enforced).
 ---
-<Base title="Moderation — Find My Pet Cyprus" description="Admin moderation queue.">
+<Base title="Moderation — Find My Pet Cyprus" description="Admin moderation console.">
   <Nav />
-  <div class="wrap">
-    <div id="loading" class="muted-center">Loading…</div>
-    <div id="demo" class="muted-center" hidden>Moderation switches on once the site is connected to its database.</div>
-    <div id="need-signin" class="muted-center" hidden>Please <a href="/account">sign in</a> as an administrator.</div>
-    <div id="not-admin" class="muted-center" hidden>This account isn’t an administrator.</div>
 
-    <div id="board" hidden>
-      <h1>Moderation</h1>
+  <div id="loading" class="gate-msg">Loading…</div>
+  <div id="need-signin" class="gate-msg" hidden>Please <a href="/account">sign in</a> as an administrator.</div>
+  <div id="not-admin" class="gate-msg" hidden>This account isn't an administrator.</div>
 
-      <div class="block">
-        <div class="block-head"><h2>Pending review <span class="count" id="pending-count"></span></h2></div>
-        <div id="pending"></div>
+  <div id="console" class="console" hidden>
+    <header class="cbar">
+      <span class="cbar-title">🛡 Moderation</span>
+      <nav class="tabs">
+        <button class="tab active" data-tab="pending">Pending <b id="c-pending">0</b></button>
+        <button class="tab" data-tab="flags">Flagged <b id="c-flags">0</b></button>
+      </nav>
+      <a class="cbar-exit" href="/">View site ↗</a>
+    </header>
+
+    <!-- PENDING -->
+    <section id="pane-pending" class="pane">
+      <div class="toolbar">
+        <label class="check"><input type="checkbox" id="selall" /> All</label>
+        <input class="tinput search" id="search" type="search" placeholder="Search name, area, breed…" />
+        <select class="tinput" id="f-status">
+          <option value="">Any status</option>
+          <option value="missing">Missing</option>
+          <option value="found">Found</option>
+        </select>
+        <span class="spacer"></span>
+        <div class="bulk" id="bulk" hidden>
+          <span id="bulk-n">0</span> selected
+          <button class="btn btn-primary" id="bulk-approve">Approve</button>
+          <button class="btn btn-reject" id="bulk-reject">Reject</button>
+        </div>
       </div>
+      <div id="pending" class="rows"></div>
+    </section>
 
-      <div class="block">
-        <div class="block-head"><h2>Flagged listings <span class="count" id="flag-count"></span></h2></div>
-        <div id="flags"></div>
-      </div>
-    </div>
+    <!-- FLAGGED -->
+    <section id="pane-flags" class="pane" hidden>
+      <div id="flags" class="rows"></div>
+    </section>
   </div>
 
   <script>
     import { getSupabase } from '../lib/supabase';
-
     type Row = Record<string, any>;
     const $ = (id: string) => document.getElementById(id)!;
     const show = (id: string, on = true) => { ($(id) as HTMLElement).hidden = !on; };
@@ -39,98 +57,178 @@ import Nav from '../components/Nav.astro';
     (async function () {
       const client = getSupabase();
       show('loading', false);
-      if (!client) { show('demo'); return; }
+      if (!client) { show('need-signin'); return; }
       const supabase = client;
-
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) { show('need-signin'); return; }
-
       const { data: profile } = await supabase.from('profiles').select('is_admin').eq('id', session.user.id).single();
       if (!profile?.is_admin) { show('not-admin'); return; }
+      show('console');
 
-      show('board');
-      await Promise.all([loadPending(), loadFlags()]);
+      let pending: Row[] = [];
+      const selected = new Set<string>();
 
-      // ── pending queue ─────────────────────────────────────────────────────────
+      // tabs
+      document.querySelectorAll<HTMLElement>('.tab').forEach((t) => t.addEventListener('click', () => {
+        document.querySelectorAll('.tab').forEach((x) => x.classList.remove('active'));
+        t.classList.add('active');
+        show('pane-pending', t.dataset.tab === 'pending');
+        show('pane-flags', t.dataset.tab === 'flags');
+      }));
+
+      // ── PENDING ────────────────────────────────────────────────────────────
       async function loadPending() {
         const { data } = await supabase.from('pets').select('*').eq('moderation_status', 'pending').order('created_at', { ascending: true });
-        $('pending-count').textContent = data ? `(${data.length})` : '';
-        const el = $('pending');
-        if (!data || !data.length) { el.innerHTML = '<p class="empty">Nothing waiting. 🎉</p>'; return; }
-        el.innerHTML = data.map((p: Row) => `
-          <div class="mod-card" data-id="${p.id}">
-            <img src="${esc(p.photo_url || '/assets/photo.jpg')}" alt="${esc(p.name)}">
-            <div class="mod-body">
-              <div class="mod-top"><span class="tag ${p.status === 'missing' ? 'tag-accent' : 'tag-accent-2'}">${esc(p.status)}</span>
-                <strong>${esc(p.name)}</strong> · ${esc(p.species)} · ${esc(p.area)}</div>
-              <div class="mod-desc">${esc(p.description)}</div>
-              <div class="mod-meta">Seen ${esc(p.date_seen)} · Contact: ${esc(p.contact_name || '—')} ${esc(p.contact_phone || p.contact_email || '')}</div>
-              <div class="mod-actions">
-                <button class="btn btn-primary" data-approve="${p.id}">Approve</button>
-                <button class="btn btn-secondary" data-reject="${p.id}">Reject</button>
-              </div>
-            </div>
-          </div>`).join('');
-        el.querySelectorAll<HTMLElement>('[data-approve]').forEach((b) => b.addEventListener('click', async () => {
-          await supabase.from('pets').update({ moderation_status: 'approved' }).eq('id', b.dataset.approve);
-          loadPending();
-        }));
-        el.querySelectorAll<HTMLElement>('[data-reject]').forEach((b) => b.addEventListener('click', async () => {
-          const reason = prompt('Reason for rejection (optional):') || null;
-          await supabase.from('pets').update({ moderation_status: 'rejected', reject_reason: reason }).eq('id', b.dataset.reject);
-          loadPending();
-        }));
+        pending = data || [];
+        selected.clear();
+        $('c-pending').textContent = String(pending.length);
+        renderPending();
       }
 
-      // ── flagged listings ──────────────────────────────────────────────────────
+      function filtered(): Row[] {
+        const q = ($('search') as HTMLInputElement).value.trim().toLowerCase();
+        const st = ($('f-status') as HTMLSelectElement).value;
+        return pending.filter((p) => {
+          if (st && p.status !== st) return false;
+          if (q && !`${p.name} ${p.area} ${p.breed} ${p.species}`.toLowerCase().includes(q)) return false;
+          return true;
+        });
+      }
+
+      function renderPending() {
+        const list = filtered();
+        const el = $('pending');
+        if (!pending.length) { el.innerHTML = '<div class="empty">Nothing waiting — you\'re all caught up. 🎉</div>'; syncBulk(); return; }
+        if (!list.length) { el.innerHTML = '<div class="empty">No matches for those filters.</div>'; syncBulk(); return; }
+        el.innerHTML = list.map((p) => `
+          <div class="row" data-id="${p.id}">
+            <input type="checkbox" class="rcheck" data-id="${p.id}" ${selected.has(String(p.id)) ? 'checked' : ''} />
+            <img class="thumb" src="${esc(p.photo_url || '/assets/photo.jpg')}" alt="" loading="lazy" />
+            <div class="info">
+              <div class="line1"><span class="pill ${p.status === 'missing' ? 'p-missing' : 'p-found'}">${esc(p.status)}</span>
+                <strong>${esc(p.name)}</strong><span class="dim">${esc(p.species)}${p.breed ? ' · ' + esc(p.breed) : ''} · ${esc(p.area)}</span></div>
+              <div class="desc">${esc(p.description)}</div>
+              <div class="meta">Seen ${esc(p.date_seen)} · ${esc(p.contact_name || '—')} ${esc(p.contact_phone || p.contact_email || '')}</div>
+            </div>
+            <div class="racts">
+              <button class="btn btn-primary sm" data-approve="${p.id}">Approve</button>
+              <button class="btn btn-reject sm" data-reject="${p.id}">Reject</button>
+            </div>
+          </div>`).join('');
+        el.querySelectorAll<HTMLInputElement>('.rcheck').forEach((c) => c.addEventListener('change', () => {
+          c.checked ? selected.add(c.dataset.id!) : selected.delete(c.dataset.id!); syncBulk();
+        }));
+        el.querySelectorAll<HTMLElement>('[data-approve]').forEach((b) => b.addEventListener('click', () => approve([b.dataset.approve!])));
+        el.querySelectorAll<HTMLElement>('[data-reject]').forEach((b) => b.addEventListener('click', () => reject([b.dataset.reject!])));
+        syncBulk();
+      }
+
+      function syncBulk() {
+        $('bulk-n').textContent = String(selected.size);
+        show('bulk', selected.size > 0);
+        ($('selall') as HTMLInputElement).checked = filtered().length > 0 && filtered().every((p) => selected.has(String(p.id)));
+      }
+
+      async function approve(ids: string[]) {
+        await supabase.from('pets').update({ moderation_status: 'approved' }).in('id', ids);
+        await loadPending();
+      }
+      async function reject(ids: string[]) {
+        const reason = prompt(`Reason for rejecting ${ids.length} listing(s)? (optional)`) || null;
+        await supabase.from('pets').update({ moderation_status: 'rejected', reject_reason: reason }).in('id', ids);
+        await loadPending();
+      }
+
+      ($('search') as HTMLInputElement).addEventListener('input', renderPending);
+      ($('f-status') as HTMLSelectElement).addEventListener('change', renderPending);
+      ($('selall') as HTMLInputElement).addEventListener('change', (e) => {
+        const on = (e.target as HTMLInputElement).checked;
+        filtered().forEach((p) => on ? selected.add(String(p.id)) : selected.delete(String(p.id)));
+        renderPending();
+      });
+      $('bulk-approve').addEventListener('click', () => approve([...selected]));
+      $('bulk-reject').addEventListener('click', () => reject([...selected]));
+
+      // ── FLAGGED ────────────────────────────────────────────────────────────
       async function loadFlags() {
         const { data } = await supabase.from('reports').select('*, pets(*)').eq('resolved', false).order('created_at', { ascending: true });
-        $('flag-count').textContent = data ? `(${data.length})` : '';
+        $('c-flags').textContent = String(data?.length || 0);
         const el = $('flags');
-        if (!data || !data.length) { el.innerHTML = '<p class="empty">No open flags.</p>'; return; }
+        if (!data || !data.length) { el.innerHTML = '<div class="empty">No open flags.</div>'; return; }
         el.innerHTML = data.map((r: Row) => {
           const p = r.pets || {};
-          return `<div class="mod-card">
-            <img src="${esc(p.photo_url || '/assets/photo.jpg')}" alt="">
-            <div class="mod-body">
-              <div class="mod-top"><span class="tag tag-outline">${esc(r.reason)}</span> <strong>${esc(p.name || 'listing')}</strong> · ${esc(p.area || '')}</div>
-              <div class="mod-desc">${esc(r.note || 'No note.')}</div>
-              <div class="mod-actions">
-                <a class="btn btn-ghost" href="/listing/${esc(p.id)}" target="_blank" rel="noopener">View</a>
-                <button class="btn btn-secondary" data-dismiss="${r.id}">Dismiss flag</button>
-                <button class="btn btn-primary" data-remove="${p.id}" data-flag="${r.id}">Remove listing</button>
-              </div>
+          return `<div class="row">
+            <img class="thumb" src="${esc(p.photo_url || '/assets/photo.jpg')}" alt="" loading="lazy" />
+            <div class="info">
+              <div class="line1"><span class="pill p-flag">${esc(r.reason)}</span><strong>${esc(p.name || 'listing')}</strong><span class="dim">${esc(p.area || '')}</span></div>
+              <div class="desc">${esc(r.note || 'No note.')}</div>
+            </div>
+            <div class="racts">
+              <a class="btn btn-ghost sm" href="/listing/${esc(p.id)}" target="_blank" rel="noopener">View</a>
+              <button class="btn btn-secondary sm" data-dismiss="${r.id}">Dismiss</button>
+              <button class="btn btn-reject sm" data-remove="${p.id}">Remove</button>
             </div>
           </div>`;
         }).join('');
         el.querySelectorAll<HTMLElement>('[data-dismiss]').forEach((b) => b.addEventListener('click', async () => {
-          await supabase.from('reports').update({ resolved: true }).eq('id', b.dataset.dismiss);
-          loadFlags();
+          await supabase.from('reports').update({ resolved: true }).eq('id', b.dataset.dismiss); loadFlags();
         }));
         el.querySelectorAll<HTMLElement>('[data-remove]').forEach((b) => b.addEventListener('click', async () => {
-          if (!confirm('Delete this listing? This cannot be undone.')) return;
-          await supabase.from('pets').delete().eq('id', b.dataset.remove);
-          loadFlags();
+          if (!confirm('Delete this listing permanently?')) return;
+          await supabase.from('pets').delete().eq('id', b.dataset.remove); loadFlags();
         }));
       }
+
+      await Promise.all([loadPending(), loadFlags()]);
     })();
   </script>
 
   <style>
-    .wrap { max-width: 860px; margin: 0 auto; padding: calc(2 * var(--space-6)) var(--edge, clamp(16px, 4vw, 48px)) calc(4 * var(--space-6)); }
-    .wrap > h1 { font-family: var(--font-heading); font-weight: var(--font-heading-weight); font-size: 32px; margin: 0 0 var(--space-6); }
-    .muted-center { text-align: center; color: color-mix(in srgb, var(--color-text) 60%, transparent); padding: calc(3 * var(--space-6)) 0; font-size: 15px; }
-    .block { margin-bottom: calc(2 * var(--space-6)); }
-    .block-head h2 { font-family: var(--font-heading); font-weight: var(--font-heading-weight); font-size: 21px; margin: 0 0 var(--space-3); }
-    .block-head .count { color: color-mix(in srgb, var(--color-text) 55%, transparent); font-size: 15px; }
-    .empty { color: color-mix(in srgb, var(--color-text) 55%, transparent); font-size: 14px; }
-    .mod-card { display: flex; gap: var(--space-4); background: var(--color-surface); border-radius: var(--radius-lg); padding: var(--space-3); margin-bottom: var(--space-3); }
-    .mod-card img { width: 96px; height: 96px; border-radius: var(--radius-md); object-fit: cover; flex: none; }
-    .mod-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
-    .mod-top { font-size: 14.5px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-    .mod-desc { font-size: 13.5px; color: color-mix(in srgb, var(--color-text) 75%, transparent); }
-    .mod-meta { font-size: 12px; color: color-mix(in srgb, var(--color-text) 55%, transparent); }
-    .mod-actions { display: flex; gap: var(--space-2); margin-top: 4px; flex-wrap: wrap; }
-    .mod-actions .btn { min-height: 38px; }
+    .gate-msg { text-align: center; color: color-mix(in srgb, var(--color-text) 60%, transparent); padding: calc(3 * var(--space-6)) 0; font-size: 15px; }
+    .console { max-width: 960px; margin: var(--space-4) auto calc(3 * var(--space-6)); padding: 0 var(--edge, clamp(12px, 3vw, 32px)); }
+
+    /* dark control bar — deliberately not the site look */
+    .cbar { display: flex; align-items: center; gap: var(--space-4); background: var(--color-neutral-900); color: var(--color-neutral-100); border-radius: var(--radius-lg) var(--radius-lg) 0 0; padding: var(--space-3) var(--space-4); }
+    .cbar-title { font-family: var(--font-heading); font-size: 17px; }
+    .tabs { display: flex; gap: 4px; margin-left: var(--space-3); }
+    .tab { background: transparent; border: 0; color: var(--color-neutral-400); font: inherit; font-size: 13.5px; padding: 6px 12px; border-radius: 999px; cursor: pointer; display: flex; gap: 6px; align-items: center; }
+    .tab b { background: var(--color-neutral-700); color: var(--color-neutral-100); border-radius: 999px; padding: 0 7px; font-size: 12px; }
+    .tab.active { background: var(--color-neutral-100); color: var(--color-neutral-900); }
+    .tab.active b { background: var(--color-accent); color: #fff; }
+    .cbar-exit { margin-left: auto; color: var(--color-neutral-400); text-decoration: none; font-size: 13px; }
+    .cbar-exit:hover { color: var(--color-neutral-100); }
+
+    .pane { background: var(--color-surface); border-radius: 0 0 var(--radius-lg) var(--radius-lg); padding: var(--space-3); }
+    .toolbar { display: flex; align-items: center; gap: var(--space-2); padding: var(--space-2) var(--space-2) var(--space-3); flex-wrap: wrap; }
+    .check { display: flex; align-items: center; gap: 6px; font-size: 13px; color: color-mix(in srgb, var(--color-text) 70%, transparent); }
+    .tinput { border: 1px solid var(--color-divider); background: var(--color-bg); border-radius: var(--radius-md); padding: 8px 12px; font: inherit; font-size: 13.5px; }
+    .search { min-width: 220px; flex: 1; }
+    .spacer { flex: 1; }
+    .bulk { display: flex; align-items: center; gap: 8px; font-size: 13px; }
+    .btn.sm { min-height: 34px; padding: 0 12px; font-size: 12.5px; }
+    .btn-reject { background: var(--color-accent-800); color: #fff; }
+    .btn-reject:hover { background: var(--color-accent-900); }
+
+    .rows { display: flex; flex-direction: column; gap: 6px; }
+    .row { display: grid; grid-template-columns: auto 72px 1fr auto; align-items: center; gap: var(--space-3); background: var(--color-bg); border-radius: var(--radius-md); padding: var(--space-2) var(--space-3); }
+    .rcheck { width: 18px; height: 18px; }
+    .thumb { width: 72px; height: 72px; border-radius: var(--radius-sm); object-fit: cover; }
+    .info { min-width: 0; }
+    .line1 { display: flex; align-items: center; gap: 8px; font-size: 14.5px; flex-wrap: wrap; }
+    .line1 .dim { color: color-mix(in srgb, var(--color-text) 60%, transparent); font-size: 13px; }
+    .pill { font-size: 11px; padding: 2px 9px; border-radius: 999px; text-transform: capitalize; }
+    .p-missing { background: var(--color-accent-200); color: var(--color-accent-800); }
+    .p-found { background: var(--color-accent-2-200); color: var(--color-accent-2-800); }
+    .p-flag { background: var(--color-neutral-300); color: var(--color-neutral-800); }
+    .desc { font-size: 12.5px; color: color-mix(in srgb, var(--color-text) 70%, transparent); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin: 2px 0; }
+    .meta { font-size: 11.5px; color: color-mix(in srgb, var(--color-text) 50%, transparent); }
+    .racts { display: flex; gap: 6px; }
+    .empty { text-align: center; color: color-mix(in srgb, var(--color-text) 55%, transparent); font-size: 14px; padding: var(--space-6); }
+    @media (max-width: 640px) {
+      .row { grid-template-columns: auto 56px 1fr; }
+      .thumb { width: 56px; height: 56px; }
+      .racts { grid-column: 2 / -1; justify-content: flex-start; }
+      .desc { white-space: normal; }
+    }
   </style>
 </Base>

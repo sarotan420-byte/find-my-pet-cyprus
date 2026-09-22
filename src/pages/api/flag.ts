@@ -1,5 +1,5 @@
 import type { APIRoute } from 'astro';
-import { getSupabaseAdmin } from '../../lib/supabase-admin';
+import { getSupabase } from '../../lib/supabase';
 import { rateLimit, hashIp } from '../../lib/rate-limit';
 
 export const prerender = false;
@@ -25,9 +25,11 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
     return json({ ok: false, error: 'Too many reports — please try later.' }, 429);
   }
 
-  const admin = getSupabaseAdmin();
-  if (admin) {
-    const { error } = await admin.from('reports').insert({
+  // Insert via the anon client — RLS allows public flag inserts (reports insert
+  // policy). This avoids the service-role key, which isn't available at runtime.
+  const supabase = getSupabase();
+  if (supabase) {
+    const { error } = await supabase.from('reports').insert({
       pet_id: petId,
       reason,
       note: note || null,
