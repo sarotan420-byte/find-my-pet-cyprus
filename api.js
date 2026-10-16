@@ -216,6 +216,45 @@ window.API = (function(){
   var TILE_URL = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
   var TILE_OPTS = { maxZoom: 19, attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors' };
 
+  // ---------- postcode / place lookup (OpenStreetMap Nominatim, Cyprus only) ----------
+  var DISTRICTS = ['Nicosia', 'Limassol', 'Larnaca', 'Paphos', 'Famagusta', 'Kyrenia'];
+  var PC_DISTRICT = { '1': 'Nicosia', '2': 'Nicosia', '3': 'Limassol', '4': 'Limassol', '5': 'Famagusta', '6': 'Larnaca', '7': 'Larnaca', '8': 'Paphos', '9': 'Kyrenia' };
+  var geoMem = {};
+  function isPostcode(q){ return /^\d{4}$/.test(String(q || '').trim()); }
+  function geocode(q){
+    q = String(q || '').trim();
+    if (!q) return Promise.resolve(null);
+    var key = q.toLowerCase(), pc = isPostcode(q);
+    if (geoMem[key]) return Promise.resolve(geoMem[key]);
+    try { var hit = JSON.parse(localStorage.getItem('fmp-geo:' + key) || 'null'); if (hit) return Promise.resolve(geoMem[key] = hit); } catch (e) {}
+    var url = 'https://nominatim.openstreetmap.org/search?format=jsonv2&countrycodes=cy&addressdetails=1&accept-language=en&limit=1&' +
+      (pc ? 'postalcode=' + q : 'q=' + encodeURIComponent(q));
+    var ctl = window.AbortController ? new AbortController() : null;
+    var timer = setTimeout(function(){ if (ctl) ctl.abort(); }, 7000);
+    return fetch(url, ctl ? { signal: ctl.signal } : {}).then(function(r){ return r.ok ? r.json() : []; }).catch(function(){ return []; }).then(function(j){
+      clearTimeout(timer);
+      var r = j && j[0], res = null;
+      if (r) {
+        var a = r.address || {};
+        var where = [a.state_district, a.county, a.state, a.city, a.town, a.municipality].join(' ');
+        var district = DISTRICTS.find(function(d){ return where.indexOf(d) > -1; }) || (pc ? PC_DISTRICT[q[0]] : null);
+        var place = a.suburb || a.neighbourhood || a.quarter || a.village || a.town || a.city || a.municipality || '';
+        res = { name: pc ? 'Postcode ' + q + (place ? ' · ' + place : '') : (r.name || q) + (district && r.name !== district ? ' · ' + district : ''),
+                kind: pc ? 'Postcode' : 'Place', lat: +r.lat, lng: +r.lon, district: district || null, exact: true };
+      } else if (pc && PC_DISTRICT[q[0]]) {
+        var c = DISTRICT_CENTRES[PC_DISTRICT[q[0]]];
+        res = { name: 'Postcode ' + q + ' · ' + PC_DISTRICT[q[0]] + ' district', kind: 'Postcode', lat: c[0], lng: c[1], district: PC_DISTRICT[q[0]], exact: false };
+      }
+      if (res) { geoMem[key] = res; if (res.exact) try { localStorage.setItem('fmp-geo:' + key, JSON.stringify(res)); } catch (e) {} }
+      return res;
+    });
+  }
+  function km(a, b){
+    var R = 6371, dLat = (b.lat - a.lat) * Math.PI / 180, dLng = (b.lng - a.lng) * Math.PI / 180;
+    var s = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.cos(a.lat * Math.PI / 180) * Math.cos(b.lat * Math.PI / 180) * Math.sin(dLng / 2) * Math.sin(dLng / 2);
+    return 2 * R * Math.asin(Math.sqrt(s));
+  }
+
   // Listings at the exact same spot would hide each other; fan them out in a small ring (pixels).
   function spread(list){
     var groups = {}, out = {};
@@ -232,6 +271,7 @@ window.API = (function(){
   }
 
   return {
+    geocode: geocode, isPostcode: isPostcode, km: km, RADII: [1, 3, 5, 10, 25],
     spread: spread,
     TILE_URL: TILE_URL, TILE_OPTS: TILE_OPTS,
     live: live, ready: ready, esc: esc, now: function(){ return live ? new Date() : DEMO_NOW; },

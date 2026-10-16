@@ -52,8 +52,10 @@ a:hover { color: var(--color-accent-800); }
 .panel-head .count { font-family: var(--font-heading); font-size: 17px; }
 .panel-head .where { font-size: 12.5px; color: color-mix(in srgb, var(--color-text) 60%, transparent); }
 .radius { display: flex; align-items: center; gap: 10px; padding: var(--space-2) var(--space-4); font-size: 12.5px; border-bottom: 1px solid var(--color-neutral-200); }
-.radius input { flex: 1; accent-color: var(--color-accent); }
-.radius b { font-family: var(--font-heading); font-weight: 400; min-width: 46px; text-align: right; }
+.radius .r-opts { display: flex; gap: 4px; flex-wrap: wrap; }
+.radius .r-opts button { all: unset; cursor: pointer; padding: 5px 10px; border-radius: 999px; font-size: 12.5px; font-weight: 600; background: var(--color-neutral-100); }
+.radius .r-opts button[aria-pressed="true"] { background: var(--color-text); color: #fff; }
+.radius .r-opts button:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
 .list { flex: 1; overflow-y: auto; padding: 6px; display: flex; flex-direction: column; gap: 2px; }
 .item { display: flex; gap: 12px; padding: 8px; border-radius: var(--radius-md); text-decoration: none; color: inherit; }
 .item:hover, .item.active { background: var(--color-surface); color: inherit; }
@@ -122,7 +124,7 @@ footer a { color: inherit; }
     <div id="map"></div>
 
     <form class="searchbar" id="searchbar" role="search" autocomplete="off">
-      <input class="q" id="q" type="search" placeholder="City, area or postcode — e.g. Limassol, Strovolos, 6023" aria-label="City, area or postcode" />
+      <input class="q" id="q" type="search" placeholder="Postcode, town or area — e.g. 2013, Strovolos, Limassol" aria-label="City, area or postcode" />
       <select id="status" aria-label="Status">
         <option value="all">Missing &amp; found</option>
         <option value="missing">Missing only</option>
@@ -141,8 +143,7 @@ footer a { color: inherit; }
       </div>
       <div class="radius" id="radius-row" style="display:none">
         <span>Within</span>
-        <input type="range" id="radius" min="2" max="40" value="10" aria-label="Search radius in km" />
-        <b id="radius-val">10 km</b>
+        <div class="r-opts" id="radius" role="group" aria-label="Search radius"></div>
       </div>
       <div class="list" id="list"></div>
       <div class="panel-foot"><a class="btn btn-secondary btn-block" id="open-full" href="search.html">Open full search</a></div>
@@ -172,9 +173,9 @@ footer a { color: inherit; }
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.79.0/dist/umd/supabase.js"></script>
-<script src="config.js?v=4"></script>
-<script src="data.js?v=4"></script>
-<script src="api.js?v=4"></script>
+<script src="config.js?v=5"></script>
+<script src="data.js?v=5"></script>
+<script src="api.js?v=5"></script>
 <script>
 API.ready.then(function(){
   // Demo gazetteer: cities, areas and postcode prefixes. Production would use a geocoder.
@@ -196,16 +197,6 @@ API.ready.then(function(){
     { name: 'Kato Paphos', kind: 'Area · Paphos', lat: 34.7564, lng: 32.4136, z: 14 },
     { name: 'Peyia', kind: 'Area · Paphos', lat: 34.8833, lng: 32.3833, z: 14 },
     { name: 'Polis Chrysochous', kind: 'Town', lat: 35.0333, lng: 32.4167, z: 13 }
-  ];
-  var POSTCODES = [ // first digits → district centre
-    { p: '1', name: 'Nicosia', lat: 35.1725, lng: 33.365 },
-    { p: '2', name: 'Nicosia district', lat: 35.12, lng: 33.3 },
-    { p: '3', name: 'Limassol', lat: 34.6841, lng: 33.0379 },
-    { p: '4', name: 'Limassol district', lat: 34.72, lng: 33.05 },
-    { p: '5', name: 'Famagusta district', lat: 35.02, lng: 33.95 },
-    { p: '6', name: 'Larnaca', lat: 34.9229, lng: 33.6233 },
-    { p: '7', name: 'Larnaca district', lat: 34.95, lng: 33.55 },
-    { p: '8', name: 'Paphos', lat: 34.7754, lng: 32.4245 }
   ];
   var QUICK = ['Nicosia', 'Limassol', 'Larnaca', 'Paphos', 'Paralimni'];
 
@@ -235,7 +226,8 @@ API.ready.then(function(){
     markers[p.id] = m;
   });
 
-  var state = { center: null, label: 'All of Cyprus', radius: 10, status: 'all' };
+  var state = { center: null, label: 'All of Cyprus', radius: 10, status: 'all', q: '' };
+  var userRadius = false;
   var circle = null;
   var $ = function(id){ return document.getElementById(id); };
 
@@ -248,10 +240,7 @@ API.ready.then(function(){
   function resolve(q){
     q = q.trim().toLowerCase();
     if (!q) return null;
-    if (/^\d{1,4}$/.test(q)) {
-      var pc = POSTCODES.find(function(x){ return q[0] === x.p; });
-      return pc ? { name: 'Postcode ' + q + ' · ' + pc.name, lat: pc.lat, lng: pc.lng, z: 12 } : null;
-    }
+    if (/^\d{1,4}$/.test(q)) return null;
     return PLACES.find(function(p){ return p.name.toLowerCase() === q; })
         || PLACES.find(function(p){ return p.name.toLowerCase().indexOf(q) === 0; })
         || PLACES.find(function(p){ return p.name.toLowerCase().indexOf(q) > -1; });
@@ -295,10 +284,20 @@ API.ready.then(function(){
     $('list').querySelectorAll('.item').forEach(function(el){ el.classList.toggle('active', Number(el.dataset.id) === id); });
   }
 
-  function go(place){
+  function defaultRadius(place){
+    if (userRadius) return state.radius;
+    if (place.kind === 'Postcode') return 3;
+    if (/^Area/.test(place.kind || '')) return 5;
+    return 10;
+  }
+  function go(place, query){
     state.center = { lat: place.lat, lng: place.lng };
     state.label = place.name;
+    state.q = query || place.name;
+    state.radius = defaultRadius(place);
+    paintRadius();
     $('q').value = place.name;
+    history.replaceState(null, '', location.pathname + '?near=' + encodeURIComponent(state.q) + '&r=' + state.radius);
     if (circle) map.removeLayer(circle);
     circle = L.circle([place.lat, place.lng], { radius: state.radius * 1000, color: C_MISS, weight: 2, fillColor: C_MISS, fillOpacity: 0.07 }).addTo(map);
     map.flyToBounds(circle.getBounds(), fitOpts(0.8));
@@ -308,8 +307,9 @@ API.ready.then(function(){
   }
 
   function reset(){
-    state.center = null; state.label = 'All of Cyprus';
+    state.center = null; state.label = 'All of Cyprus'; state.q = '';
     if (circle) { map.removeLayer(circle); circle = null; }
+    history.replaceState(null, '', location.pathname);
     $('q').value = '';
     map.flyTo([35.0, 33.2], 9, { duration: 0.8 });
     paintQuick(); render();
@@ -322,11 +322,20 @@ API.ready.then(function(){
     var q = $('q').value.trim().toLowerCase();
     if (!q) return closeSuggest();
     if (/^\d{1,4}$/.test(q)) {
-      var r = resolve(q); sugItems = r ? [r] : [];
+      if (q.length < 4) { $('suggest').innerHTML = '<div class="empty" style="padding:12px">Keep typing: Cyprus postcodes have 4 digits.</div>'; $('suggest').classList.add('on'); sugItems = []; return; }
+      $('suggest').innerHTML = '<div class="empty" style="padding:12px">Looking up postcode ' + q + '…</div>'; $('suggest').classList.add('on');
+      API.geocode(q).then(function(r){
+        if ($('q').value.trim() !== q) return;
+        sugItems = r ? [r] : [];
+        if (!r) { $('suggest').innerHTML = '<div class="empty" style="padding:12px">Postcode not found.</div>'; return; }
+        $('suggest').innerHTML = '<button type="button" data-i="0"><span>' + API.esc(r.name) + '</span><span class="kind">' + (r.exact ? 'Postcode' : 'Approx.') + '</span></button>';
+        $('suggest').querySelector('button').addEventListener('mousedown', function(e){ e.preventDefault(); go(r, q); });
+      });
+      return;
     } else {
       sugItems = PLACES.filter(function(p){ return p.name.toLowerCase().indexOf(q) > -1; }).slice(0, 6);
     }
-    if (!sugItems.length) { $('suggest').innerHTML = '<div class="empty" style="padding:12px">No match. Try a city, area or 4-digit postcode.</div>'; $('suggest').classList.add('on'); return; }
+    if (!sugItems.length) { $('suggest').innerHTML = '<div class="empty" style="padding:12px">Press Enter to search for “' + API.esc($('q').value.trim()) + '”.</div>'; $('suggest').classList.add('on'); return; }
     $('suggest').innerHTML = sugItems.map(function(p, i){ return '<button type="button" data-i="' + i + '"><span>' + p.name + '</span><span class="kind">' + (p.kind || 'Postcode') + '</span></button>'; }).join('');
     $('suggest').classList.add('on');
     $('suggest').querySelectorAll('button').forEach(function(b){ b.addEventListener('mousedown', function(e){ e.preventDefault(); go(sugItems[Number(b.dataset.i)]); }); });
@@ -343,17 +352,29 @@ API.ready.then(function(){
   });
   $('searchbar').addEventListener('submit', function(e){
     e.preventDefault();
-    var place = sugIdx > -1 && sugItems[sugIdx] ? sugItems[sugIdx] : resolve($('q').value);
-    if (place) go(place); else if (!$('q').value.trim()) reset(); else suggest();
+    var q = $('q').value.trim();
+    var place = sugIdx > -1 && sugItems[sugIdx] ? sugItems[sugIdx] : resolve(q);
+    if (place) return go(place, q);
+    if (!q) return reset();
+    $('suggest').innerHTML = '<div class="empty" style="padding:12px">Searching…</div>'; $('suggest').classList.add('on');
+    API.geocode(q).then(function(r){
+      if (r) go(r, q);
+      else { $('suggest').innerHTML = '<div class="empty" style="padding:12px">Couldn\u2019t find “' + API.esc(q) + '”. Try a town, area or 4-digit postcode.</div>'; $('suggest').classList.add('on'); }
+    });
   });
   $('status').addEventListener('change', function(){ state.status = this.value; render(); });
   $('reset').addEventListener('click', reset);
-  $('radius').addEventListener('input', function(){
-    state.radius = Number(this.value); $('radius-val').textContent = state.radius + ' km';
-    if (circle) circle.setRadius(state.radius * 1000);
-    render();
-  });
-  $('radius').addEventListener('change', function(){ if (circle) map.flyToBounds(circle.getBounds(), fitOpts(0.5)); });
+  function paintRadius(){
+    $('radius').innerHTML = API.RADII.map(function(r){ return '<button type="button" data-r="' + r + '" aria-pressed="' + (r === state.radius) + '">' + r + ' km</button>'; }).join('');
+    $('radius').querySelectorAll('button').forEach(function(b){
+      b.onclick = function(){
+        state.radius = Number(b.dataset.r); userRadius = true; paintRadius();
+        if (circle) { circle.setRadius(state.radius * 1000); map.flyToBounds(circle.getBounds(), fitOpts(0.5)); }
+        if (state.center) history.replaceState(null, '', location.pathname + '?near=' + encodeURIComponent(state.q) + '&r=' + state.radius);
+        render();
+      };
+    });
+  }
 
   function paintQuick(){
     $('quick').innerHTML = QUICK.map(function(n){ return '<button type="button" class="chip' + (state.label === n ? ' on' : '') + '" data-n="' + n + '">' + n + '</button>'; }).join('');
@@ -361,7 +382,14 @@ API.ready.then(function(){
   }
 
   paintQuick();
+  paintRadius();
   render();
+  var p0 = new URLSearchParams(location.search);
+  if (p0.get('near')) {
+    var r0 = Number(p0.get('r')); if (API.RADII.indexOf(r0) > -1) { state.radius = r0; userRadius = true; }
+    var q0 = p0.get('near'), local = resolve(q0);
+    if (local) go(local, q0); else API.geocode(q0).then(function(r){ if (r) go(r, q0); });
+  }
 });
 </script>
 </body>

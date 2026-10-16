@@ -5,6 +5,9 @@ API.ready.then(function(){
   var pets = window.PETS.filter(function(p){ return p.status === STATUS; });
   var state = { q: '', species: '', colours: [], size: [], sex: '', district: '', collar: false, chipped: false, since: '', sort: 'newest' };
 
+  var NEAR = NearFilter({ input: 'near', radius: 'near-r', status: 'near-status', onChange: function(){ var n = NEAR.get(); if (n && !nearUsed) { nearUsed = true; $('sort').value = 'near'; } update(); } });
+  var nearUsed = false;
+
   // Read initial filters from URL so filtered views are shareable / indexable
   var params = new URLSearchParams(location.search);
   ['q','species','sex','district','since','sort'].forEach(function(k){ if (params.get(k)) state[k] = params.get(k); });
@@ -53,8 +56,10 @@ API.ready.then(function(){
       var days = Number(state.since);
       if ((API.now() - new Date(p.date)) / 864e5 > days) return false;
     }
+    var near = NEAR.get();
+    if (near && API.km(near, p) > near.r) return false;
     if (state.q) {
-      var hay = [p.name, p.breed, p.color, p.exoticType || '', p.area, p.desc].join(' ').toLowerCase();
+      var hay = [p.name, p.breed, p.color, p.exoticType || '', p.area, p.postcode || '', p.desc].join(' ').toLowerCase();
       var ok = state.q.toLowerCase().split(/\s+/).every(function(w){ return hay.indexOf(w) > -1; });
       if (!ok) return false;
     }
@@ -64,6 +69,7 @@ API.ready.then(function(){
   function activeChips(){
     var out = [];
     if (state.q) out.push(['q', '“' + state.q + '”']);
+    var n = NEAR.get(); if (n) out.push(['near', 'Within ' + n.r + ' km of ' + n.label]);
     if (state.species) out.push(['species', state.species]);
     if (state.species !== 'Other') state.colours.forEach(function(c){ out.push(['colour:' + c, c]); });
     state.size.forEach(function(s){ out.push(['size:' + s, s]); });
@@ -76,6 +82,7 @@ API.ready.then(function(){
   }
 
   function clearOne(key){
+    if (key === 'near') { NEAR.clear(); return; }
     if (key.indexOf('colour:') === 0) { var c = key.slice(7); document.querySelectorAll('#colours input').forEach(function(i){ if (i.value === c) i.checked = false; }); }
     else if (key.indexOf('size:') === 0) { var s = key.slice(5); document.querySelectorAll('#sizes input').forEach(function(i){ if (i.value === s) i.checked = false; }); }
     else if (key === 'collar' || key === 'chipped') $(key).checked = false;
@@ -89,6 +96,7 @@ API.ready.then(function(){
     if (state.sort !== 'newest') u.set('sort', state.sort);
     if (state.colours.length) u.set('colour', state.colours.join(','));
     if (state.size.length) u.set('size', state.size.join(','));
+    var n = NEAR.get(); if (n) { u.set('near', n.q); u.set('r', n.r); }
     var qs = u.toString();
     history.replaceState(null, '', location.pathname + (qs ? '?' + qs : ''));
   }
@@ -99,6 +107,7 @@ API.ready.then(function(){
     var rows = pets.filter(matches).sort(function(a, b){
       if (state.sort === 'oldest') return new Date(a.date) - new Date(b.date);
       if (state.sort === 'area') return a.area.localeCompare(b.area);
+      var nr = NEAR.get(); if (state.sort === 'near' && nr) return API.km(nr, a) - API.km(nr, b);
       return new Date(b.date) - new Date(a.date);
     });
 
@@ -121,7 +130,7 @@ API.ready.then(function(){
             '<span class="cols">' + (p.colours || []).map(function(c){ var s = window.COLOURS.find(function(x){ return x.name === c; }); return '<i title="' + c + '" style="background:' + (s ? s.swatch : '#ccc') + '"></i>'; }).join('') + p.color + '</span>' +
           '</div>' +
           '<p class="desc">' + p.desc + '</p>' +
-          '<div class="foot"><span class="loc">' + p.area + '</span>' +
+          '<div class="foot"><span class="loc">' + p.area + (NEAR.get() ? ' · ' + API.km(NEAR.get(), p).toFixed(1) + ' km away' : '') + '</span>' +
             (p.chipped ? '<span class="tag tag-accent-2">Microchipped</span>' : '') +
             (p.collar ? '<span class="tag tag-neutral">Collar</span>' : '') +
           '</div>' +
@@ -132,6 +141,7 @@ API.ready.then(function(){
   function syncColourGroup(){ $('colour-group').style.display = state.species === 'Other' ? 'none' : ''; }
   function update(){ readControls(); syncColourGroup(); writeURL(); render(); }
   function clearAll(){
+    $('near').value = ''; NEAR.clear();
     $('q').value = ''; ['species','sex','district','since'].forEach(function(k){ $(k).value = ''; });
     $('collar').checked = false; $('chipped').checked = false;
     document.querySelectorAll('#colours input, #sizes input').forEach(function(i){ i.checked = false; });
@@ -147,4 +157,5 @@ API.ready.then(function(){
 
   syncColourGroup();
   render();
+  if (params.get('near')) NEAR.set(params.get('near'), params.get('r'));
 });

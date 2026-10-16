@@ -33,6 +33,10 @@ a:hover { color: var(--color-accent-800); }
 .fgroup { display: flex; flex-direction: column; gap: 8px; }
 .fgroup > .lbl { font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: color-mix(in srgb, var(--color-text) 62%, transparent); }
 .filters .input { background: var(--white); border-color: var(--color-neutral-300); }
+.near-row { display: flex; gap: 8px; }
+.near-row .input:first-child { flex: 1; min-width: 0; }
+.near-row select { width: auto; flex: none; }
+.near-status { font-size: 12.5px; color: color-mix(in srgb, var(--color-text) 65%, transparent); min-height: 1em; }
 .searchbox { position: relative; }
 .searchbox .input { padding-left: 40px; }
 .searchbox svg { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); opacity: .55; }
@@ -142,6 +146,17 @@ a:hover { color: var(--color-accent-800); }
       </div>
 
       <div class="fgroup">
+        <label class="lbl" for="near">Near postcode or area</label>
+        <div class="near-row">
+          <input class="input" id="near" type="search" placeholder="e.g. 2013 or Strovolos" autocomplete="off" />
+          <select class="input" id="near-r" aria-label="Distance">
+            <option value="1">1 km</option><option value="3" selected>3 km</option><option value="5">5 km</option><option value="10">10 km</option><option value="25">25 km</option>
+          </select>
+        </div>
+        <div class="near-status" id="near-status" aria-live="polite"></div>
+      </div>
+
+      <div class="fgroup">
         <label class="lbl" for="species">Animal</label>
         <select class="input" id="species">
           <option value="">Any animal</option>
@@ -209,6 +224,7 @@ a:hover { color: var(--color-accent-800); }
               <option value="newest">Newest first</option>
               <option value="oldest">Oldest first</option>
               <option value="area">By area</option>
+              <option value="near">Nearest first</option>
             </select>
           </label>
         </div>
@@ -220,10 +236,11 @@ a:hover { color: var(--color-accent-800); }
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.79.0/dist/umd/supabase.js"></script>
-<script src="config.js?v=4"></script>
-<script src="data.js?v=4"></script>
-<script src="api.js?v=4"></script>
-<script src="save-search.js?v=4"></script>
-<script src="browse.js?v=4"></script>
+<script src="config.js?v=5"></script>
+<script src="data.js?v=5"></script>
+<script src="api.js?v=5"></script>
+<script src="near.js?v=5"></script>
+<script src="save-search.js?v=5"></script>
+<script src="browse.js?v=5"></script>
 </body>
 </html>

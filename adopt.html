@@ -33,6 +33,10 @@ a:hover { color: var(--color-accent-800); }
 .fgroup { display: flex; flex-direction: column; gap: 8px; }
 .fgroup > .lbl { font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: color-mix(in srgb, var(--color-text) 62%, transparent); }
 .filters .input { background: var(--white); border-color: var(--color-neutral-300); }
+.near-row { display: flex; gap: 8px; }
+.near-row .input:first-child { flex: 1; min-width: 0; }
+.near-row select { width: auto; flex: none; }
+.near-status { font-size: 12.5px; color: color-mix(in srgb, var(--color-text) 65%, transparent); min-height: 1em; }
 .searchbox { position: relative; }
 .searchbox .input { padding-left: 40px; }
 .searchbox svg { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); opacity: .55; }
@@ -152,6 +156,17 @@ a:hover { color: var(--color-accent-800); }
       </div>
 
       <div class="fgroup">
+        <label class="lbl" for="near">Near postcode or area</label>
+        <div class="near-row">
+          <input class="input" id="near" type="search" placeholder="e.g. 2013 or Strovolos" autocomplete="off" />
+          <select class="input" id="near-r" aria-label="Distance">
+            <option value="1">1 km</option><option value="3" selected>3 km</option><option value="5">5 km</option><option value="10">10 km</option><option value="25">25 km</option>
+          </select>
+        </div>
+        <div class="near-status" id="near-status" aria-live="polite"></div>
+      </div>
+
+      <div class="fgroup">
         <label class="lbl" for="species">Animal</label>
         <select class="input" id="species">
           <option value="">Any animal</option>
@@ -233,6 +248,7 @@ a:hover { color: var(--color-accent-800); }
           <label class="sortbox"><span>Sort</span>
             <select class="input" id="sort">
               <option value="newest">Newest first</option>
+              <option value="near">Nearest first</option>
               <option value="youngest">Youngest first</option>
               <option value="oldest">Oldest first</option>
             </select>
@@ -254,10 +270,11 @@ a:hover { color: var(--color-accent-800); }
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.79.0/dist/umd/supabase.js"></script>
-<script src="config.js?v=4"></script>
-<script src="data.js?v=4"></script>
-<script src="api.js?v=4"></script>
-<script src="save-search.js?v=4"></script>
+<script src="config.js?v=5"></script>
+<script src="data.js?v=5"></script>
+<script src="api.js?v=5"></script>
+<script src="near.js?v=5"></script>
+<script src="save-search.js?v=5"></script>
 <script>
 API.ready.then(function(){
   var $ = function(id){ return document.getElementById(id); };
@@ -270,6 +287,8 @@ API.ready.then(function(){
   window.AREAS.forEach(function(a){ var o = document.createElement('option'); o.value = a; o.textContent = a; $('district').appendChild(o); });
 
   function checked(sel){ return Array.prototype.map.call(document.querySelectorAll(sel + ' input:checked'), function(i){ return i.value; }); }
+  var NEAR = NearFilter({ input: 'near', radius: 'near-r', status: 'near-status', onChange: function(){ if (NEAR.get() && !nearUsed) { nearUsed = true; $('sort').value = 'near'; } update(); } });
+  var nearUsed = false;
   var s = {};
   function read(){
     s = { q: $('q').value.trim(), species: $('species').value, sex: $('sex').value, district: $('district').value, lister: $('lister').value, sort: $('sort').value,
@@ -288,13 +307,15 @@ API.ready.then(function(){
     if (s.good.length && !s.good.every(function(g){ return p.goodWith.indexOf(g) > -1; })) return false;
     if (s.colours.length && s.species !== 'Other' && (p.species === 'Other' || !s.colours.every(function(c){ return p.colours.indexOf(c) > -1; }))) return false;
     for (var k in BOOLS) if (s[k] && !p[k]) return false;
-    if (s.q) { var hay = [p.name, p.breed, p.color, p.exoticType || '', p.area, p.desc].join(' ').toLowerCase(); if (!s.q.toLowerCase().split(/\s+/).every(function(w){ return hay.indexOf(w) > -1; })) return false; }
+    var near = NEAR.get(); if (near && API.km(near, p) > near.r) return false;
+    if (s.q) { var hay = [p.name, p.breed, p.color, p.exoticType || '', p.area, p.postcode || '', p.desc].join(' ').toLowerCase(); if (!s.q.toLowerCase().split(/\s+/).every(function(w){ return hay.indexOf(w) > -1; })) return false; }
     return true;
   }
 
   function chips(){
     var out = [];
     if (s.q) out.push(['q', '“' + s.q + '”']);
+    var n = NEAR.get(); if (n) out.push(['near', 'Within ' + n.r + ' km of ' + n.label]);
     if (s.species) out.push(['species', s.species === 'Other' ? 'Other / exotic' : s.species]);
     s.ages.forEach(function(v){ out.push(['#ages|' + v, v]); });
     if (s.species !== 'Other') s.colours.forEach(function(v){ out.push(['#colours|' + v, v]); });
@@ -307,6 +328,7 @@ API.ready.then(function(){
     return out;
   }
   function clearOne(k){
+    if (k === 'near') { NEAR.clear(); return; }
     if (k.indexOf('|') > -1) { var parts = k.split('|'); document.querySelectorAll(parts[0] + ' input').forEach(function(i){ if (i.value === parts[1]) i.checked = false; }); }
     else if (BOOLS[k]) $(k).checked = false;
     else $(k).value = '';
@@ -315,6 +337,7 @@ API.ready.then(function(){
   function clearAll(){
     document.querySelectorAll('#filters input[type=checkbox]').forEach(function(i){ i.checked = false; });
     ['q','species','sex','district','lister'].forEach(function(k){ $(k).value = ''; });
+    NEAR.clear();
     update();
   }
 
@@ -324,6 +347,7 @@ API.ready.then(function(){
     var rows = pets.filter(match).sort(function(a, b){
       if (s.sort === 'youngest') return AGE_ORDER.indexOf(a.age) - AGE_ORDER.indexOf(b.age);
       if (s.sort === 'oldest') return AGE_ORDER.indexOf(b.age) - AGE_ORDER.indexOf(a.age);
+      var nr = NEAR.get(); if (s.sort === 'near' && nr) return API.km(nr, a) - API.km(nr, b);
       return new Date(b.date) - new Date(a.date);
     });
     $('count').textContent = rows.length + ' of ' + pets.length + ' pets for adoption';
@@ -344,7 +368,7 @@ API.ready.then(function(){
             '<span class="cols">' + p.colours.map(function(cn){ var w = window.COLOURS.find(function(x){ return x.name === cn; }); return '<i title="' + cn + '" style="background:' + (w ? w.swatch : '#ccc') + '"></i>'; }).join('') + p.color + '</span></div>' +
           (p.goodWith.length ? '<div class="good"><b>Good with</b>' + p.goodWith.map(function(g){ return '<span>' + g.toLowerCase() + '</span>'; }).join('') + '</div>' : '') +
           '<div class="health">' + Object.keys(BOOLS).map(function(k){ return '<span class="' + (p[k] ? '' : 'no') + '">' + ic(p[k]) + BOOLS[k] + '</span>'; }).join('') + '</div>' +
-          '<div class="foot"><span class="loc">' + p.area + ' <span class="lister">· ' + p.lister + '</span></span><span class="btn btn-primary meet">Meet ' + p.name + '</span></div>' +
+          '<div class="foot"><span class="loc">' + p.area + (NEAR.get() ? ' · ' + API.km(NEAR.get(), p).toFixed(1) + ' km' : '') + ' <span class="lister">· ' + p.lister + '</span></span><span class="btn btn-primary meet">Meet ' + p.name + '</span></div>' +
         '</div></a>';
     }).join('') : '<div class="empty"><h3>No matches</h3><p>Try removing a filter. New pets are added as soon as a moderator approves them.</p></div>';
   }
