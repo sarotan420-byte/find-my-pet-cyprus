@@ -6,6 +6,8 @@
 <title>Report a missing or found pet — Find My Pet Cyprus</title>
 <meta name="description" content="Report a missing or found pet anywhere in Cyprus. Listings are checked by a moderator before going public." />
 <script src="./ds-base.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <style>
 :root { --edge: clamp(16px, 4vw, 48px); --white: #fff; }
 body { margin: 0; background: var(--white); text-wrap: pretty; }
@@ -69,7 +71,17 @@ textarea.input::placeholder { line-height: 1.5; }
 .check input { width: 18px; height: 18px; accent-color: var(--color-accent); }
 
 .photo-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-3); }
-.photo-row image-slot { width: 100%; aspect-ratio: 1; }
+.photo-slot { position: relative; aspect-ratio: 1; border: 2px dashed var(--color-neutral-300); border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; text-align: center; font-size: 13px; font-weight: 600; color: var(--color-neutral-600); cursor: pointer; overflow: hidden; background: var(--color-neutral-50, #faf8f5); }
+.photo-slot:hover { border-color: var(--color-accent); }
+.photo-slot input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+.photo-slot img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.photo-slot .rm { position: absolute; top: 6px; right: 6px; z-index: 2; width: 28px; height: 28px; border-radius: 50%; border: none; background: rgba(32,30,29,.75); color: #fff; font-size: 14px; cursor: pointer; display: none; }
+.photo-slot.has .rm { display: block; }
+.photo-slot.has input { pointer-events: none; }
+#pin-map { height: 260px; border-radius: var(--radius-lg); overflow: hidden; border: 1px solid var(--color-neutral-200); }
+.pin-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; font-size: 13px; color: var(--color-neutral-600); margin-top: 6px; }
+.submit-err { display: none; margin-top: 12px; padding: 12px 14px; border-radius: var(--radius-md); background: #fbe9e4; color: #8a2b17; font-size: 14px; font-weight: 600; }
+.submit-err.on { display: block; }
 
 .actions-row { display: flex; justify-content: space-between; align-items: center; margin-top: var(--space-2); gap: var(--space-3); }
 .actions-row .btn { min-height: 44px; padding-inline: var(--space-5, 24px); }
@@ -155,11 +167,11 @@ textarea.input::placeholder { line-height: 1.5; }
       <div class="field-grid">
         <div class="field">
           <label for="breed">Breed <span class="hint">(if known)</span></label>
-          <input class="input" id="breed" placeholder="e.g. Labrador, mixed breed" />
+          <input class="input" id="breed" maxlength="80" placeholder="e.g. Labrador, mixed breed" />
         </div>
         <div class="field">
           <label for="name">Name <span class="hint" id="name-hint">(if known)</span></label>
-          <input class="input" id="name" placeholder="e.g. Bella" />
+          <input class="input" id="name" maxlength="60" placeholder="e.g. Bella" />
         </div>
       </div>
       <div class="field">
@@ -226,7 +238,12 @@ textarea.input::placeholder { line-height: 1.5; }
       </div>
       <div class="field">
         <label for="area"><span id="area-label">Area or street last seen</span></label>
-        <input class="input" id="area" required placeholder="e.g. Agios Nikolaos, near the church" />
+        <input class="input" id="area" required minlength="2" maxlength="120" placeholder="e.g. Agios Nikolaos, near the church" />
+      </div>
+      <div class="field">
+        <span class="lbl">Exact spot on the map <span class="hint">· tap the map to drop a pin</span></span>
+        <div id="pin-map"></div>
+        <div class="pin-row"><button type="button" class="btn btn-secondary" id="locate">Use my current location</button><span id="pin-status">No pin yet. We'll use the district centre if you skip this.</span></div>
       </div>
       <div class="field-grid">
         <div class="field">
@@ -247,14 +264,14 @@ textarea.input::placeholder { line-height: 1.5; }
       <div class="field">
         <span class="lbl">Photos <span class="hint">· clear, recent and well-lit photos help the most</span></span>
         <div class="photo-row">
-          <image-slot id="s-photo-1" shape="rounded" radius="16" placeholder="Main photo"></image-slot>
-          <image-slot id="s-photo-2" shape="rounded" radius="16" placeholder="Add photo"></image-slot>
-          <image-slot id="s-photo-3" shape="rounded" radius="16" placeholder="Add photo"></image-slot>
+          <label class="photo-slot" data-i="0"><span>+ Main photo</span><input type="file" accept="image/*" aria-label="+ Main photo"><button type="button" class="rm" aria-label="Remove photo">✕</button></label>
+          <label class="photo-slot" data-i="1"><span>+ Add photo</span><input type="file" accept="image/*" aria-label="+ Add photo"><button type="button" class="rm" aria-label="Remove photo">✕</button></label>
+          <label class="photo-slot" data-i="2"><span>+ Add photo</span><input type="file" accept="image/*" aria-label="+ Add photo"><button type="button" class="rm" aria-label="Remove photo">✕</button></label>
         </div>
       </div>
       <div class="field">
         <label for="desc">Description</label>
-        <textarea class="input" id="desc" required rows="5" placeholder="Temperament, anything distinctive, and what someone should do if they see the pet (e.g. don't chase, call instead)."></textarea>
+        <textarea class="input" id="desc" required minlength="10" maxlength="2000" rows="5" placeholder="Temperament, anything distinctive, and what someone should do if they see the pet (e.g. don't chase, call instead)."></textarea>
       </div>
       <div class="actions-row"><button type="button" class="btn btn-secondary" data-back>Back</button><button type="button" class="btn btn-primary" data-next>Continue</button></div>
     </div>
@@ -264,7 +281,7 @@ textarea.input::placeholder { line-height: 1.5; }
       <span class="step-label">Step 5 of 5 · Contact and review</span>
       <div class="field-grid">
         <div class="field"><label for="cname">Your name</label><input class="input" id="cname" required autocomplete="name" /></div>
-        <div class="field"><label for="cphone">Phone</label><input class="input" id="cphone" type="tel" required autocomplete="tel" placeholder="e.g. 99 123 456" /></div>
+        <div class="field"><label for="cphone">Phone</label><input class="input" id="cphone" type="tel" required minlength="6" maxlength="30" autocomplete="tel" placeholder="e.g. 99 123 456" /></div>
       </div>
       <div class="field"><label for="cemail">Email <span class="hint">(not shown publicly)</span></label><input class="input" id="cemail" type="email" autocomplete="email" /></div>
       <div class="field" id="lister-field" style="display:none">
@@ -281,14 +298,15 @@ textarea.input::placeholder { line-height: 1.5; }
       <h2>Check your listing</h2>
       <div class="review" id="review"></div>
       <label class="check"><input type="checkbox" id="agree" required> I confirm this listing is accurate to the best of my knowledge.</label>
-      <div class="actions-row"><button type="button" class="btn btn-secondary" data-back>Back</button><button type="submit" class="btn btn-primary">Submit for review</button></div>
+      <div class="submit-err" id="submit-err" role="alert"></div>
+      <div class="actions-row"><button type="button" class="btn btn-secondary" data-back>Back</button><button type="submit" class="btn btn-primary" id="submit-btn">Submit for review</button></div>
     </div>
   </form>
 
   <div class="success" id="success" style="display:none">
     <div class="circle"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></div>
     <h2>Sent for review</h2>
-    <p>A moderator checks new listings before they go live, usually within a few hours. Once it's approved you can manage it from your account.</p>
+    <p>A moderator checks new listings before they go live, usually within a few hours. You can follow it from your account on this device<span id="email-note"></span>.</p>
     <div class="row">
       <a href="account.html" class="btn btn-primary">Go to my account</a>
       <a href="missing.html" class="btn btn-secondary" id="browse-link">Browse listings</a>
@@ -296,8 +314,10 @@ textarea.input::placeholder { line-height: 1.5; }
   </div>
 </div>
 
-<script src="image-slot.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.79.0/dist/umd/supabase.js"></script>
+<script src="config.js"></script>
 <script src="data.js"></script>
+<script src="api.js"></script>
 <script>
 (function(){
   var $ = function(id){ return document.getElementById(id); };
@@ -363,6 +383,7 @@ textarea.input::placeholder { line-height: 1.5; }
     $('progress').querySelectorAll('i').forEach(function(d, k){ d.className = k < i ? 'done' : k === i ? 'current' : ''; });
     current = i;
     if (i === steps.length - 1) buildReview();
+    if (i === 2) initPin();
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
@@ -382,7 +403,9 @@ textarea.input::placeholder { line-height: 1.5; }
       ['Size · sex', val('size') + ' · ' + (val('sex') === 'Unknown' ? 'Not sure' : val('sex'))],
       ['Identification', ids || 'None'],
       ['Location', [$('area').value, $('district').value, $('postcode').value].filter(Boolean).join(', ')],
-      ['Date', $('date').value + ($('time').value ? ' · ' + $('time').value : '')]
+      ['Date', $('date').value + ($('time').value ? ' · ' + $('time').value : '')],
+      ['Map pin', pin ? 'Placed' : 'Not placed (district centre will be used)'],
+      ['Photos', files.filter(Boolean).length + ' of 3']
     ];
     if (val('status') === 'adoption') {
       rows.splice(7, 1,
@@ -395,15 +418,118 @@ textarea.input::placeholder { line-height: 1.5; }
     $('review').innerHTML = rows.map(function(r){ return '<div class="review-row"><span class="k">' + r[0] + '</span><span class="v">' + String(r[1]).replace(/</g, '&lt;') + '</span></div>'; }).join('');
   }
 
+  // ---------- photos ----------
+  var files = [null, null, null];
+  document.querySelectorAll('.photo-slot').forEach(function(slot){
+    var i = Number(slot.dataset.i), input = slot.querySelector('input');
+    input.addEventListener('change', function(){
+      var f = input.files && input.files[0];
+      if (!f) return;
+      if (!/^image\//.test(f.type)) { alert('Please choose a photo.'); input.value = ''; return; }
+      if (f.size > 25 * 1024 * 1024) { alert('That photo is too large (max 25 MB).'); input.value = ''; return; }
+      files[i] = f;
+      var old = slot.querySelector('img'); if (old) old.remove();
+      var img = document.createElement('img'); img.src = URL.createObjectURL(f); img.alt = 'Selected photo ' + (i + 1);
+      slot.insertBefore(img, slot.firstChild); slot.classList.add('has');
+    });
+    slot.querySelector('.rm').addEventListener('click', function(e){
+      e.preventDefault(); e.stopPropagation();
+      files[i] = null; input.value = '';
+      var img = slot.querySelector('img'); if (img) img.remove();
+      slot.classList.remove('has');
+    });
+  });
+
+  // ---------- map pin ----------
+  var pin = null, pinMap = null, pinMarker = null;
+  function setPin(lat, lng, label){
+    pin = { lat: lat, lng: lng };
+    if (pinMarker) pinMarker.setLatLng([lat, lng]);
+    else pinMarker = L.marker([lat, lng], { draggable: true, icon: L.divIcon({ className: '', html: '<div style="width:20px;height:20px;border-radius:50%;background:#c67139;border:3px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.35)"></div>', iconSize: [20,20], iconAnchor: [10,10] }) })
+      .addTo(pinMap).on('dragend', function(e){ var ll = e.target.getLatLng(); pin = { lat: ll.lat, lng: ll.lng }; });
+    $('pin-status').textContent = label || 'Pin placed. Drag it to adjust.';
+  }
+  function initPin(){
+    if (typeof L === 'undefined') { $('pin-map').parentNode.style.display = 'none'; return; }
+    if (pinMap) { setTimeout(function(){ pinMap.invalidateSize(); }, 50); return; }
+    var c = API.districtCentre($('district').value) || [35.0, 33.2];
+    pinMap = L.map('pin-map', { scrollWheelZoom: false }).setView(c, $('district').value ? 11 : 8);
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', { attribution: '&copy; OpenStreetMap contributors &copy; CARTO', subdomains: 'abcd', maxZoom: 19 }).addTo(pinMap);
+    pinMap.on('click', function(e){ setPin(e.latlng.lat, e.latlng.lng); });
+    if (pin) setPin(pin.lat, pin.lng);
+  }
+  $('district').addEventListener('change', function(){
+    var c = API.districtCentre($('district').value);
+    if (pinMap && c && !pin) pinMap.setView(c, 11);
+  });
+  $('locate').addEventListener('click', function(){
+    if (!navigator.geolocation) return alert('Location is not available on this device.');
+    $('pin-status').textContent = 'Finding you…';
+    navigator.geolocation.getCurrentPosition(function(pos){
+      setPin(pos.coords.latitude, pos.coords.longitude, 'Pin placed at your location. Drag it to adjust.');
+      pinMap.setView([pos.coords.latitude, pos.coords.longitude], 15);
+    }, function(){ $('pin-status').textContent = 'Could not get your location. Tap the map instead.'; }, { enableHighAccuracy: true, timeout: 10000 });
+  });
+
+  // ---------- draft (so a stressed owner doesn't lose their progress) ----------
+  var DRAFT = 'fmp-report-draft';
+  var fields = ['exoticType','exoticColour','colorDesc','breed','name','ageBand','ageText','district','postcode','area','date','time','desc','cname','cphone','cemail','lister'];
+  function saveDraft(){
+    var d = { radios: {}, checks: {}, pin: pin };
+    fields.forEach(function(id){ if ($(id)) d[id] = $(id).value; });
+    document.querySelectorAll('#form input[type=radio]:checked').forEach(function(r){ d.radios[r.name] = r.value; });
+    document.querySelectorAll('#form input[type=checkbox]').forEach(function(c){ if (c.checked && c.id !== 'agree') d.checks[(c.name || c.id) + ':' + c.value] = 1; });
+    try { localStorage.setItem(DRAFT, JSON.stringify(d)); } catch (e) {}
+  }
+  function loadDraft(){
+    var d; try { d = JSON.parse(localStorage.getItem(DRAFT) || 'null'); } catch (e) {}
+    if (!d) return;
+    fields.forEach(function(id){ if ($(id) && d[id] != null) $(id).value = d[id]; });
+    Object.keys(d.radios || {}).forEach(function(n){ var r = document.querySelector('#form input[name="' + n + '"][value="' + d.radios[n] + '"]'); if (r) r.checked = true; });
+    document.querySelectorAll('#form input[type=checkbox]').forEach(function(c){ if (d.checks && d.checks[(c.name || c.id) + ':' + c.value]) c.checked = true; });
+    if (d.pin) pin = d.pin;
+  }
+  $('form').addEventListener('input', saveDraft);
+  $('form').addEventListener('change', saveDraft);
+
+  // ---------- submit ----------
+  function checked(name){ return Array.prototype.map.call(document.querySelectorAll('input[name="' + name + '"]:checked'), function(i){ return i.value; }); }
   $('form').addEventListener('submit', function(e){
     e.preventDefault();
     if (!validate(current)) return;
-    $('form').style.display = 'none';
-    $('intro').style.display = 'none';
-    $('success').style.display = 'block';
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    var st = val('status'), ex = isExotic(), ad = st === 'adoption';
+    var c = API.districtCentre($('district').value) || [35.0, 33.2];
+    var listing = {
+      status: st, species: val('species'), exotic_type: ex ? $('exoticType').value : '',
+      name: $('name').value.trim(), breed: $('breed').value.trim(), size: val('size'), sex: val('sex'),
+      colours: ex ? [] : colours(), color: ex ? $('exoticColour').value.trim() : '', markings: $('colorDesc').value.trim(),
+      collar: !ad && $('collar').checked, chipped: $('chipped').checked,
+      district: $('district').value, postcode: $('postcode').value.trim(), area: $('area').value.trim(),
+      lat: pin ? pin.lat : c[0], lng: pin ? pin.lng : c[1],
+      event_date: $('date').value, event_time: ad ? '' : $('time').value,
+      description: $('desc').value.trim(),
+      age_band: ad ? $('ageBand').value : '', age_text: ad ? $('ageText').value.trim() : '',
+      neutered: ad && $('neutered').checked, vaccinated: ad && $('vaccinated').checked,
+      good_with: ad ? checked('good') : [], lister: ad ? $('lister').value : ''
+    };
+    var contact = { name: $('cname').value.trim(), phone: $('cphone').value.trim(), email: $('cemail').value.trim() };
+    var btn = $('submit-btn'); btn.disabled = true; btn.textContent = files.some(Boolean) ? 'Uploading photos…' : 'Sending…';
+    $('submit-err').classList.remove('on');
+    API.submitListing(listing, files.filter(Boolean), contact).then(function(){
+      try { localStorage.removeItem(DRAFT); } catch (e) {}
+      $('email-note').textContent = contact.email ? ', or confirm the email we sent to ' + contact.email + ' to manage it from any device' : '';
+      $('form').style.display = 'none';
+      $('intro').style.display = 'none';
+      $('success').style.display = 'block';
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }).catch(function(err){
+      $('submit-err').textContent = (err && err.message) || 'Something went wrong. Please try again.';
+      $('submit-err').classList.add('on');
+      btn.disabled = false; btn.textContent = 'Submit for review';
+    });
   });
 
+  loadDraft();
   var pre = new URLSearchParams(location.search).get('type');
   if (pre) { var el = document.querySelector('input[name="status"][value="' + pre + '"]'); if (el) el.checked = true; }
   syncType();

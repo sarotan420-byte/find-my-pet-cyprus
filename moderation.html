@@ -126,11 +126,14 @@ textarea.input { height: auto; min-height: 84px; border-radius: var(--radius-md)
 
 <div class="toast" id="toast" role="status"><span id="toast-msg"></span><button type="button" id="undo">Undo</button></div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.79.0/dist/umd/supabase.js"></script>
+<script src="config.js"></script>
 <script src="data.js"></script>
+<script src="api.js"></script>
 <script>
 (function(){
   var $ = function(id){ return document.getElementById(id); };
-  var NOW = new Date('2026-10-09T10:00:00');
+  var NOW = API.live ? new Date() : new Date('2026-10-09T10:00:00');
   // Demo submissions. In production: GET /api/moderation?status=pending
   var ITEMS = [
     { id: 'S-2041', state: 'pending', status: 'missing', species: 'Dog', name: 'Coco', breed: 'Cocker spaniel', size: 'Medium', sex: 'Female', colours: ['Golden'], color: 'Golden', collar: true, chipped: true, area: 'Limassol — Agios Athanasios', district: 'Limassol', postcode: '4102', date: '2026-10-08', submitted: '2026-10-09T06:12:00', photos: 3, desc: 'Ran off during a walk near the stadium. Pink collar. Friendly but may be frightened.', contact: 'Despina · 99 456 210', accountAge: '2 years', priorListings: 1 },
@@ -144,7 +147,7 @@ textarea.input { height: auto; min-height: 84px; border-radius: var(--radius-md)
   var TAG = { missing: 'tag-accent', found: 'tag-accent-2', adoption: 'tag-accent-2' };
   var tab = 'pending', sel = null, last = null;
 
-  function ago(t){ var m = Math.round((NOW - new Date(t)) / 60000); return m < 60 ? m + ' min ago' : Math.round(m / 60) + ' h ago'; }
+  function ago(t){ var m = Math.max(0, Math.round((NOW - new Date(t)) / 60000)); return m < 60 ? m + ' min ago' : m < 2880 ? Math.round(m / 60) + ' h ago' : Math.round(m / 1440) + ' days ago'; }
   function title(it){ return it.name || (it.color + ' ' + (it.species === 'Other' ? it.exoticType : it.species).toLowerCase()); }
   function checks(it){
     var c = [];
@@ -154,7 +157,8 @@ textarea.input { height: auto; min-height: 84px; border-radius: var(--radius-md)
     if (it.phoneInDesc) c.push(['meh', 'Phone number in the description will be public. Remove it']);
     c.push(it.accountAge === 'New today' || /day/.test(it.accountAge) ? ['meh', 'New account (' + it.accountAge + ')'] : ['ok', 'Account age: ' + it.accountAge]);
     if (it.priorListings > 3) c.push(['meh', it.priorListings + ' listings in the last 30 days']);
-    c.push(it.postcode ? ['ok', 'Postcode ' + it.postcode + ' matches ' + it.district] : ['meh', 'No postcode. Area name only']);
+    var PC = { '1': 'Nicosia', '2': 'Nicosia', '3': 'Limassol', '4': 'Limassol', '5': 'Famagusta', '6': 'Larnaca', '7': 'Larnaca', '8': 'Paphos', '9': 'Kyrenia' };
+    c.push(!it.postcode ? ['meh', 'No postcode. Area name only'] : PC[it.postcode[0]] === it.district ? ['ok', 'Postcode ' + it.postcode + ' matches ' + it.district] : ['meh', 'Postcode ' + it.postcode + ' does not look like ' + it.district]);
     c.push(it.status === 'missing' || it.status === 'found' ? (new Date(it.date) <= NOW ? ['ok', 'Date is valid'] : ['bad', 'Date is in the future']) : ['ok', 'Available from ' + it.date]);
     return c;
   }
@@ -183,7 +187,7 @@ textarea.input { height: auto; min-height: 84px; border-radius: var(--radius-md)
     $('queue').innerHTML = list.length ? list.map(function(it){
       var f = flags(it);
       return '<button type="button" role="listitem" class="qitem" data-id="' + it.id + '" aria-current="' + (sel === it.id) + '">' +
-        (it.photos ? '<img src="assets/photo.jpg" alt="">' : '<span class="noimg">No photo</span>') +
+        (it.photos ? '<img src="' + ((it.photoUrls && it.photoUrls[0]) || 'assets/photo.jpg') + '" alt="">' : '<span class="noimg">No photo</span>') +
         '<span style="min-width:0"><span class="l1"><span class="n">' + title(it) + '</span><span class="tag ' + TAG[it.status] + '">' + LABEL[it.status] + '</span></span>' +
         '<span class="m" style="display:block">' + it.area + ' · ' + ago(it.submitted) + '</span>' +
         (f.length ? '<span class="flags">' + f.map(function(x){ return '<span class="flag' + (x[0] === 'bad' ? ' warn' : '') + '">' + x[1].split(/[.(]/)[0].trim() + '</span>'; }).join('') + '</span>' : '') +
@@ -202,7 +206,7 @@ textarea.input { height: auto; min-height: 84px; border-radius: var(--radius-md)
     var desc = it.desc.replace(/(price|negotiable|papers|whatsapp|\d{2} \d{3} \d{3})/gi, '<mark>$1</mark>');
     var dupe = it.dupeOf ? window.PETS.find(function(p){ return p.id === it.dupeOf; }) : null;
     var pending = it.state === 'pending' || it.state === 'changes';
-    var ph = []; for (var i = 0; i < 3; i++) ph.push(i < it.photos ? '<img src="assets/photo.jpg" alt="Submitted photo ' + (i+1) + '">' : '<div class="ph-empty">' + (i === 0 ? 'No photo' : '') + '</div>');
+    var ph = []; for (var i = 0; i < 3; i++) ph.push(i < it.photos ? '<a href="' + ((it.photoUrls && it.photoUrls[i]) || 'assets/photo.jpg') + '" target="_blank"><img src="' + ((it.photoUrls && it.photoUrls[i]) || 'assets/photo.jpg') + '" alt="Submitted photo ' + (i+1) + '"></a>' : '<div class="ph-empty">' + (i === 0 ? 'No photo' : '') + '</div>');
 
     $('review').innerHTML =
       '<div class="rv-head"><div><h2>' + title(it) + ' <span class="tag ' + TAG[it.status] + '">' + LABEL[it.status] + '</span></h2>' +
@@ -216,7 +220,7 @@ textarea.input { height: auto; min-height: 84px; border-radius: var(--radius-md)
         '<div><span class="lbl">Automatic checks</span><ul class="checks">' + checks(it).map(function(c){ return '<li>' + icon(c[0]) + '<span>' + c[1] + '</span></li>'; }).join('') + '</ul></div>' +
         (dupe ? '<div><span class="lbl">Possible match</span><a class="dupe" href="listing.html?id=' + dupe.id + '" target="_blank"><img src="' + dupe.photo + '" alt=""><span><b>' + (dupe.name === 'Unnamed' ? dupe.color : dupe.name) + '</b><br>' + dupe.area + ' · live</span></a></div>' : '') +
         (pending ?
-          '<div><label class="lbl" for="note">Note to poster</label><textarea class="input" id="note" placeholder="Required for “Request changes” and “Reject”. Sent by email."></textarea></div>' +
+          '<div><label class="lbl" for="note">Note to poster</label><textarea class="input" id="note" placeholder="Required for “Request changes” and “Reject”. Shown to the poster in their account."></textarea></div>' +
           '<div><label class="lbl" for="reason">Reject reason</label><select class="input" id="reason"><option>Duplicate listing</option><option>Selling animals</option><option>Not a pet / spam</option><option>Offensive content</option><option>Other</option></select></div>' +
           '<div class="acts"><button class="btn btn-primary" type="button" data-act="approved">Approve and publish</button><button class="btn btn-secondary" type="button" data-act="changes">Request changes</button><button class="btn btn-danger" type="button" data-act="rejected">Reject</button></div>' +
           '<div class="kbd"><kbd>J</kbd>/<kbd>K</kbd> next / previous · <kbd>A</kbd> approve</div>'
@@ -231,7 +235,11 @@ textarea.input { height: auto; min-height: 84px; border-radius: var(--radius-md)
     if ((to === 'changes' || to === 'rejected') && !note) { $('note').focus(); $('note').setAttribute('placeholder', 'Add a short note so the poster knows what to fix.'); $('note').style.borderColor = '#a8361f'; return; }
     var list = visible(), idx = list.indexOf(it);
     last = { it: it, from: it.state };
+    var from = it.state;
     it.state = to;
+    if (API.live) API.moderate(it.id, to, note, to === 'rejected' && $('reason') ? $('reason').value : null).catch(function(e){
+      it.state = from; render(); alert('Could not save: ' + e.message);
+    });
     var rest = visible();
     sel = rest.length ? (rest[Math.min(idx, rest.length - 1)] || rest[0]).id : null;
     toast({ approved: 'Published: ', changes: 'Changes requested: ', rejected: 'Rejected: ', pending: 'Moved back: ' }[to] + title(it));
@@ -240,7 +248,7 @@ textarea.input { height: auto; min-height: 84px; border-radius: var(--radius-md)
 
   var tt;
   function toast(msg){ $('toast-msg').textContent = msg; $('toast').classList.add('on'); clearTimeout(tt); tt = setTimeout(function(){ $('toast').classList.remove('on'); }, 4000); }
-  $('undo').onclick = function(){ if (last) { last.it.state = last.from; tab = last.from; sel = last.it.id; last = null; $('toast').classList.remove('on'); render(); } };
+  $('undo').onclick = function(){ if (last) { if (API.live) API.moderate(last.it.id, last.from).catch(function(e){ alert('Could not undo: ' + e.message); }); last.it.state = last.from; tab = last.from; sel = last.it.id; last = null; $('toast').classList.remove('on'); render(); } };
 
   function render(){
     renderTabs();
@@ -258,7 +266,36 @@ textarea.input { height: auto; min-height: 84px; border-radius: var(--radius-md)
     if (e.key === 'a' && list[i] && list[i].state !== 'approved') act(list[i], 'approved');
   });
   $('ftype').onchange = render; $('fsort').onchange = render;
-  render();
+  function toItem(p){
+    var raw = p.rawDesc || '';
+    var age = (NOW - new Date(p.ownerCreatedAt || NOW)) / 864e5;
+    var dupe = (window.PETS || []).concat(window.ADOPT || []).find(function(x){
+      return x.id !== p.id && x.status === p.status && x.species === p.species && x.district === p.district &&
+        (!p.colours.length || p.colours.some(function(c){ return x.colours.indexOf(c) > -1; })) &&
+        Math.abs(new Date(x.date) - new Date(p.date)) < 10 * 864e5;
+    });
+    return {
+      id: p.id, state: p.closed ? 'approved' : p.moderationStatus, status: p.status, species: p.species, exoticType: p.exoticType,
+      name: p.name === 'Unnamed' ? '' : p.name, breed: p.breed, size: p.size, sex: p.sex, colours: p.colours, color: p.color,
+      collar: p.collar, chipped: p.chipped, area: p.area, district: p.district, postcode: p.postcode, date: p.date,
+      submitted: p.createdAt, photos: p.photos.length, photoUrls: p.photos, desc: p.desc, contact: p.contact,
+      accountAge: p.ownerAnonymous ? 'Guest, ' + (age < 1 ? 'new today' : Math.round(age) + ' days') : age < 1 ? 'New today' : Math.round(age) + ' days',
+      priorListings: Math.max(0, p.ownerRecent - 1), dupeOf: dupe ? dupe.id : null,
+      sale: /(price|negotiable|papers|pedigree|for sale|€|euro)/i.test(raw), phoneInDesc: /(\+?357)?\s?\d{2}\s?\d{3}\s?\d{3}/.test(raw),
+      age: p.age, lister: p.lister, fee: ''
+    };
+  }
+  function gate(msg){ $('review').innerHTML = '<div class="empty" style="border:none;padding:80px 24px">' + msg + '</div>'; $('queue').innerHTML = ''; }
+
+  if (!API.live) { render(); return; }
+  gate('Loading…');
+  API.ready.then(API.getUser).then(function(u){
+    if (!u || u.is_anonymous) return gate('Please <a href="account.html">sign in</a> with a moderator account.');
+    return API.isModerator().then(function(ok){
+      if (!ok) return gate('Your account is not a moderator.');
+      return API.moderationQueue().then(function(rows){ ITEMS = rows.map(toItem); render(); });
+    });
+  }).catch(function(e){ gate('Could not load the queue: ' + API.esc(e.message)); });
 })();
 </script>
 </body>

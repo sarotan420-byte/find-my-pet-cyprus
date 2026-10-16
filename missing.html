@@ -202,6 +202,7 @@ a:hover { color: var(--color-accent-800); }
       <div class="main-top">
         <span class="count" id="count" aria-live="polite"></span>
         <div style="display:flex;gap:8px;align-items:center">
+          <button type="button" class="btn btn-ghost" id="save-search">Save search</button>
           <button type="button" class="btn btn-secondary" id="toggle-filters">Filters <span id="filter-count"></span></button>
           <label class="sortbox"><span>Sort</span>
             <select class="input" id="sort">
@@ -218,7 +219,11 @@ a:hover { color: var(--color-accent-800); }
   </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.79.0/dist/umd/supabase.js"></script>
+<script src="config.js"></script>
 <script src="data.js"></script>
+<script src="api.js"></script>
+<script src="save-search.js"></script>
 <script src="browse.js"></script>
 </body>
 </html>

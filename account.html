@@ -42,6 +42,19 @@ body { margin: 0; }
 .status-pill.pending { background: var(--color-neutral-200); color: var(--color-neutral-800); }
 .status-pill.live { background: var(--color-accent-2-100); color: var(--color-accent-2-800); }
 
+.status-pill.changes { background: var(--color-accent-100); color: var(--color-accent-800); }
+.status-pill.rejected { background: #fbe9e4; color: #8a2b17; }
+.status-pill.closed { background: var(--color-neutral-100); color: var(--color-neutral-700); }
+.mine-wrap { border: 1px solid var(--color-neutral-200); border-radius: var(--radius-lg); padding: var(--space-2) var(--space-3); margin-bottom: var(--space-2); }
+.mine-wrap .mine-card { margin: 0; padding: 4px 0; }
+.mine-note { font-size: 13px; background: var(--color-accent-100); color: var(--color-accent-800); padding: 8px 12px; border-radius: var(--radius-md); margin: 6px 0; }
+.mine-acts { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 6px; }
+.mine-acts .btn { font-size: 13px; padding: 6px 14px; }
+.msg { font-size: 14px; padding: 12px 14px; border-radius: var(--radius-md); background: var(--color-accent-2-100); color: var(--color-accent-2-900); text-align: left; }
+.msg.err { background: #fbe9e4; color: #8a2b17; }
+.guest-box { background: var(--color-surface); border-radius: var(--radius-lg); padding: var(--space-4); margin-bottom: calc(2 * var(--space-6)); display: flex; flex-direction: column; gap: 10px; }
+.guest-box .row { display: flex; gap: 8px; flex-wrap: wrap; }
+.guest-box .row .input { flex: 1; min-width: 200px; }
 .empty-note { font-size: 13.5px; color: color-mix(in srgb, var(--color-text) 60%, transparent); padding: var(--space-3) 0; }
 </style>
 </head>
@@ -55,66 +68,134 @@ body { margin: 0; }
 </nav>
 
 <div class="wrap">
-  <div class="gate" id="gate">
+  <p class="empty-note" id="loading">Loading…</p>
+
+  <div class="gate" id="gate" style="display:none">
     <h1>Sign in</h1>
-    <p>Save searches so new listings in your area are easy to check back on. (Automatic alerts are coming soon — for now, saved searches are one click away.)</p>
-    <div class="field"><label for="email">Email</label><input class="input" id="email" type="email" placeholder="you@example.com" /></div>
-    <button class="btn btn-primary btn-block" id="signin" type="button">Continue</button>
+    <p>We'll email you a sign-in link, no password needed. Use it to manage your listings and saved searches.</p>
+    <form id="signin-form" style="display:flex;flex-direction:column;gap:var(--space-3)">
+      <div class="field"><label for="email">Email</label><input class="input" id="email" type="email" required autocomplete="email" placeholder="you@example.com" /></div>
+      <button class="btn btn-primary btn-block" id="signin" type="submit">Email me a link</button>
+    </form>
+    <div class="msg" id="gate-msg" style="display:none" role="status"></div>
   </div>
 
   <div id="account" style="display:none">
     <div class="head-row">
       <h1>Your account</h1>
-      <div style="display:flex;gap:8px"><a class="btn btn-ghost" href="moderation.html">Moderation</a><button class="btn btn-secondary" id="signout" type="button">Sign out</button></div>
+      <div style="display:flex;gap:8px"><a class="btn btn-ghost" href="moderation.html" id="mod-link" style="display:none">Moderation</a><button class="btn btn-secondary" id="signout" type="button">Sign out</button></div>
     </div>
+    <p class="empty-note" id="who" style="margin-top:-16px"></p>
 
-    <div class="block">
-      <h2 class="section-title">Saved searches</h2>
-      <div class="search-card">
-        <div><div class="desc">Missing dogs · Limassol · within 15 km</div><div class="meta">Saved 2 days ago</div></div>
-        <div class="actions"><a class="btn btn-ghost" href="search.html">Open</a><button class="btn btn-icon" type="button" title="Remove" data-remove>✕</button></div>
-      </div>
-      <div class="search-card">
-        <div><div class="desc">Found cats · all of Cyprus</div><div class="meta">Saved 1 week ago</div></div>
-        <div class="actions"><a class="btn btn-ghost" href="search.html">Open</a><button class="btn btn-icon" type="button" title="Remove" data-remove>✕</button></div>
-      </div>
+    <div class="guest-box" id="guest-box" style="display:none">
+      <strong>Keep access to your listings</strong>
+      <span style="font-size:14px">You're using a guest account on this device. Add your email so you can manage your listings from anywhere.</span>
+      <form class="row" id="link-form"><input class="input" id="link-email" type="email" required placeholder="you@example.com" autocomplete="email"><button class="btn btn-primary" type="submit">Add email</button></form>
+      <div class="msg" id="link-msg" style="display:none" role="status"></div>
     </div>
 
     <div class="block">
       <h2 class="section-title">Your listings</h2>
       <div id="mine"></div>
     </div>
+
+    <div class="block" id="saved-block">
+      <h2 class="section-title">Saved searches</h2>
+      <div id="saved"></div>
+    </div>
   </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.79.0/dist/umd/supabase.js"></script>
+<script src="config.js"></script>
 <script src="data.js"></script>
+<script src="api.js"></script>
 <script>
 (function(){
-  var gate = document.getElementById('gate');
-  var account = document.getElementById('account');
+  var $ = function(id){ return document.getElementById(id); };
+  var LABEL = { approved: ['live', 'Live'], pending: ['pending', 'In review'], changes: ['changes', 'Changes requested'], rejected: ['rejected', 'Not approved'] };
 
-  function signIn(){ gate.style.display = 'none'; account.style.display = 'block'; }
-  document.getElementById('signin').addEventListener('click', signIn);
-  document.getElementById('signout').addEventListener('click', function(){ account.style.display = 'none'; gate.style.display = 'flex'; });
+  function ago(t){
+    var d = Math.round((Date.now() - new Date(t)) / 864e5);
+    return d <= 0 ? 'today' : d === 1 ? 'yesterday' : d + ' days ago';
+  }
+  function show(id){ ['loading', 'gate', 'account'].forEach(function(x){ $(x).style.display = x === id ? (x === 'gate' ? 'flex' : 'block') : 'none'; }); }
 
-  document.querySelectorAll('[data-remove]').forEach(function(btn){
-    btn.addEventListener('click', function(){ btn.closest('.search-card').remove(); });
+  function load(){
+    API.getUser().then(function(u){
+      if (API.live && !u) return show('gate');
+      show('account');
+      var guest = u && u.is_anonymous;
+      $('who').textContent = !API.live ? 'Demo mode: nothing here is saved.' : guest ? 'Guest account on this device' : 'Signed in as ' + (u.email || '');
+      $('guest-box').style.display = guest ? 'flex' : 'none';
+      $('saved-block').style.display = guest ? 'none' : 'block';
+      API.isModerator().then(function(m){ $('mod-link').style.display = m ? '' : 'none'; });
+      renderMine();
+      if (!guest) renderSaved();
+    });
+  }
+
+  function renderMine(){
+    $('mine').innerHTML = '<p class="empty-note">Loading…</p>';
+    API.myListings().then(function(list){
+      if (!list.length) { $('mine').innerHTML = '<p class="empty-note">You haven’t reported any pets yet. <a href="submit.html">Report a pet</a></p>'; return; }
+      $('mine').innerHTML = list.map(function(p){
+        var l = p.closed ? ['closed', p.status === 'adoption' ? 'Adopted' : 'Reunited'] : (LABEL[p.moderationStatus] || LABEL.pending);
+        var title = p.name === 'Unnamed' ? p.color + ' ' + (p.exoticType || p.species).toLowerCase() : p.name;
+        return '<div class="mine-wrap">' +
+          '<a class="mine-card" href="listing.html?id=' + p.id + '" style="text-decoration:none;color:inherit">' +
+            '<img src="' + p.photo + '" alt="">' +
+            '<div class="info"><div class="name">' + title + '</div><div class="meta">' + (p.exoticType || p.species) + ' · ' + p.area + ' · sent ' + ago(p.createdAt || p.date) + '</div></div>' +
+            '<span class="status-pill ' + l[0] + '">' + l[1] + '</span>' +
+          '</a>' +
+          (p.moderatorNote && !p.closed && p.moderationStatus !== 'approved' ? '<div class="mine-note"><b>Note from the moderator:</b> ' + p.moderatorNote + (p.moderationStatus === 'changes' ? '<br>Delete this listing and send a corrected one.' : '') + '</div>' : '') +
+          '<div class="mine-acts">' +
+            (!p.closed && p.moderationStatus === 'approved' ? '<button class="btn btn-secondary" type="button" data-close="' + p.id + '">' + (p.status === 'adoption' ? 'Mark as adopted' : p.status === 'missing' ? 'Mark as found' : 'Mark as reunited') + '</button>' : '') +
+            '<button class="btn btn-ghost" type="button" data-del="' + p.id + '">Delete</button>' +
+          '</div></div>';
+      }).join('');
+      $('mine').querySelectorAll('[data-close]').forEach(function(b){
+        b.onclick = function(){ if (!confirm('Close this listing? It will be removed from the map and lists.')) return; b.disabled = true; API.closeListing(Number(b.dataset.close)).then(renderMine).catch(function(e){ alert(e.message); b.disabled = false; }); };
+      });
+      $('mine').querySelectorAll('[data-del]').forEach(function(b){
+        b.onclick = function(){ if (!confirm('Delete this listing permanently?')) return; b.disabled = true; API.deleteListing(Number(b.dataset.del)).then(renderMine).catch(function(e){ alert(e.message); b.disabled = false; }); };
+      });
+    }).catch(function(e){ $('mine').innerHTML = '<p class="empty-note">' + API.esc(e.message) + '</p>'; });
+  }
+
+  function renderSaved(){
+    API.savedViews().then(function(list){
+      $('saved').innerHTML = list.length ? list.map(function(v){
+        return '<div class="search-card"><div><div class="desc">' + v.label + '</div><div class="meta">Saved ' + ago(v.created_at) + '</div></div>' +
+          '<div class="actions"><a class="btn btn-ghost" href="' + v.url + '">Open</a><button class="btn btn-icon" type="button" title="Remove" data-rm="' + v.id + '">✕</button></div></div>';
+      }).join('') : '<p class="empty-note">No saved searches yet. Use "Save search" on the Missing, Found or Adopt pages.</p>';
+      $('saved').querySelectorAll('[data-rm]').forEach(function(b){ b.onclick = function(){ API.removeView(Number(b.dataset.rm)).then(renderSaved); }; });
+    });
+  }
+
+  $('signin-form').addEventListener('submit', function(e){
+    e.preventDefault();
+    var btn = $('signin'); btn.disabled = true;
+    API.signIn($('email').value.trim()).then(function(r){
+      if (r.demo) return load();
+      $('gate-msg').className = 'msg'; $('gate-msg').style.display = 'block';
+      $('gate-msg').textContent = 'Check your email and tap the link to sign in. You can close this page.';
+    }).catch(function(err){
+      $('gate-msg').className = 'msg err'; $('gate-msg').style.display = 'block'; $('gate-msg').textContent = err.message;
+    }).then(function(){ btn.disabled = false; });
   });
 
-  var mine = document.getElementById('mine');
-  var myPets = window.PETS.slice(0, 2);
-  if (!myPets.length) {
-    mine.innerHTML = '<p class="empty-note">You haven\u2019t reported any pets yet.</p>';
-  } else {
-    mine.innerHTML = myPets.map(function(p, i){
-      var pill = i === 0 ? '<span class="status-pill live">Live</span>' : '<span class="status-pill pending">In review</span>';
-      return '<a class="mine-card" href="listing.html?id=' + p.id + '" style="text-decoration:none;color:inherit">' +
-        '<img src="' + p.photo + '" alt="' + p.name + '">' +
-        '<div class="info"><div class="name">' + p.name + '</div><div class="meta">' + p.species + ' · ' + p.area + '</div></div>' +
-        pill +
-      '</a>';
-    }).join('');
-  }
+  $('link-form').addEventListener('submit', function(e){
+    e.preventDefault();
+    API.signIn($('link-email').value.trim()).then(function(){
+      $('link-msg').className = 'msg'; $('link-msg').style.display = 'block';
+      $('link-msg').textContent = 'Check your email and tap the link to confirm.';
+    }).catch(function(err){ $('link-msg').className = 'msg err'; $('link-msg').style.display = 'block'; $('link-msg').textContent = err.message; });
+  });
+
+  $('signout').addEventListener('click', function(){ API.signOut().then(function(){ if (API.live) show('gate'); }); });
+  API.onAuth(function(u, ev){ if (ev === 'SIGNED_IN' || ev === 'USER_UPDATED') load(); });
+  load();
 })();
 </script>
 </body>

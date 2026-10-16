@@ -122,9 +122,12 @@ body { margin: 0; }
   <div id="map"></div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.79.0/dist/umd/supabase.js"></script>
+<script src="config.js"></script>
 <script src="data.js"></script>
+<script src="api.js"></script>
 <script>
-(function(){
+API.ready.then(function(){
   var areaSel = document.getElementById('f-area');
   window.AREAS.forEach(function(a){ var o = document.createElement('option'); o.value = a; o.textContent = a; areaSel.appendChild(o); });
 
@@ -219,7 +222,7 @@ body { margin: 0; }
   document.getElementById('btn-map').addEventListener('click', function(){ document.body.dataset.view = 'map'; setTimeout(function(){ map.invalidateSize(); }, 50); });
 
   render();
-})();
+});
 </script>
 </body>
 </html>

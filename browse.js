@@ -1,5 +1,5 @@
 // Shared list-view logic for missing.html and found.html. Page sets <body data-status="missing|found">.
-(function(){
+API.ready.then(function(){
   var STATUS = document.body.dataset.status;
   var $ = function(id){ return document.getElementById(id); };
   var pets = window.PETS.filter(function(p){ return p.status === STATUS; });
@@ -51,7 +51,7 @@
     }
     if (state.since) {
       var days = Number(state.since);
-      if ((new Date('2026-10-08') - new Date(p.date)) / 864e5 > days) return false;
+      if ((API.now() - new Date(p.date)) / 864e5 > days) return false;
     }
     if (state.q) {
       var hay = [p.name, p.breed, p.color, p.exoticType || '', p.area, p.desc].join(' ').toLowerCase();
@@ -113,9 +113,9 @@
     $('results').innerHTML = rows.length ? rows.map(function(p){
       var unnamed = p.name === 'Unnamed';
       return '<a class="row" href="listing.html?id=' + p.id + '">' +
-        '<div class="ph"><img src="' + p.photo + '" alt="' + (unnamed ? p.color + ' ' + p.species.toLowerCase() : p.name) + '"></div>' +
+        '<div class="ph"><img src="' + p.photo + '" alt="' + (unnamed ? p.color + ' ' + (p.exoticType || p.species).toLowerCase() : p.name) + '"></div>' +
         '<div class="body">' +
-          '<div class="top"><h2 class="nm">' + (unnamed ? p.color + ' ' + p.species.toLowerCase() : p.name) + '</h2><span class="date">' + (STATUS === 'missing' ? 'Missing since ' : 'Found ') + fmtDate(p.date) + '</span></div>' +
+          '<div class="top"><h2 class="nm">' + (unnamed ? p.color + ' ' + (p.exoticType || p.species).toLowerCase() : p.name) + '</h2><span class="date">' + (STATUS === 'missing' ? 'Missing since ' : 'Found ') + fmtDate(p.date) + '</span></div>' +
           '<div class="traits">' +
             '<span>' + (p.species === 'Other' ? (p.exoticType || 'Exotic') : p.species) + '</span><span>' + p.breed + '</span><span>' + p.size + '</span>' + (p.sex !== 'Unknown' ? '<span>' + p.sex + '</span>' : '') +
             '<span class="cols">' + (p.colours || []).map(function(c){ var s = window.COLOURS.find(function(x){ return x.name === c; }); return '<i title="' + c + '" style="background:' + (s ? s.swatch : '#ccc') + '"></i>'; }).join('') + p.color + '</span>' +
@@ -147,4 +147,4 @@
 
   syncColourGroup();
   render();
-})();
+});
