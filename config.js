@@ -1,6 +1,6 @@
-// Site settings. Paste your Supabase project URL and anon (public) key below.
-// While these are empty the site runs on built-in demo data and nothing is saved.
+// Site settings: Supabase project URL and publishable (public) key.
+// These are meant to be public; access is controlled by the database rules in supabase/setup.sql.
 window.SITE_CONFIG = {
-  supabaseUrl: '',
-  supabaseAnonKey: ''
+  supabaseUrl: 'https://gacmwporrxlkqigklopb.supabase.co',
+  supabaseAnonKey: 'sb_publishable_difmH5JmR0oEfGs-myi6AA_7OL3PFxb'
 };
