@@ -78,6 +78,7 @@ textarea.input::placeholder { line-height: 1.5; }
 .photo-slot .rm { position: absolute; top: 6px; right: 6px; z-index: 2; width: 28px; height: 28px; border-radius: 50%; border: none; background: rgba(32,30,29,.75); color: #fff; font-size: 14px; cursor: pointer; display: none; }
 .photo-slot.has .rm { display: block; }
 .photo-slot.has input { pointer-events: none; }
+.area-hint { font-size: 13px; color: var(--color-accent-2-800, #56633f); margin-top: 6px; min-height: 1em; }
 #pin-map { height: 260px; border-radius: var(--radius-lg); overflow: hidden; border: 1px solid var(--color-neutral-200); }
 .pin-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; font-size: 13px; color: var(--color-neutral-600); margin-top: 6px; }
 .submit-err { display: none; margin-top: 12px; padding: 12px 14px; border-radius: var(--radius-md); background: #fbe9e4; color: #8a2b17; font-size: 14px; font-weight: 600; }
@@ -238,12 +239,13 @@ textarea.input::placeholder { line-height: 1.5; }
       </div>
       <div class="field">
         <label for="area"><span id="area-label">Area or street last seen</span></label>
-        <input class="input" id="area" required minlength="2" maxlength="120" placeholder="e.g. Agios Nikolaos, near the church" />
+        <input class="input" id="area" required minlength="2" maxlength="120" placeholder="e.g. Strovolos, or Latsia near the church" />
+        <div class="area-hint" id="area-hint" aria-live="polite"></div>
       </div>
       <div class="field">
-        <span class="lbl">Exact spot on the map <span class="hint">· tap the map to drop a pin</span></span>
+        <span class="lbl">Exact spot on the map <span class="hint">(optional) · tap the map to drop a pin</span></span>
         <div id="pin-map"></div>
-        <div class="pin-row"><button type="button" class="btn btn-secondary" id="locate">Use my current location</button><span id="pin-status">No pin yet. If you skip this we'll use your postcode, or the district centre.</span></div>
+        <div class="pin-row"><button type="button" class="btn btn-secondary" id="locate">Use my current location</button><span id="pin-status">Optional. If you skip this, the marker goes in the centre of the area or postcode you typed.</span></div>
       </div>
       <div class="field-grid">
         <div class="field">
@@ -315,9 +317,9 @@ textarea.input::placeholder { line-height: 1.5; }
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.79.0/dist/umd/supabase.js"></script>
-<script src="config.js?v=5"></script>
-<script src="data.js?v=5"></script>
-<script src="api.js?v=5"></script>
+<script src="config.js?v=6"></script>
+<script src="data.js?v=6"></script>
+<script src="api.js?v=6"></script>
 <script>
 (function(){
   var $ = function(id){ return document.getElementById(id); };
@@ -404,7 +406,7 @@ textarea.input::placeholder { line-height: 1.5; }
       ['Identification', ids || 'None'],
       ['Location', [$('area').value, $('district').value, $('postcode').value].filter(Boolean).join(', ')],
       ['Date', $('date').value + ($('time').value ? ' · ' + $('time').value : '')],
-      ['Map pin', pin ? 'Placed' : pcSpot ? 'Not placed (postcode area will be used)' : 'Not placed (district centre will be used)'],
+      ['Map location', pin ? 'Exact pin' : autoSpot() ? 'Centre of ' + autoSpot().name : 'District centre'],
       ['Photos', files.filter(Boolean).length + ' of 3']
     ];
     if (val('status') === 'adoption') {
@@ -441,26 +443,47 @@ textarea.input::placeholder { line-height: 1.5; }
   });
 
   // ---------- map pin ----------
-  var pin = null, pinMap = null, pinMarker = null, pcSpot = null;
+  var pin = null, pinMap = null, pinMarker = null, pcSpot = null, areaSpot = null, autoMarker = null;
+  // Where the listing goes if no pin is dropped: exact postcode, else the named area's centre, else the district centre.
+  function autoSpot(){
+    if (pcSpot && pcSpot.exact) return pcSpot;
+    if (areaSpot) return areaSpot;
+    if (pcSpot) return pcSpot;
+    var c = API.districtCentre($('district').value);
+    return c ? { lat: c[0], lng: c[1], exact: false, name: $('district').value + ' (district centre)' } : null;
+  }
+  function refreshAuto(move){
+    if (!pinMap) return;
+    var s = autoSpot();
+    if (autoMarker) { pinMap.removeLayer(autoMarker); autoMarker = null; }
+    if (pin || !s) return;
+    autoMarker = L.circleMarker([s.lat, s.lng], { radius: 11, color: '#c67139', weight: 2, dashArray: '4 4', fillColor: '#c67139', fillOpacity: 0.15 }).addTo(pinMap);
+    if (move) pinMap.setView([s.lat, s.lng], s.exact ? 15 : s.area ? 14 : 11);
+    $('pin-status').textContent = 'The dashed circle shows where the marker will go (' + s.name + '). Tap the map to place it more exactly.';
+  }
   function setPin(lat, lng, label){
     pin = { lat: lat, lng: lng };
     if (pinMarker) pinMarker.setLatLng([lat, lng]);
     else pinMarker = L.marker([lat, lng], { draggable: true, icon: L.divIcon({ className: '', html: '<div style="width:20px;height:20px;border-radius:50%;background:#c67139;border:3px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.35)"></div>', iconSize: [20,20], iconAnchor: [10,10] }) })
       .addTo(pinMap).on('dragend', function(e){ var ll = e.target.getLatLng(); pin = { lat: ll.lat, lng: ll.lng }; });
+    if (autoMarker) { pinMap.removeLayer(autoMarker); autoMarker = null; }
     $('pin-status').textContent = label || 'Pin placed. Drag it to adjust.';
   }
   function initPin(){
     if (typeof L === 'undefined') { $('pin-map').parentNode.style.display = 'none'; return; }
     if (pinMap) { setTimeout(function(){ pinMap.invalidateSize(); }, 50); return; }
-    var c = pcSpot ? [pcSpot.lat, pcSpot.lng] : API.districtCentre($('district').value) || [35.0, 33.2];
-    pinMap = L.map('pin-map', { scrollWheelZoom: false }).setView(c, pcSpot && pcSpot.exact ? 15 : $('district').value ? 11 : 8);
+    var s0 = autoSpot(), c = s0 ? [s0.lat, s0.lng] : [35.0, 33.2];
+    pinMap = L.map('pin-map', { scrollWheelZoom: false }).setView(c, !s0 ? 8 : s0.exact ? 15 : s0.area ? 14 : 11);
     L.tileLayer(API.TILE_URL, API.TILE_OPTS).addTo(pinMap);
     pinMap.on('click', function(e){ setPin(e.latlng.lat, e.latlng.lng); });
     if (pin) setPin(pin.lat, pin.lng);
+    refreshAuto(false);
   }
   $('district').addEventListener('change', function(){
     var c = API.districtCentre($('district').value);
-    if (pinMap && c && !pin && !pcSpot) pinMap.setView(c, 11);
+    if (areaSpot && areaSpot.district && areaSpot.district !== $('district').value) areaSpot = null;
+    refreshAuto(!pin);
+    lookupArea();
   });
   // Postcode → move the map to that neighbourhood (and fill in the district if empty)
   function lookupPostcode(){
@@ -468,15 +491,40 @@ textarea.input::placeholder { line-height: 1.5; }
     if (!API.isPostcode(v)) { pcSpot = null; return; }
     API.geocode(v).then(function(r){
       if (!r || $('postcode').value.trim() !== v) return;
-      pcSpot = { lat: r.lat, lng: r.lng, exact: r.exact };
+      pcSpot = { lat: r.lat, lng: r.lng, exact: r.exact, name: r.name };
       if (r.district && !$('district').value) { $('district').value = r.district; saveDraft(); }
-      if (pinMap && !pin) {
-        pinMap.setView([r.lat, r.lng], r.exact ? 15 : 11);
-        $('pin-status').textContent = (r.exact ? 'Map moved to ' + r.name + '.' : 'Showing ' + r.name + '.') + ' Tap the exact spot to drop a pin.';
-      }
+      refreshAuto(!pin);
     });
   }
   $('postcode').addEventListener('input', lookupPostcode);
+
+  // Area name → centre of that area (e.g. "Strovolos", "Latsia near the school")
+  var areaTimer = null, areaSeq = 0;
+  function lookupArea(){
+    clearTimeout(areaTimer);
+    areaTimer = setTimeout(function(){
+      var raw = $('area').value.trim(), d = $('district').value, my = ++areaSeq;
+      if (raw.length < 3) { areaSpot = null; $('area-hint').textContent = ''; refreshAuto(false); return; }
+      var first = raw.split(/,| near | by | next to | opposite /i)[0].trim();
+      var tries = [raw, first].filter(function(v, i, a){ return v.length >= 3 && a.indexOf(v) === i; }).map(function(v){ return d ? v + ', ' + d : v; });
+      (function attempt(i){
+        if (i >= tries.length) {
+          if (my !== areaSeq) return;
+          areaSpot = null; $('area-hint').textContent = '';
+          refreshAuto(false); return;
+        }
+        API.geocode(tries[i]).then(function(r){
+          if (my !== areaSeq) return;
+          if (!r || (d && r.district && r.district !== d)) return attempt(i + 1);
+          areaSpot = { lat: r.lat, lng: r.lng, exact: false, area: true, name: r.name.split(' · ')[0], district: r.district };
+          $('area-hint').textContent = '\u2713 Found ' + areaSpot.name + (r.district ? ', ' + r.district : '') + '. The marker will go in its centre unless you drop a pin.';
+          if (r.district && !$('district').value) { $('district').value = r.district; saveDraft(); }
+          refreshAuto(!pin);
+        });
+      })(0);
+    }, 700);
+  }
+  $('area').addEventListener('input', lookupArea);
   $('locate').addEventListener('click', function(){
     if (!navigator.geolocation) return alert('Location is not available on this device.');
     $('pin-status').textContent = 'Finding you…';
@@ -520,7 +568,7 @@ textarea.input::placeholder { line-height: 1.5; }
       colours: ex ? [] : colours(), color: ex ? $('exoticColour').value.trim() : '', markings: $('colorDesc').value.trim(),
       collar: !ad && $('collar').checked, chipped: $('chipped').checked,
       district: $('district').value, postcode: $('postcode').value.trim(), area: $('area').value.trim(),
-      lat: pin ? pin.lat : pcSpot ? pcSpot.lat : c[0], lng: pin ? pin.lng : pcSpot ? pcSpot.lng : c[1],
+      lat: pin ? pin.lat : autoSpot() ? autoSpot().lat : c[0], lng: pin ? pin.lng : autoSpot() ? autoSpot().lng : c[1],
       event_date: $('date').value, event_time: ad ? '' : $('time').value,
       description: $('desc').value.trim(),
       age_band: ad ? $('ageBand').value : '', age_text: ad ? $('ageText').value.trim() : '',
@@ -546,6 +594,7 @@ textarea.input::placeholder { line-height: 1.5; }
 
   loadDraft();
   lookupPostcode();
+  lookupArea();
   var pre = new URLSearchParams(location.search).get('type');
   if (pre) { var el = document.querySelector('input[name="status"][value="' + pre + '"]'); if (el) el.checked = true; }
   syncType();
