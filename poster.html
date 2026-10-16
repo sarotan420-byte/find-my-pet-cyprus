@@ -53,7 +53,15 @@ body { margin: 0; background: var(--white); text-wrap: pretty; }
 .poster .band { background: var(--band); color: #fff; text-align: center; font-family: var(--font-heading, 'Caprasimo', serif);
   font-size: calc(var(--u) * 11); line-height: 1; padding: calc(var(--u) * 3.2) calc(var(--u) * 3) calc(var(--u) * 2.6); letter-spacing: .01em; text-transform: uppercase; }
 .poster .sub { background: var(--band); color: #fff; text-align: center; font-size: calc(var(--u) * 3.4); font-weight: 700; padding: 0 0 calc(var(--u) * 2.6); margin-top: -1px; }
-.poster .photo { flex: 1 1 auto; min-height: calc(var(--u) * 30); margin: calc(var(--u) * 3.5) calc(var(--u) * 5) 0; border-radius: calc(var(--u) * 3); background: #eee center / cover no-repeat; }
+.poster .photo { flex: 1 1 auto; min-height: calc(var(--u) * 30); margin: calc(var(--u) * 3.5) calc(var(--u) * 5) 0; border-radius: calc(var(--u) * 3); background-color: #f3efe9; background-repeat: no-repeat; background-position: var(--px, 50%) var(--py, 50%); background-size: cover; }
+.poster .photo.whole { background-size: contain; background-position: center; }
+.poster .photo.fill { cursor: grab; touch-action: none; }
+.poster .photo.fill.dragging { cursor: grabbing; }
+.pick { display: flex; gap: 8px; flex-wrap: wrap; }
+.pick button { all: unset; cursor: pointer; width: 64px; height: 64px; border-radius: var(--radius-md); background: #eee center / cover no-repeat; border: 3px solid transparent; box-sizing: border-box; }
+.pick button[aria-pressed="true"] { border-color: var(--color-accent); }
+.pick button:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
+.hint { font-size: 12.5px; color: color-mix(in srgb, var(--color-text) 60%, transparent); margin-top: 6px; }
 .poster .info { padding: calc(var(--u) * 3) calc(var(--u) * 5) 0; display: flex; flex-direction: column; gap: calc(var(--u) * 1.6); }
 .poster .name { font-family: var(--font-heading, 'Caprasimo', serif); font-size: calc(var(--u) * 8.2); line-height: calc(var(--u) * 9); white-space: nowrap; }
 .poster .seen { font-size: calc(var(--u) * 3.5); line-height: calc(var(--u) * 4.6); font-weight: 700; }
@@ -103,9 +111,9 @@ body { margin: 0; background: var(--white); text-wrap: pretty; }
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.79.0/dist/umd/supabase.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/html-to-image@1.11.11/dist/html-to-image.js"></script>
-<script src="config.js?v=7"></script>
-<script src="data.js?v=7"></script>
-<script src="api.js?v=7"></script>
+<script src="config.js?v=8"></script>
+<script src="data.js?v=8"></script>
+<script src="api.js?v=8"></script>
 <script>
 (function(){
   var $ = function(id){ return document.getElementById(id); };
@@ -124,6 +132,7 @@ body { margin: 0; background: var(--white); text-wrap: pretty; }
     var kind = (p.exoticType || p.species || 'pet').toLowerCase();
     var unnamed = p.name === 'Unnamed';
     var title = unnamed ? p.color + ' ' + kind : p.name;
+    var photos = p.photos && p.photos.length ? p.photos : [p.photo];
     var posterTitle = title.length > 22 ? title.slice(0, 21) + '…' : title;
     var st = p.status;
     var band = st === 'missing' ? 'var(--miss)' : 'var(--found)';
@@ -131,7 +140,7 @@ body { margin: 0; background: var(--white); text-wrap: pretty; }
     var sub = st === 'missing' ? 'Have you seen me?' : st === 'found' ? 'Is this your pet?' : 'Looking for a loving home';
     var dateTxt = new Date(p.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
     var seenLbl = st === 'missing' ? 'Last seen' : st === 'found' ? 'Found in' : 'Available in';
-    var where = (p.areaOnly && p.areaOnly !== p.district ? p.areaOnly + ', ' : '') + p.district;
+    var where = !p.areaOnly || p.areaOnly === p.district ? p.district : p.areaOnly.toLowerCase().indexOf(p.district.toLowerCase()) > -1 ? p.areaOnly : p.areaOnly + ', ' + p.district;
     var facts = [];
     if (p.breed && p.breed !== 'Unknown') facts.push(p.breed);
     if (p.color && p.color !== '—') facts.push(p.color);
@@ -154,6 +163,10 @@ body { margin: 0; background: var(--white); text-wrap: pretty; }
         '<p>Print it for lamp posts, vets and shops, or share the image on Facebook, Instagram and WhatsApp groups.</p>' +
         '<div><span class="lbl">Format</span><div class="seg" role="group" aria-label="Format">' +
           '<button type="button" data-f="a4" aria-pressed="true">Print (A4)</button><button type="button" data-f="social" aria-pressed="false">Social (4:5)</button></div></div>' +
+        (photos.length > 1 ? '<div><span class="lbl">Photo</span><div class="pick" id="pick">' + photos.map(function(u, i){ return '<button type="button" data-i="' + i + '" aria-pressed="' + (i === 0) + '" aria-label="Use photo ' + (i + 1) + '" style="background-image:url(\'' + u + '\')"></button>'; }).join('') + '</div></div>' : '') +
+        '<div><span class="lbl">Photo framing</span><div class="seg" role="group" aria-label="Photo framing" id="fitseg">' +
+          '<button type="button" data-fit="whole" aria-pressed="true">Whole photo</button><button type="button" data-fit="fill" aria-pressed="false">Fill the frame</button></div>' +
+          '<div class="hint" id="fit-hint">Shows the entire photo, nothing cut off.</div></div>' +
         '<label class="check"><input type="checkbox" id="show-phone"' + (isOwner ? ' checked' : '') + '> <span>Show the contact phone number' + (isOwner ? ' (yours)' : '') + '</span></label>' +
         '<div class="acts">' +
           '<button class="btn btn-primary btn-block" type="button" id="print">Print or save as PDF</button>' +
@@ -165,7 +178,7 @@ body { margin: 0; background: var(--white); text-wrap: pretty; }
       '<div class="stage" id="stage"><div class="scaler" id="scaler">' +
         '<div class="poster a4" id="poster" style="--band:' + band + '">' +
           '<div class="band">' + head + '</div><div class="sub">' + sub + '</div>' +
-          '<div class="photo" id="poster-photo" role="img" aria-label="' + title + '" style="background-image:url(\'' + p.photo + '\')"></div>' +
+          '<div class="photo whole" id="poster-photo" role="img" aria-label="' + title + '" style="background-image:url(\'' + photos[0] + '\')"></div>' +
           '<div class="info">' +
             '<div class="name">' + posterTitle + '</div>' +
             '<div class="seen"><span>' + seenLbl + ':</span> ' + where + ' · ' + dateTxt + '</div>' +
@@ -217,6 +230,38 @@ body { margin: 0; background: var(--white); text-wrap: pretty; }
       }).catch(function(){ alert('Could not load the phone number.'); });
     };
     if ($('show-phone').checked) $('show-phone').onchange.call($('show-phone'));
+
+    // photo choice + framing
+    var ph = $('poster-photo'), pos = { x: 50, y: 50 };
+    if ($('pick')) $('pick').querySelectorAll('button').forEach(function(b){
+      b.onclick = function(){
+        $('pick').querySelectorAll('button').forEach(function(x){ x.setAttribute('aria-pressed', x === b); });
+        ph.style.backgroundImage = 'url(' + JSON.stringify(photos[Number(b.dataset.i)]) + ')';
+        pos = { x: 50, y: 50 }; ph.style.setProperty('--px', '50%'); ph.style.setProperty('--py', '50%');
+      };
+    });
+    $('fitseg').querySelectorAll('button').forEach(function(b){
+      b.onclick = function(){
+        $('fitseg').querySelectorAll('button').forEach(function(x){ x.setAttribute('aria-pressed', x === b); });
+        var whole = b.dataset.fit === 'whole';
+        ph.classList.toggle('whole', whole); ph.classList.toggle('fill', !whole);
+        $('fit-hint').textContent = whole ? 'Shows the entire photo, nothing cut off.' : 'Drag the photo on the poster to choose which part shows.';
+      };
+    });
+    var drag = null;
+    ph.addEventListener('pointerdown', function(e){
+      if (!ph.classList.contains('fill')) return;
+      drag = { x: e.clientX, y: e.clientY, px: pos.x, py: pos.y, r: ph.getBoundingClientRect() };
+      ph.classList.add('dragging'); ph.setPointerCapture(e.pointerId);
+    });
+    ph.addEventListener('pointermove', function(e){
+      if (!drag) return;
+      pos.x = Math.max(0, Math.min(100, drag.px - (e.clientX - drag.x) / drag.r.width * 150));
+      pos.y = Math.max(0, Math.min(100, drag.py - (e.clientY - drag.y) / drag.r.height * 150));
+      ph.style.setProperty('--px', pos.x + '%'); ph.style.setProperty('--py', pos.y + '%');
+    });
+    function endDrag(){ drag = null; ph.classList.remove('dragging'); }
+    ph.addEventListener('pointerup', endDrag); ph.addEventListener('pointercancel', endDrag);
 
     $('print').onclick = function(){ window.print(); };
 
