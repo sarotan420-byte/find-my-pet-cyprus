@@ -6,4 +6,6 @@
     l.rel = 'stylesheet'; l.href = base + '/' + p;
     document.head.appendChild(l);
   }
+  // Brand rule: pages are pure white; the design system's cream is only for accents.
+  var w = document.createElement('style'); w.textContent = 'html,body{background:#fff}'; document.head.appendChild(w);
 })();

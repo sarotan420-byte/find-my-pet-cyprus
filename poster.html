@@ -1,0 +1,260 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="robots" content="noindex" />
+<title>Poster — Find My Pet Cyprus</title>
+<script src="./ds-base.js"></script>
+<style>
+body { margin: 0; background: var(--white); text-wrap: pretty; }
+.nav { padding-inline: max(var(--edge), calc((100% - 1320px) / 2 + var(--edge))); position: sticky; top: 0; z-index: 1000; background: rgba(255,255,255,.94); backdrop-filter: blur(6px); border-bottom: 1px solid var(--color-neutral-200); }
+.nav .links { display: flex; gap: var(--space-4); margin-right: auto; margin-left: var(--space-4); }
+.nav .links a, .nav .actions > a:not(.btn) { color: var(--color-text); text-decoration: none; }
+.nav .actions { display: flex; align-items: center; gap: var(--space-3); }
+@media (max-width: 720px) { .nav .links { display: none; } }
+
+.page { max-width: 1100px; margin: 0 auto; padding: var(--space-6) var(--edge) calc(3 * var(--space-6)); display: grid; grid-template-columns: 300px 1fr; gap: calc(1.5 * var(--space-6)); align-items: start; }
+@media (max-width: 860px) { .page { grid-template-columns: 1fr; } }
+.controls { display: flex; flex-direction: column; gap: var(--space-4); position: sticky; top: 90px; }
+@media (max-width: 860px) { .controls { position: static; } }
+.controls h1 { font-family: var(--font-heading); font-weight: var(--font-heading-weight); font-size: 28px; line-height: 1.1; margin: 0; }
+.controls p { margin: 0; font-size: 14px; color: color-mix(in srgb, var(--color-text) 70%, transparent); }
+.lbl { font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: color-mix(in srgb, var(--color-text) 62%, transparent); margin-bottom: 6px; display: block; }
+.seg { display: flex; background: var(--color-neutral-100); border-radius: 999px; padding: 4px; }
+.seg button { all: unset; flex: 1; text-align: center; cursor: pointer; padding: 8px 10px; border-radius: 999px; font-size: 13.5px; font-weight: 600; }
+.seg button[aria-pressed="true"] { background: var(--white); box-shadow: var(--shadow-sm); }
+.seg button:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
+.check { display: flex; gap: 10px; align-items: flex-start; font-size: 14px; }
+.check input { margin-top: 3px; accent-color: var(--color-accent); }
+.acts { display: flex; flex-direction: column; gap: 8px; }
+.note { font-size: 12.5px; color: color-mix(in srgb, var(--color-text) 60%, transparent); }
+.back { font-size: 14px; color: var(--color-text); }
+.msg { padding: 60px 24px; text-align: center; border: 2px dashed var(--color-neutral-300); border-radius: var(--radius-lg); grid-column: 1 / -1; }
+
+/* ---------- the poster ---------- */
+.stage { background: var(--color-neutral-100); border-radius: var(--radius-lg); padding: var(--space-4); display: flex; justify-content: center; overflow: hidden; }
+.scaler { transform-origin: top left; }
+.poster {
+  --u: 10.8px;                          /* 1% of the poster width */
+  --miss: #c67139; --found: #7a8a5e; --ink: #201e1d;
+  width: calc(var(--u) * 100); height: calc(var(--u) * 125);
+  background: #fff; color: var(--ink); font-family: var(--font-body, 'Figtree', sans-serif);
+  display: flex; flex-direction: column; overflow: hidden; position: relative;
+}
+.poster.a4 { height: calc(var(--u) * 141.4); }
+.poster:not(.a4) .band { font-size: calc(var(--u) * 9); padding-top: calc(var(--u) * 2.6); }
+.poster:not(.a4) .photo { min-height: calc(var(--u) * 20); margin-top: calc(var(--u) * 2.6); }
+.poster:not(.a4) .info { padding-top: calc(var(--u) * 2.2); gap: calc(var(--u) * 1.2); }
+.poster:not(.a4) .name { font-size: calc(var(--u) * 7); line-height: calc(var(--u) * 7.8); }
+.poster:not(.a4) .foot { margin-top: calc(var(--u) * 2); padding-top: calc(var(--u) * 2); padding-bottom: calc(var(--u) * 2); }
+.poster:not(.a4) .qr { width: calc(var(--u) * 12); height: calc(var(--u) * 12); }
+.poster .band { background: var(--band); color: #fff; text-align: center; font-family: var(--font-heading, 'Caprasimo', serif);
+  font-size: calc(var(--u) * 11); line-height: 1; padding: calc(var(--u) * 3.2) calc(var(--u) * 3) calc(var(--u) * 2.6); letter-spacing: .01em; text-transform: uppercase; }
+.poster .sub { background: var(--band); color: #fff; text-align: center; font-size: calc(var(--u) * 3.4); font-weight: 700; padding: 0 0 calc(var(--u) * 2.6); margin-top: -1px; }
+.poster .photo { flex: 1 1 auto; min-height: calc(var(--u) * 30); margin: calc(var(--u) * 3.5) calc(var(--u) * 5) 0; border-radius: calc(var(--u) * 3); background: #eee center / cover no-repeat; }
+.poster .info { padding: calc(var(--u) * 3) calc(var(--u) * 5) 0; display: flex; flex-direction: column; gap: calc(var(--u) * 1.6); }
+.poster .name { font-family: var(--font-heading, 'Caprasimo', serif); font-size: calc(var(--u) * 8.2); line-height: calc(var(--u) * 9); white-space: nowrap; }
+.poster .seen { font-size: calc(var(--u) * 3.5); line-height: calc(var(--u) * 4.6); font-weight: 700; }
+.poster .seen span { color: var(--band); }
+.poster .facts { display: flex; flex-wrap: wrap; gap: calc(var(--u) * 1.2); }
+.poster .facts span { display: inline-block; background: #f3efe9; border-radius: 999px; height: calc(var(--u) * 5); line-height: calc(var(--u) * 5); padding: 0 calc(var(--u) * 2.2); font-size: calc(var(--u) * 2.7); font-weight: 600; white-space: nowrap; }
+.poster .desc { font-size: calc(var(--u) * 2.9); line-height: calc(var(--u) * 4); margin: 0; }
+.poster .call { background: var(--band); color: #fff; border-radius: calc(var(--u) * 2); height: calc(var(--u) * 8.5); line-height: calc(var(--u) * 8.5); padding: 0 calc(var(--u) * 3); font-size: calc(var(--u) * 4.2); font-weight: 700; text-align: center; white-space: nowrap; overflow: hidden; }
+.poster .foot { margin-top: calc(var(--u) * 3); padding: calc(var(--u) * 2.6) calc(var(--u) * 5); border-top: calc(var(--u) * .3) solid #eee;
+  display: flex; align-items: center; gap: calc(var(--u) * 3); }
+.poster .qr { width: calc(var(--u) * 15); height: calc(var(--u) * 15); flex: none; image-rendering: pixelated; }
+.poster .foot .txt { flex: 1; font-size: calc(var(--u) * 2.8); line-height: calc(var(--u) * 3.8); }
+.poster .foot .txt b { font-size: calc(var(--u) * 3.4); }
+.poster .brand { text-align: right; font-family: var(--font-heading, 'Caprasimo', serif); font-size: calc(var(--u) * 4.2); line-height: calc(var(--u) * 4.8); color: var(--miss); }
+.poster .brand small { display: block; font-family: var(--font-body, sans-serif); font-size: calc(var(--u) * 2.2); line-height: calc(var(--u) * 3); color: #6b6560; font-weight: 600; margin-top: calc(var(--u) * 1); }
+
+@media print {
+  @page { size: A4 portrait; margin: 0; }
+  html, body { background: #fff !important; }
+  .nav, .controls { display: none !important; }
+  .page { display: block; padding: 0; max-width: none; }
+  .stage { padding: 0; background: none; border-radius: 0; }
+  .scaler { transform: none !important; width: auto !important; height: auto !important; }
+  .poster { --u: 2.1mm; width: 210mm; height: 297mm; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+}
+</style>
+</head>
+<body>
+<nav class="nav">
+  <a class="nav-brand" href="index.html" style="text-decoration:none;color:inherit">Find My Pet Cyprus</a>
+  <span class="links">
+    <a href="missing.html">Missing pets</a>
+    <a href="found.html">Found pets</a>
+    <a href="adopt.html">Adopt</a>
+    <a href="index.html">Map</a>
+  </span>
+  <span class="actions">
+    <a href="account.html">Sign in</a>
+    <a href="submit.html" class="btn btn-primary">Report a pet</a>
+  </span>
+</nav>
+
+<div class="page" id="page">
+  <p class="msg" id="loading">Loading…</p>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.79.0/dist/umd/supabase.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/html-to-image@1.11.11/dist/html-to-image.js"></script>
+<script src="config.js?v=7"></script>
+<script src="data.js?v=7"></script>
+<script src="api.js?v=7"></script>
+<script>
+(function(){
+  var $ = function(id){ return document.getElementById(id); };
+  var id = Number(new URLSearchParams(location.search).get('id'));
+  var page = $('page');
+  var SITE = 'www.findmypetcy.com';
+
+  function fail(msg){ page.innerHTML = '<div class="msg"><p>' + msg + '</p><p><a class="btn btn-primary" href="index.html">Back to the map</a></p></div>'; }
+
+  API.ready.then(function(){ return id ? API.getListing(id) : null; }).then(function(p){
+    if (!p) return fail('This listing isn’t available. It may be waiting for review or has been closed.');
+    return API.getUser().then(function(u){ build(p, !!(u && p.ownerId && u.id === p.ownerId)); });
+  }).catch(function(){ fail('Could not load this listing. Please check your connection and try again.'); });
+
+  function build(p, isOwner){
+    var kind = (p.exoticType || p.species || 'pet').toLowerCase();
+    var unnamed = p.name === 'Unnamed';
+    var title = unnamed ? p.color + ' ' + kind : p.name;
+    var posterTitle = title.length > 22 ? title.slice(0, 21) + '…' : title;
+    var st = p.status;
+    var band = st === 'missing' ? 'var(--miss)' : 'var(--found)';
+    var head = st === 'missing' ? 'Missing ' + kind : st === 'found' ? 'Found ' + kind : 'Adopt me';
+    var sub = st === 'missing' ? 'Have you seen me?' : st === 'found' ? 'Is this your pet?' : 'Looking for a loving home';
+    var dateTxt = new Date(p.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+    var seenLbl = st === 'missing' ? 'Last seen' : st === 'found' ? 'Found in' : 'Available in';
+    var where = (p.areaOnly && p.areaOnly !== p.district ? p.areaOnly + ', ' : '') + p.district;
+    var facts = [];
+    if (p.breed && p.breed !== 'Unknown') facts.push(p.breed);
+    if (p.color && p.color !== '—') facts.push(p.color);
+    if (p.markings) facts.push(p.markings);
+    if (p.size && p.size !== 'Size unknown') facts.push(p.size);
+    if (p.sex && p.sex !== 'Unknown') facts.push(p.sex);
+    if (st === 'adoption' && p.age) facts.push(p.age + (p.ageText ? ' · ' + p.ageText : ''));
+    if (p.collar) facts.push('Wearing a collar');
+    if (p.chipped) facts.push(p.species === 'Other' ? 'Ringed / tagged' : 'Microchipped');
+    if (st === 'adoption' && p.neutered) facts.push('Neutered');
+    var url = 'https://' + SITE + '/listing.html?id=' + p.id;
+
+    var qr = qrcode(0, 'M'); qr.addData(url); qr.make();
+    var qrSrc = qr.createDataURL(10, 0);
+
+    page.innerHTML =
+      '<div class="controls">' +
+        '<a class="back" href="listing.html?id=' + p.id + '">← Back to the listing</a>' +
+        '<h1>Make a poster</h1>' +
+        '<p>Print it for lamp posts, vets and shops, or share the image on Facebook, Instagram and WhatsApp groups.</p>' +
+        '<div><span class="lbl">Format</span><div class="seg" role="group" aria-label="Format">' +
+          '<button type="button" data-f="a4" aria-pressed="true">Print (A4)</button><button type="button" data-f="social" aria-pressed="false">Social (4:5)</button></div></div>' +
+        '<label class="check"><input type="checkbox" id="show-phone"' + (isOwner ? ' checked' : '') + '> <span>Show the contact phone number' + (isOwner ? ' (yours)' : '') + '</span></label>' +
+        '<div class="acts">' +
+          '<button class="btn btn-primary btn-block" type="button" id="print">Print or save as PDF</button>' +
+          '<button class="btn btn-secondary btn-block" type="button" id="download">Download image</button>' +
+          '<button class="btn btn-secondary btn-block" type="button" id="share" hidden>Share image</button>' +
+        '</div>' +
+        '<p class="note">The QR code opens this listing, so people can always reach the latest details.</p>' +
+      '</div>' +
+      '<div class="stage" id="stage"><div class="scaler" id="scaler">' +
+        '<div class="poster a4" id="poster" style="--band:' + band + '">' +
+          '<div class="band">' + head + '</div><div class="sub">' + sub + '</div>' +
+          '<div class="photo" id="poster-photo" role="img" aria-label="' + title + '" style="background-image:url(\'' + p.photo + '\')"></div>' +
+          '<div class="info">' +
+            '<div class="name">' + posterTitle + '</div>' +
+            '<div class="seen"><span>' + seenLbl + ':</span> ' + where + ' · ' + dateTxt + '</div>' +
+            (facts.length ? '<div class="facts">' + facts.map(function(f){ return '<span>' + f + '</span>'; }).join('') + '</div>' : '') +
+            '<p class="desc" id="desc"></p>' +
+            '<div class="call" id="call" hidden></div>' +
+          '</div>' +
+          '<div class="foot"><img class="qr" src="' + qrSrc + '" alt="QR code linking to the listing">' +
+            '<div class="txt">Scan for photos, map and contact details<br><b>' + SITE + '</b><br>Listing #' + p.id + '</div>' +
+            '<div class="brand">Find My Pet<br>Cyprus<small>Missing &amp; found pets across Cyprus</small></div></div>' +
+        '</div>' +
+      '</div></div>';
+
+    var poster = $('poster');
+    var rawDesc = (p.desc || '').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'");
+    function setDesc(){
+      var max = poster.classList.contains('a4') ? 330 : ($('call') && !$('call').hidden ? 100 : 160);
+      var t = rawDesc.length > max ? rawDesc.slice(0, max).replace(/\s+\S*$/, '') + '…' : rawDesc;
+      $('desc').textContent = t;
+    }
+    setDesc();
+    function fit(){
+      var w = poster.offsetWidth, h = poster.offsetHeight, avail = $('stage').clientWidth - 32;
+      var k = Math.min(1, avail / w);
+      $('scaler').style.transform = 'scale(' + k + ')';
+      $('scaler').style.width = (w * k) + 'px'; $('scaler').style.height = (h * k) + 'px';
+    }
+    window.addEventListener('resize', fit);
+    fit();
+
+    document.querySelectorAll('.seg button').forEach(function(b){
+      b.onclick = function(){
+        document.querySelectorAll('.seg button').forEach(function(x){ x.setAttribute('aria-pressed', x === b); });
+        poster.classList.toggle('a4', b.dataset.f === 'a4');
+        setDesc();
+        $('print').hidden = b.dataset.f !== 'a4';
+        fit();
+      };
+    });
+
+    var phone = null;
+    $('show-phone').onchange = function(){
+      var on = this.checked, box = $('call');
+      if (!on) { box.hidden = true; setDesc(); return; }
+      (phone ? Promise.resolve(phone) : API.revealContact(p.id, p).then(function(c){ phone = c; return c; })).then(function(c){
+        if (!c || !c.phone || c.phone === 'Not given') { box.hidden = true; $('show-phone').checked = false; alert('No phone number was given for this listing.'); return; }
+        box.textContent = (st === 'adoption' ? 'Call ' : st === 'missing' ? 'Seen me? Call ' : 'Call ') + c.phone + (c.name && c.name !== 'Owner' ? ' (' + c.name.replace(/&amp;/g, '&') + ')' : '');
+        box.hidden = false; setDesc();
+      }).catch(function(){ alert('Could not load the phone number.'); });
+    };
+    if ($('show-phone').checked) $('show-phone').onchange.call($('show-phone'));
+
+    $('print').onclick = function(){ window.print(); };
+
+    var fileName = 'find-my-pet-cyprus-' + (title.replace(/&[a-z#0-9]+;/gi, '').replace(/[^a-z0-9]+/gi, '-').toLowerCase() || 'poster') + '.png';
+    function render(){
+      var old = $('scaler').style.transform;
+      $('scaler').style.transform = 'none';
+      var p1 = (document.fonts && document.fonts.ready) ? document.fonts.ready : Promise.resolve();
+      var opts = { pixelRatio: poster.classList.contains('a4') ? 2 : 1080 / poster.offsetWidth, backgroundColor: '#ffffff', cacheBust: false };
+      return p1.then(function(){ return htmlToImage.toBlob(poster, opts); })
+        .then(function(){ return htmlToImage.toBlob(poster, opts); })
+        .then(function(blob){ $('scaler').style.transform = old; return blob; },
+              function(e){ $('scaler').style.transform = old; throw e; });
+    }
+    function toBlob(blob){ return blob; }
+
+    $('download').onclick = function(){
+      var b = this; b.disabled = true; b.textContent = 'Preparing…';
+      render().then(toBlob).then(function(blob){
+        var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = fileName;
+        document.body.appendChild(a); a.click(); a.remove();
+        setTimeout(function(){ URL.revokeObjectURL(a.href); }, 5000);
+      }).catch(function(){ alert('Sorry, the image could not be created. Try "Print or save as PDF" instead.'); })
+        .then(function(){ b.disabled = false; b.textContent = 'Download image'; });
+    };
+
+    if (navigator.canShare && window.File) {
+      try { if (navigator.canShare({ files: [new File([''], 'x.png', { type: 'image/png' })] })) $('share').hidden = false; } catch (e) {}
+    }
+    $('share').onclick = function(){
+      var b = this; b.disabled = true; b.textContent = 'Preparing…';
+      render().then(toBlob).then(function(blob){
+        var file = new File([blob], fileName, { type: 'image/png' });
+        return navigator.share({ files: [file], title: document.title, text: head + ': ' + title + ' — ' + url });
+      }).catch(function(){}).then(function(){ b.disabled = false; b.textContent = 'Share image'; });
+    };
+    document.title = 'Poster: ' + title.replace(/&[a-z#0-9]+;/gi, '') + ' — Find My Pet Cyprus';
+  }
+})();
+</script>
+</body>
+</html>

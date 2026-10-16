@@ -10,11 +10,13 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <style>
 :root { --edge: clamp(16px, 4vw, 48px); }
-body { margin: 0; }
-.nav { padding-inline: var(--edge); position: sticky; top: 0; z-index: 30; background: color-mix(in srgb, var(--color-bg) 92%, transparent); backdrop-filter: blur(6px); }
+body { margin: 0; background: var(--white); text-wrap: pretty; }
+.nav { padding-inline: max(var(--edge), calc((100% - 1320px) / 2 + var(--edge))); position: sticky; top: 0; z-index: 1000; background: rgba(255,255,255,.94); backdrop-filter: blur(6px); border-bottom: 1px solid var(--color-neutral-200); }
 .nav .links { display: flex; gap: var(--space-4); margin-right: auto; margin-left: var(--space-4); }
+.nav .links a, .nav .actions > a:not(.btn) { color: var(--color-text); text-decoration: none; }
+.nav .links a[aria-current] { color: var(--color-accent-700); font-weight: 600; }
 .nav .actions { display: flex; align-items: center; gap: var(--space-3); }
-@media (max-width: 620px) { .nav .links { display: none; } }
+@media (max-width: 720px) { .nav .links { display: none; } }
 
 .layout { display: grid; grid-template-columns: 380px 1fr; height: calc(100dvh - 57px); }
 @media (max-width: 900px) { .layout { grid-template-columns: 1fr; height: auto; } }
@@ -63,10 +65,12 @@ body { margin: 0; }
 </head>
 <body data-view="list">
 <nav class="nav">
-  <span class="nav-brand">Find My Pet Cyprus</span>
+  <a class="nav-brand" href="index.html" style="text-decoration:none;color:inherit">Find My Pet Cyprus</a>
   <span class="links">
-    <a href="search.html" aria-current="page">Search map</a>
-    <a href="submit.html">Report a pet</a>
+    <a href="missing.html">Missing pets</a>
+    <a href="found.html">Found pets</a>
+    <a href="adopt.html">Adopt</a>
+    <a href="index.html" aria-current="page">Map</a>
   </span>
   <span class="actions">
     <a href="account.html">Sign in</a>
@@ -123,9 +127,9 @@ body { margin: 0; }
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.79.0/dist/umd/supabase.js"></script>
-<script src="config.js?v=6"></script>
-<script src="data.js?v=6"></script>
-<script src="api.js?v=6"></script>
+<script src="config.js?v=7"></script>
+<script src="data.js?v=7"></script>
+<script src="api.js?v=7"></script>
 <script>
 API.ready.then(function(){
   var areaSel = document.getElementById('f-area');

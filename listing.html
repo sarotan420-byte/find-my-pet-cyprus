@@ -9,10 +9,13 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <style>
 :root { --edge: clamp(16px, 4vw, 48px); }
-body { margin: 0; }
-.nav { padding-inline: var(--edge); position: sticky; top: 0; z-index: 30; background: color-mix(in srgb, var(--color-bg) 92%, transparent); backdrop-filter: blur(6px); }
+body { margin: 0; background: var(--white); text-wrap: pretty; }
+.nav { padding-inline: max(var(--edge), calc((100% - 1320px) / 2 + var(--edge))); position: sticky; top: 0; z-index: 1000; background: rgba(255,255,255,.94); backdrop-filter: blur(6px); border-bottom: 1px solid var(--color-neutral-200); }
 .nav .links { display: flex; gap: var(--space-4); margin-right: auto; margin-left: var(--space-4); }
-@media (max-width: 620px) { .nav .links { display: none; } }
+.nav .links a, .nav .actions > a:not(.btn) { color: var(--color-text); text-decoration: none; }
+.nav .links a[aria-current] { color: var(--color-accent-700); font-weight: 600; }
+.nav .actions { display: flex; align-items: center; gap: var(--space-3); }
+@media (max-width: 720px) { .nav .links { display: none; } }
 
 .wrap { max-width: 1080px; margin: 0 auto; padding: var(--space-6) var(--edge) calc(4 * var(--space-6)); }
 .back { font-size: 13px; color: color-mix(in srgb, var(--color-text) 65%, transparent); text-decoration: none; display: inline-block; margin-bottom: var(--space-4); }
@@ -56,10 +59,16 @@ body { margin: 0; }
 </head>
 <body>
 <nav class="nav">
-  <span class="nav-brand">Find My Pet Cyprus</span>
+  <a class="nav-brand" href="index.html" style="text-decoration:none;color:inherit">Find My Pet Cyprus</a>
   <span class="links">
-    <a href="search.html">Search map</a>
-    <a href="submit.html">Report a pet</a>
+    <a href="missing.html">Missing pets</a>
+    <a href="found.html">Found pets</a>
+    <a href="adopt.html">Adopt</a>
+    <a href="index.html">Map</a>
+  </span>
+  <span class="actions">
+    <a href="account.html">Sign in</a>
+    <a href="submit.html" class="btn btn-primary">Report a pet</a>
   </span>
 </nav>
 
@@ -68,9 +77,9 @@ body { margin: 0; }
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.79.0/dist/umd/supabase.js"></script>
-<script src="config.js?v=6"></script>
-<script src="data.js?v=6"></script>
-<script src="api.js?v=6"></script>
+<script src="config.js?v=7"></script>
+<script src="data.js?v=7"></script>
+<script src="api.js?v=7"></script>
 <script>
 (function(){
   var id = Number(new URLSearchParams(location.search).get('id'));
@@ -122,7 +131,8 @@ body { margin: 0; }
             '<button class="btn btn-primary btn-block" id="reveal-btn" type="button">Show contact details</button>' +
             '<div class="contact-line" id="contact-line"></div>' +
           '</div>' +
-          '<div class="share-row"><a class="btn btn-secondary" href="index.html">Nearby listings</a><button class="btn btn-secondary" type="button" id="share-btn">Share</button></div>' +
+          '<a class="btn btn-secondary btn-block" style="margin-top:10px" href="poster.html?id=' + p.id + '">Make a poster to print or share</a>' +
+          '<div class="share-row"><a class="btn btn-secondary" href="index.html">Nearby listings</a><button class="btn btn-secondary" type="button" id="share-btn">Share link</button></div>' +
         '</div>' +
       '</div>' +
     '</div>'
