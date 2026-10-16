@@ -172,9 +172,9 @@ footer a { color: inherit; }
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.79.0/dist/umd/supabase.js"></script>
-<script src="config.js?v=3"></script>
-<script src="data.js?v=3"></script>
-<script src="api.js?v=3"></script>
+<script src="config.js?v=4"></script>
+<script src="data.js?v=4"></script>
+<script src="api.js?v=4"></script>
 <script>
 API.ready.then(function(){
   // Demo gazetteer: cities, areas and postcode prefixes. Production would use a geocoder.
@@ -219,10 +219,17 @@ API.ready.then(function(){
   L.tileLayer(API.TILE_URL, API.TILE_OPTS).addTo(map);
   map.on('click', function(){ map.scrollWheelZoom.enable(); });
 
+  // Keep the search bar (top) and results panel (right) clear when zooming to a place.
+  function fitOpts(d){
+    return window.innerWidth > 820
+      ? { paddingTopLeft: [40, 130], paddingBottomRight: [380, 40], duration: d, maxZoom: 15 }
+      : { padding: [20, 20], duration: d, maxZoom: 15 };
+  }
   var markers = {};
+  var OFF = API.spread(window.PETS);
   window.PETS.forEach(function(p){
     var c = p.status === 'missing' ? C_MISS : C_FOUND;
-    var m = L.marker([p.lat, p.lng], { icon: L.divIcon({ className: '', html: '<div style="width:18px;height:18px;border-radius:50%;background:' + c + ';border:3px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.3)"></div>', iconSize: [18,18], iconAnchor: [9,9] }) }).addTo(map);
+    var m = L.marker([p.lat, p.lng], { icon: L.divIcon({ className: '', html: '<div style="width:18px;height:18px;border-radius:50%;background:' + c + ';border:3px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.3)"></div>', iconSize: [18,18], iconAnchor: [9 - OFF[p.id][0], 9 - OFF[p.id][1]], popupAnchor: [OFF[p.id][0], OFF[p.id][1] - 9] }) }).addTo(map);
     m.bindPopup('<div style="font-family:var(--font-body);min-width:150px"><div style="font-family:var(--font-heading);font-size:15px">' + p.name + '</div><div style="font-size:12px;opacity:.7;margin:2px 0 6px">' + p.species + ' · ' + p.area + '</div><a href="listing.html?id=' + p.id + '">View listing →</a></div>');
     m.on('click', function(){ highlight(p.id); });
     markers[p.id] = m;
@@ -294,7 +301,7 @@ API.ready.then(function(){
     $('q').value = place.name;
     if (circle) map.removeLayer(circle);
     circle = L.circle([place.lat, place.lng], { radius: state.radius * 1000, color: C_MISS, weight: 2, fillColor: C_MISS, fillOpacity: 0.07 }).addTo(map);
-    map.flyToBounds(circle.getBounds(), { padding: window.innerWidth > 820 ? [140, 380] : [20, 20], duration: 0.8 });
+    map.flyToBounds(circle.getBounds(), fitOpts(0.8));
     paintQuick();
     closeSuggest();
     render();
@@ -346,7 +353,7 @@ API.ready.then(function(){
     if (circle) circle.setRadius(state.radius * 1000);
     render();
   });
-  $('radius').addEventListener('change', function(){ if (circle) map.flyToBounds(circle.getBounds(), { padding: window.innerWidth > 820 ? [140, 380] : [20, 20], duration: 0.5 }); });
+  $('radius').addEventListener('change', function(){ if (circle) map.flyToBounds(circle.getBounds(), fitOpts(0.5)); });
 
   function paintQuick(){
     $('quick').innerHTML = QUICK.map(function(n){ return '<button type="button" class="chip' + (state.label === n ? ' on' : '') + '" data-n="' + n + '">' + n + '</button>'; }).join('');

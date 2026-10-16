@@ -216,7 +216,23 @@ window.API = (function(){
   var TILE_URL = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
   var TILE_OPTS = { maxZoom: 19, attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors' };
 
+  // Listings at the exact same spot would hide each other; fan them out in a small ring (pixels).
+  function spread(list){
+    var groups = {}, out = {};
+    list.forEach(function(p){ var k = (+p.lat).toFixed(4) + ',' + (+p.lng).toFixed(4); (groups[k] = groups[k] || []).push(p); });
+    Object.keys(groups).forEach(function(k){
+      var g = groups[k];
+      g.forEach(function(p, i){
+        if (g.length === 1) { out[p.id] = [0, 0]; return; }
+        var r = g.length <= 6 ? 14 : 20, a = (2 * Math.PI * i) / g.length - Math.PI / 2;
+        out[p.id] = [Math.round(r * Math.cos(a)), Math.round(r * Math.sin(a))];
+      });
+    });
+    return out;
+  }
+
   return {
+    spread: spread,
     TILE_URL: TILE_URL, TILE_OPTS: TILE_OPTS,
     live: live, ready: ready, esc: esc, now: function(){ return live ? new Date() : DEMO_NOW; },
     districtCentre: function(d){ return DISTRICT_CENTRES[d]; },

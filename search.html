@@ -123,9 +123,9 @@ body { margin: 0; }
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.79.0/dist/umd/supabase.js"></script>
-<script src="config.js?v=3"></script>
-<script src="data.js?v=3"></script>
-<script src="api.js?v=3"></script>
+<script src="config.js?v=4"></script>
+<script src="data.js?v=4"></script>
+<script src="api.js?v=4"></script>
 <script>
 API.ready.then(function(){
   var areaSel = document.getElementById('f-area');
@@ -136,10 +136,11 @@ API.ready.then(function(){
 
   var markers = {};
   function markerColor(status){ return status === 'missing' ? '#c67139' : '#7a8a5e'; }
+  var OFF = API.spread(window.PETS);
   window.PETS.forEach(function(p){
     var icon = L.divIcon({
       className: '', html: '<div style="width:16px;height:16px;border-radius:50%;background:' + markerColor(p.status) + ';border:3px solid #f5ead8;box-shadow:0 1px 3px rgba(0,0,0,.3)"></div>',
-      iconSize: [16,16], iconAnchor: [8,8]
+      iconSize: [16,16], iconAnchor: [8 - OFF[p.id][0], 8 - OFF[p.id][1]], popupAnchor: [OFF[p.id][0], OFF[p.id][1] - 8]
     });
     var m = L.marker([p.lat, p.lng], { icon: icon }).addTo(map);
     m.bindPopup('<div class="popup-card"><span class="name">' + p.name + '</span><span style="font-size:12px;opacity:.7">' + p.species + ' · ' + p.area + '</span><a href="listing.html?id=' + p.id + '">View listing →</a></div>');
