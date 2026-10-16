@@ -5,7 +5,7 @@ window.API = (function(){
   var live = !!(cfg.supabaseUrl && cfg.supabaseAnonKey && window.supabase);
   var sb = live ? window.supabase.createClient(cfg.supabaseUrl, cfg.supabaseAnonKey) : null;
   var DEMO_NOW = new Date('2026-10-08T12:00:00');
-  var BASE = location.href.replace(/[?#].*$/, '').replace(/[^/]*$/, '');
+  var BASE = location.origin + '/';
   var PLACEHOLDER = 'assets/photo.jpg';
   var DISTRICT_CENTRES = {
     Nicosia: [35.1725, 33.365], Limassol: [34.6841, 33.0379], Larnaca: [34.9229, 33.6233],
@@ -16,12 +16,12 @@ window.API = (function(){
     if (s == null) return '';
     return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
   }
-  function err(e){ return new Error((e && (e.message || e.error_description)) || 'Something went wrong. Please try again.'); }
+  function err(e){ var m = e && (e.message || e.error_description); return new Error(m ? t(m) : t('Something went wrong. Please try again.')); }
 
   // Database row → the shape the pages were designed around (all text HTML-escaped).
   function fromRow(r){
     var colours = r.colours || [];
-    var color = r.color || colours.map(function(c, i){ return i ? c.toLowerCase() : c; }).join(' & ');
+    var color = r.color || colours.map(function(c, i){ var x = t(c); return i ? x.toLowerCase() : x; }).join(t(' & '));
     return {
       id: r.id, status: r.status, species: r.species, exoticType: esc(r.exotic_type),
       name: r.name ? esc(r.name) : 'Unnamed', breed: esc(r.breed) || 'Unknown',
@@ -35,6 +35,23 @@ window.API = (function(){
       moderationStatus: r.moderation_status, moderatorNote: esc(r.moderator_note), rejectReason: esc(r.reject_reason),
       closed: r.closed, createdAt: r.created_at, ownerId: r.owner_id
     };
+  }
+
+  // Display helpers (language-aware)
+  function kind(p){ return t(p.exoticType || p.species || 'Pet'); }
+  function petTitle(p){
+    if (p.name && p.name !== 'Unnamed') return p.name;
+    var c = (p.color && p.color !== '—') ? p.color : '';
+    if (window.LANG === 'el') return kind(p) + (c ? ' (' + c.toLowerCase() + ')' : '');
+    return (c ? c + ' ' : '') + kind(p).toLowerCase();
+  }
+  function statusLabel(s){ return t({ missing: 'Missing', found: 'Found', adoption: 'For adoption' }[s] || s); }
+  function fmtDate(d, long){ return new Date(d).toLocaleDateString(window.LOCALE || 'en-GB', long ? { day: 'numeric', month: 'long', year: 'numeric' } : { day: 'numeric', month: 'short' }); }
+  function areaText(p){ var a = p.areaOnly || (p.area && p.area.split(' — ')[1]) || p.area || ''; return t(p.district) + (a && a !== p.district ? ' — ' + a : ''); }
+  function petPath(p){
+    var slug = [p.name && p.name !== 'Unnamed' ? p.name : '', p.status === 'adoption' ? 'adopt' : p.status, p.exoticType || p.species, p.district]
+      .join('-').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+    return 'pet/' + p.id + '-' + slug + '.html';
   }
 
   var ready = (function(){
@@ -67,7 +84,7 @@ window.API = (function(){
   }
   function signIn(email){
     if (!live) return Promise.resolve({ demo: true });
-    var redirect = BASE + 'account.html';
+    var redirect = BASE + lp('account.html');
     return getUser().then(function(u){
       if (u && u.is_anonymous) {
         // Attach the email to the guest account so its listings are kept.
@@ -117,10 +134,10 @@ window.API = (function(){
         URL.revokeObjectURL(url);
         c.toBlob(function(b){
           if (b && b.type === 'image/webp') return resolve(b);
-          c.toBlob(function(j){ j ? resolve(j) : reject(new Error('Could not read that photo.')); }, 'image/jpeg', 0.85);
+          c.toBlob(function(j){ j ? resolve(j) : reject(new Error(t('Could not read that photo.'))); }, 'image/jpeg', 0.85);
         }, 'image/webp', 0.82);
       };
-      img.onerror = function(){ URL.revokeObjectURL(url); reject(new Error('That file is not a photo we can read. Try a JPG or PNG.')); };
+      img.onerror = function(){ URL.revokeObjectURL(url); reject(new Error(t('That file is not a photo we can read. Try a JPG or PNG.'))); };
       img.src = url;
     });
   }
@@ -150,7 +167,7 @@ window.API = (function(){
       if (r.error) throw err(r.error);
       // If they gave an email and are a guest, link it so they can manage the listing later.
       if (contact.email && user.is_anonymous) {
-        sb.auth.updateUser({ email: contact.email }, { emailRedirectTo: BASE + 'account.html' }).catch(function(){});
+        sb.auth.updateUser({ email: contact.email }, { emailRedirectTo: BASE + lp('account.html') }).catch(function(){});
       }
       return { id: r.data };
     });
@@ -167,7 +184,47 @@ window.API = (function(){
     });
   }
   function closeListing(id){ return live ? sb.rpc('close_listing', { p_id: id }).then(function(r){ if (r.error) throw err(r.error); }) : Promise.resolve(); }
-  function deleteListing(id){ return live ? sb.from('listings').delete().eq('id', id).then(function(r){ if (r.error) throw err(r.error); }) : Promise.resolve(); }
+  var PHOTO_PREFIX = '/storage/v1/object/public/listing-photos/';
+  function photoPaths(urls){
+    return (urls || []).map(function(u){ var i = String(u).indexOf(PHOTO_PREFIX); return i > -1 ? decodeURIComponent(String(u).slice(i + PHOTO_PREFIX.length)) : null; }).filter(Boolean);
+  }
+  // Deletes the listing and its photos (GDPR: nothing left behind).
+  function deleteListing(id){
+    if (!live) return Promise.resolve();
+    return sb.from('listings').select('photos').eq('id', id).maybeSingle().then(function(r){
+      var paths = photoPaths(r.data && r.data.photos);
+      return (paths.length ? sb.storage.from('listing-photos').remove(paths) : Promise.resolve()).then(function(){
+        return sb.from('listings').delete().eq('id', id);
+      });
+    }).then(function(r){ if (r && r.error) throw err(r.error); });
+  }
+  // GDPR: a copy of everything held about the signed-in person.
+  function exportMyData(){
+    if (!live) return Promise.resolve({ demo: true });
+    return getUser().then(function(u){
+      if (!u) throw new Error(t('Please sign in first.'));
+      return Promise.all([
+        sb.from('listings').select('*, listing_contacts(name, phone, email)').eq('owner_id', u.id),
+        sb.from('saved_views').select('label, url, created_at').eq('user_id', u.id)
+      ]).then(function(res){
+        if (res[0].error) throw err(res[0].error);
+        return { exported_at: new Date().toISOString(), account: { id: u.id, email: u.email || null, created_at: u.created_at, guest: !!u.is_anonymous },
+                 listings: res[0].data, saved_searches: (res[1].data || []) };
+      });
+    });
+  }
+  // GDPR: remove photos, then the account (listings, contacts and saved searches go with it).
+  function deleteMyAccount(){
+    if (!live) return Promise.resolve();
+    return getUser().then(function(u){
+      if (!u) throw new Error(t('Please sign in first.'));
+      return sb.storage.from('listing-photos').list(u.id, { limit: 1000 }).then(function(r){
+        var paths = (r.data || []).map(function(f){ return u.id + '/' + f.name; });
+        return paths.length ? sb.storage.from('listing-photos').remove(paths) : null;
+      }).then(function(){ return sb.rpc('delete_my_account'); })
+        .then(function(r){ if (r.error) throw err(r.error); return sb.auth.signOut(); });
+    });
+  }
 
   // ---------- saved searches ----------
   var demoViews = [
@@ -184,7 +241,7 @@ window.API = (function(){
   function saveView(label, url){
     if (!live) { demoViews.unshift({ id: Date.now(), label: label, url: url, created_at: new Date().toISOString() }); return Promise.resolve(); }
     return getUser().then(function(u){
-      if (!u || u.is_anonymous) throw new Error('Sign in to save searches.');
+      if (!u || u.is_anonymous) throw new Error(t('Sign in to save searches.'));
       return sb.from('saved_views').insert({ label: label, url: url }).then(function(r){ if (r.error) throw err(r.error); });
     });
   }
@@ -224,7 +281,7 @@ window.API = (function(){
   function geocode(q){
     q = String(q || '').trim();
     if (!q) return Promise.resolve(null);
-    var key = q.toLowerCase(), pc = isPostcode(q);
+    var key = (window.LANG || 'en') + ':' + q.toLowerCase(), pc = isPostcode(q);
     if (geoMem[key]) return Promise.resolve(geoMem[key]);
     try { var hit = JSON.parse(localStorage.getItem('fmp-geo:' + key) || 'null'); if (hit) return Promise.resolve(geoMem[key] = hit); } catch (e) {}
     var url = 'https://nominatim.openstreetmap.org/search?format=jsonv2&countrycodes=cy&addressdetails=1&accept-language=en&limit=1&' +
@@ -239,11 +296,11 @@ window.API = (function(){
         var where = [a.state_district, a.county, a.state, a.city, a.town, a.municipality].join(' ');
         var district = DISTRICTS.find(function(d){ return where.indexOf(d) > -1; }) || (pc ? PC_DISTRICT[q[0]] : null);
         var place = a.suburb || a.neighbourhood || a.quarter || a.village || a.town || a.city || a.municipality || '';
-        res = { name: pc ? 'Postcode ' + q + (place ? ' · ' + place : '') : (r.name || q) + (district && r.name !== district ? ' · ' + district : ''),
+        res = { name: pc ? t('Postcode') + ' ' + q + (place ? ' · ' + place : '') : (r.name || q) + (district && r.name !== district ? ' · ' + t(district) : ''),
                 kind: pc ? 'Postcode' : 'Place', lat: +r.lat, lng: +r.lon, district: district || null, exact: true };
       } else if (pc && PC_DISTRICT[q[0]]) {
         var c = DISTRICT_CENTRES[PC_DISTRICT[q[0]]];
-        res = { name: 'Postcode ' + q + ' · ' + PC_DISTRICT[q[0]] + ' district', kind: 'Postcode', lat: c[0], lng: c[1], district: PC_DISTRICT[q[0]], exact: false };
+        res = { name: t('Postcode') + ' ' + q + ' · ' + t('{d} district', { d: t(PC_DISTRICT[q[0]]) }), kind: 'Postcode', lat: c[0], lng: c[1], district: PC_DISTRICT[q[0]], exact: false };
       }
       if (res) { geoMem[key] = res; if (res.exact) try { localStorage.setItem('fmp-geo:' + key, JSON.stringify(res)); } catch (e) {} }
       return res;
@@ -271,6 +328,7 @@ window.API = (function(){
   }
 
   return {
+    kind: kind, petTitle: petTitle, statusLabel: statusLabel, fmtDate: fmtDate, areaText: areaText, petPath: petPath,
     geocode: geocode, isPostcode: isPostcode, km: km, RADII: [1, 3, 5, 10, 25],
     spread: spread,
     TILE_URL: TILE_URL, TILE_OPTS: TILE_OPTS,
@@ -278,7 +336,7 @@ window.API = (function(){
     districtCentre: function(d){ return DISTRICT_CENTRES[d]; },
     getUser: getUser, signIn: signIn, signOut: signOut, onAuth: onAuth, isModerator: isModerator,
     getListing: getListing, revealContact: revealContact, submitListing: submitListing,
-    myListings: myListings, closeListing: closeListing, deleteListing: deleteListing,
+    myListings: myListings, closeListing: closeListing, deleteListing: deleteListing, exportMyData: exportMyData, deleteMyAccount: deleteMyAccount,
     savedViews: savedViews, saveView: saveView, removeView: removeView,
     moderationQueue: moderationQueue, moderate: moderate
   };

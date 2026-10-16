@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Account — Find My Pet Cyprus</title>
 <script src="./ds-base.js"></script>
+<link rel="stylesheet" href="site.css?v=9" />
+<script src="i18n.js?v=9"></script>
 <style>
 :root { --edge: clamp(16px, 4vw, 48px); --white: #fff; }
 body { margin: 0; background: var(--white); text-wrap: pretty; }
@@ -71,6 +73,7 @@ body { margin: 0; background: var(--white); text-wrap: pretty; }
     <a href="index.html">Map</a>
   </span>
   <span class="actions">
+    <a class="lang-switch" href="el/index.html" lang="el" hreflang="el" title="Ελληνικά">ΕΛ</a>
     <a href="account.html" aria-current="page">Your account</a>
     <a href="submit.html" class="btn btn-primary">Report a pet</a>
   </span>
@@ -86,6 +89,7 @@ body { margin: 0; background: var(--white); text-wrap: pretty; }
       <div class="field"><label for="email">Email</label><input class="input" id="email" type="email" required autocomplete="email" placeholder="you@example.com" /></div>
       <button class="btn btn-primary btn-block" id="signin" type="submit">Email me a link</button>
     </form>
+    <p style="font-size:12.5px;margin:0">We use your email only to sign you in and let you manage your listings. <a href="privacy.html">Privacy policy</a></p>
     <div class="msg" id="gate-msg" style="display:none" role="status"></div>
   </div>
 
@@ -112,10 +116,35 @@ body { margin: 0; background: var(--white); text-wrap: pretty; }
       <h2 class="section-title">Saved searches</h2>
       <div id="saved"></div>
     </div>
+
+    <div class="block">
+      <h2 class="section-title">Your data and privacy</h2>
+      <p class="empty-note" style="padding-top:0">Download a copy of everything we hold about you, or delete your account. Deleting removes all your listings, photos, contact details and saved searches. This cannot be undone.</p>
+      <div class="mine-acts">
+        <button class="btn btn-secondary" type="button" id="export">Download my data</button>
+        <button class="btn btn-ghost" type="button" id="delete-account" style="color:#a8361f">Delete my account</button>
+        <a class="btn btn-ghost" href="privacy.html">Privacy policy</a>
+      </div>
+    </div>
   </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.79.0/dist/umd/supabase.js"></script>
+<footer class="site-foot">
+  <div class="foot-in">
+    <div><b>Find My Pet Cyprus</b><span>Free community website for lost, found and adoptable pets across Cyprus. Every listing is checked by a moderator.</span></div>
+    <nav aria-label="Pets by district"><h2>Pets by district</h2><ul>
+      <li><a href="area/nicosia.html">Nicosia</a></li><li><a href="area/limassol.html">Limassol</a></li><li><a href="area/larnaca.html">Larnaca</a></li>
+      <li><a href="area/paphos.html">Paphos</a></li><li><a href="area/famagusta.html">Famagusta</a></li><li><a href="area/kyrenia.html">Kyrenia</a></li>
+    </ul></nav>
+    <nav aria-label="Site links"><h2>Find My Pet Cyprus</h2><ul>
+      <li><a href="submit.html">Report a missing or found pet</a></li><li><a href="adopt.html">Pets for adoption</a></li>
+      <li><a href="privacy.html">Privacy policy</a></li><li><a href="terms.html">Terms of use</a></li><li><a href="account.html">Your account</a></li>
+    </ul></nav>
+    <p class="foot-note">© 2026 Find My Pet Cyprus · No advertising or tracking cookies · This site does not replace reporting to the police, your municipality or a vet.</p>
+  </div>
+</footer>
+
+<script src="vendor/supabase.js"></script>
 <script src="config.js?v=8"></script>
 <script src="data.js?v=8"></script>
 <script src="api.js?v=8"></script>
@@ -124,9 +153,9 @@ body { margin: 0; background: var(--white); text-wrap: pretty; }
   var $ = function(id){ return document.getElementById(id); };
   var LABEL = { approved: ['live', 'Live'], pending: ['pending', 'In review'], changes: ['changes', 'Changes requested'], rejected: ['rejected', 'Not approved'] };
 
-  function ago(t){
-    var d = Math.round((Date.now() - new Date(t)) / 864e5);
-    return d <= 0 ? 'today' : d === 1 ? 'yesterday' : d + ' days ago';
+  function ago(d0){
+    var d = Math.round((Date.now() - new Date(d0)) / 864e5);
+    return d <= 0 ? t('today') : d === 1 ? t('yesterday') : t('{n} days ago', { n: d });
   }
   function show(id){ ['loading', 'gate', 'account'].forEach(function(x){ $(x).style.display = x === id ? (x === 'gate' ? 'flex' : 'block') : 'none'; }); }
 
@@ -135,7 +164,7 @@ body { margin: 0; background: var(--white); text-wrap: pretty; }
       if (API.live && !u) return show('gate');
       show('account');
       var guest = u && u.is_anonymous;
-      $('who').textContent = !API.live ? 'Demo mode: nothing here is saved.' : guest ? 'Guest account on this device' : 'Signed in as ' + (u.email || '');
+      $('who').textContent = !API.live ? t('Demo mode: nothing here is saved.') : guest ? t('Guest account on this device') : t('Signed in as {email}', { email: u.email || '' });
       $('guest-box').style.display = guest ? 'flex' : 'none';
       $('saved-block').style.display = guest ? 'none' : 'block';
       API.isModerator().then(function(m){ $('mod-link').style.display = m ? '' : 'none'; });
@@ -145,30 +174,30 @@ body { margin: 0; background: var(--white); text-wrap: pretty; }
   }
 
   function renderMine(){
-    $('mine').innerHTML = '<p class="empty-note">Loading…</p>';
+    $('mine').innerHTML = '<p class="empty-note">' + t('Loading…') + '</p>';
     API.myListings().then(function(list){
-      if (!list.length) { $('mine').innerHTML = '<p class="empty-note">You haven’t reported any pets yet. <a href="submit.html">Report a pet</a></p>'; return; }
+      if (!list.length) { $('mine').innerHTML = '<p class="empty-note">' + t('You haven’t reported any pets yet.') + ' <a href="' + lp('submit.html') + '">' + t('Report a pet') + '</a></p>'; return; }
       $('mine').innerHTML = list.map(function(p){
         var l = p.closed ? ['closed', p.status === 'adoption' ? 'Adopted' : 'Reunited'] : (LABEL[p.moderationStatus] || LABEL.pending);
-        var title = p.name === 'Unnamed' ? p.color + ' ' + (p.exoticType || p.species).toLowerCase() : p.name;
+        var title = API.petTitle(p);
         return '<div class="mine-wrap">' +
-          '<a class="mine-card" href="listing.html?id=' + p.id + '" style="text-decoration:none;color:inherit">' +
+          '<a class="mine-card" href="' + lp('listing.html?id=' + p.id) + '" style="text-decoration:none;color:inherit">' +
             '<img src="' + p.photo + '" alt="">' +
-            '<div class="info"><div class="name">' + title + '</div><div class="meta">' + (p.exoticType || p.species) + ' · ' + p.area + ' · sent ' + ago(p.createdAt || p.date) + '</div></div>' +
-            '<span class="status-pill ' + l[0] + '">' + l[1] + '</span>' +
+            '<div class="info"><div class="name">' + title + '</div><div class="meta">' + API.kind(p) + ' · ' + API.areaText(p) + ' · ' + t('sent {when}', { when: ago(p.createdAt || p.date) }) + '</div></div>' +
+            '<span class="status-pill ' + l[0] + '">' + t(l[1]) + '</span>' +
           '</a>' +
-          (p.moderatorNote && !p.closed && p.moderationStatus !== 'approved' ? '<div class="mine-note"><b>Note from the moderator:</b> ' + p.moderatorNote + (p.moderationStatus === 'changes' ? '<br>Delete this listing and send a corrected one.' : '') + '</div>' : '') +
+          (p.moderatorNote && !p.closed && p.moderationStatus !== 'approved' ? '<div class="mine-note"><b>' + t('Note from the moderator:') + '</b> ' + p.moderatorNote + (p.moderationStatus === 'changes' ? '<br>' + t('Delete this listing and send a corrected one.') : '') + '</div>' : '') +
           '<div class="mine-acts">' +
-            (!p.closed && p.moderationStatus === 'approved' ? '<button class="btn btn-secondary" type="button" data-close="' + p.id + '">' + (p.status === 'adoption' ? 'Mark as adopted' : p.status === 'missing' ? 'Mark as found' : 'Mark as reunited') + '</button>' : '') +
-            (!p.closed ? '<a class="btn btn-secondary" href="poster.html?id=' + p.id + '">Poster</a>' : '') +
-            '<button class="btn btn-ghost" type="button" data-del="' + p.id + '">Delete</button>' +
+            (!p.closed && p.moderationStatus === 'approved' ? '<button class="btn btn-secondary" type="button" data-close="' + p.id + '">' + t(p.status === 'adoption' ? 'Mark as adopted' : p.status === 'missing' ? 'Mark as found' : 'Mark as reunited') + '</button>' : '') +
+            (!p.closed ? '<a class="btn btn-secondary" href="' + lp('poster.html?id=' + p.id) + '">' + t('Poster') + '</a>' : '') +
+            '<button class="btn btn-ghost" type="button" data-del="' + p.id + '">' + t('Delete') + '</button>' +
           '</div></div>';
       }).join('');
       $('mine').querySelectorAll('[data-close]').forEach(function(b){
-        b.onclick = function(){ if (!confirm('Close this listing? It will be removed from the map and lists.')) return; b.disabled = true; API.closeListing(Number(b.dataset.close)).then(renderMine).catch(function(e){ alert(e.message); b.disabled = false; }); };
+        b.onclick = function(){ if (!confirm(t('Close this listing? It will be removed from the map and lists.'))) return; b.disabled = true; API.closeListing(Number(b.dataset.close)).then(renderMine).catch(function(e){ alert(e.message); b.disabled = false; }); };
       });
       $('mine').querySelectorAll('[data-del]').forEach(function(b){
-        b.onclick = function(){ if (!confirm('Delete this listing permanently?')) return; b.disabled = true; API.deleteListing(Number(b.dataset.del)).then(renderMine).catch(function(e){ alert(e.message); b.disabled = false; }); };
+        b.onclick = function(){ if (!confirm(t('Delete this listing and its photos permanently?'))) return; b.disabled = true; API.deleteListing(Number(b.dataset.del)).then(renderMine).catch(function(e){ alert(e.message); b.disabled = false; }); };
       });
     }).catch(function(e){ $('mine').innerHTML = '<p class="empty-note">' + API.esc(e.message) + '</p>'; });
   }
@@ -176,12 +205,29 @@ body { margin: 0; background: var(--white); text-wrap: pretty; }
   function renderSaved(){
     API.savedViews().then(function(list){
       $('saved').innerHTML = list.length ? list.map(function(v){
-        return '<div class="search-card"><div><div class="desc">' + v.label + '</div><div class="meta">Saved ' + ago(v.created_at) + '</div></div>' +
-          '<div class="actions"><a class="btn btn-ghost" href="' + v.url + '">Open</a><button class="btn btn-icon" type="button" title="Remove" data-rm="' + v.id + '">✕</button></div></div>';
-      }).join('') : '<p class="empty-note">No saved searches yet. Use "Save search" on the Missing, Found or Adopt pages.</p>';
+        return '<div class="search-card"><div><div class="desc">' + v.label + '</div><div class="meta">' + t('Saved {when}', { when: ago(v.created_at) }) + '</div></div>' +
+          '<div class="actions"><a class="btn btn-ghost" href="' + lp(v.url) + '">' + t('Open') + '</a><button class="btn btn-icon" type="button" title="' + t('Remove') + '" aria-label="' + t('Remove') + '" data-rm="' + v.id + '">✕</button></div></div>';
+      }).join('') : '<p class="empty-note">' + t('No saved searches yet. Use "Save search" on the Missing, Found or Adopt pages.') + '</p>';
       $('saved').querySelectorAll('[data-rm]').forEach(function(b){ b.onclick = function(){ API.removeView(Number(b.dataset.rm)).then(renderSaved); }; });
     });
   }
+
+  $('export').addEventListener('click', function(){
+    var b = this; b.disabled = true;
+    API.exportMyData().then(function(data){
+      var blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'find-my-pet-cyprus-my-data.json';
+      document.body.appendChild(a); a.click(); a.remove();
+    }).catch(function(e){ alert(e.message); }).then(function(){ b.disabled = false; });
+  });
+  $('delete-account').addEventListener('click', function(){
+    if (!confirm(t('Delete your account? All your listings, photos, contact details and saved searches will be permanently removed.'))) return;
+    var b = this; b.disabled = true;
+    API.deleteMyAccount().then(function(){
+      alert(t('Your account and data have been deleted.'));
+      location.href = '/' + lp('index.html');
+    }).catch(function(e){ alert(e.message); b.disabled = false; });
+  });
 
   $('signin-form').addEventListener('submit', function(e){
     e.preventDefault();
@@ -189,7 +235,7 @@ body { margin: 0; background: var(--white); text-wrap: pretty; }
     API.signIn($('email').value.trim()).then(function(r){
       if (r.demo) return load();
       $('gate-msg').className = 'msg'; $('gate-msg').style.display = 'block';
-      $('gate-msg').textContent = 'Check your email and tap the link to sign in. You can close this page.';
+      $('gate-msg').textContent = t('Check your email and tap the link to sign in. You can close this page.');
     }).catch(function(err){
       $('gate-msg').className = 'msg err'; $('gate-msg').style.display = 'block'; $('gate-msg').textContent = err.message;
     }).then(function(){ btn.disabled = false; });
@@ -199,7 +245,7 @@ body { margin: 0; background: var(--white); text-wrap: pretty; }
     e.preventDefault();
     API.signIn($('link-email').value.trim()).then(function(){
       $('link-msg').className = 'msg'; $('link-msg').style.display = 'block';
-      $('link-msg').textContent = 'Check your email and tap the link to confirm.';
+      $('link-msg').textContent = t('Check your email and tap the link to confirm.');
     }).catch(function(err){ $('link-msg').className = 'msg err'; $('link-msg').style.display = 'block'; $('link-msg').textContent = err.message; });
   });
 

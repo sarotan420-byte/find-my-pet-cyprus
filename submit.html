@@ -6,8 +6,10 @@
 <title>Report a missing or found pet — Find My Pet Cyprus</title>
 <meta name="description" content="Report a missing or found pet anywhere in Cyprus. Listings are checked by a moderator before going public." />
 <script src="./ds-base.js"></script>
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<link rel="stylesheet" href="site.css?v=9" />
+<script src="i18n.js?v=9"></script>
+<link rel="stylesheet" href="vendor/leaflet/leaflet.css" />
+<script src="vendor/leaflet/leaflet.js"></script>
 <style>
 :root { --edge: clamp(16px, 4vw, 48px); --white: #fff; }
 body { margin: 0; background: var(--white); text-wrap: pretty; }
@@ -111,13 +113,14 @@ textarea.input::placeholder { line-height: 1.5; }
     <a href="index.html">Map</a>
   </span>
   <span class="actions">
+    <a class="lang-switch" href="el/index.html" lang="el" hreflang="el" title="Ελληνικά">ΕΛ</a>
     <a href="account.html">Sign in</a>
   </span>
 </nav>
 
 <div class="wrap">
   <div id="intro">
-    <h1 class="title">Report a pet</h1>
+    <h1 class="title">Report a missing or found pet</h1>
     <p class="lede">This takes a few minutes. A moderator checks every listing before it goes public. The more detail you add, the easier it is for someone to recognise the pet.</p>
     <div class="progress" id="progress"></div>
   </div>
@@ -300,6 +303,8 @@ textarea.input::placeholder { line-height: 1.5; }
       <h2>Check your listing</h2>
       <div class="review" id="review"></div>
       <label class="check"><input type="checkbox" id="agree" required> I confirm this listing is accurate to the best of my knowledge.</label>
+      <label class="check"><input type="checkbox" id="consent" required> I agree that this listing, its photos and area will be published, and that my name and phone number will be shown to visitors who tap “Show contact details”.</label>
+      <p class="note">You can close or delete the listing at any time from your account. <a href="privacy.html" target="_blank">Read the privacy policy</a></p>
       <div class="submit-err" id="submit-err" role="alert"></div>
       <div class="actions-row"><button type="button" class="btn btn-secondary" data-back>Back</button><button type="submit" class="btn btn-primary" id="submit-btn">Submit for review</button></div>
     </div>
@@ -316,18 +321,33 @@ textarea.input::placeholder { line-height: 1.5; }
   </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.79.0/dist/umd/supabase.js"></script>
+<footer class="site-foot">
+  <div class="foot-in">
+    <div><b>Find My Pet Cyprus</b><span>Free community website for lost, found and adoptable pets across Cyprus. Every listing is checked by a moderator.</span></div>
+    <nav aria-label="Pets by district"><h2>Pets by district</h2><ul>
+      <li><a href="area/nicosia.html">Nicosia</a></li><li><a href="area/limassol.html">Limassol</a></li><li><a href="area/larnaca.html">Larnaca</a></li>
+      <li><a href="area/paphos.html">Paphos</a></li><li><a href="area/famagusta.html">Famagusta</a></li><li><a href="area/kyrenia.html">Kyrenia</a></li>
+    </ul></nav>
+    <nav aria-label="Site links"><h2>Find My Pet Cyprus</h2><ul>
+      <li><a href="submit.html">Report a missing or found pet</a></li><li><a href="adopt.html">Pets for adoption</a></li>
+      <li><a href="privacy.html">Privacy policy</a></li><li><a href="terms.html">Terms of use</a></li><li><a href="account.html">Your account</a></li>
+    </ul></nav>
+    <p class="foot-note">© 2026 Find My Pet Cyprus · No advertising or tracking cookies · This site does not replace reporting to the police, your municipality or a vet.</p>
+  </div>
+</footer>
+
+<script src="vendor/supabase.js"></script>
 <script src="config.js?v=8"></script>
 <script src="data.js?v=8"></script>
 <script src="api.js?v=8"></script>
 <script>
 (function(){
   var $ = function(id){ return document.getElementById(id); };
-  window.AREAS.forEach(function(a){ var o = document.createElement('option'); o.value = a; o.textContent = a; $('district').appendChild(o); });
-  window.AGES.forEach(function(a){ var o = document.createElement('option'); o.value = a; o.textContent = a; $('ageBand').appendChild(o); });
-  window.EXOTIC_TYPES.forEach(function(a){ var o = document.createElement('option'); o.value = a; o.textContent = a; $('exoticType').appendChild(o); });
+  window.AREAS.forEach(function(a){ var o = document.createElement('option'); o.value = a; o.textContent = t(a); $('district').appendChild(o); });
+  window.AGES.forEach(function(a){ var o = document.createElement('option'); o.value = a; o.textContent = t(a); $('ageBand').appendChild(o); });
+  window.EXOTIC_TYPES.forEach(function(a){ var o = document.createElement('option'); o.value = a; o.textContent = t(a); $('exoticType').appendChild(o); });
   $('colours').innerHTML = window.COLOURS.map(function(c){
-    return '<label class="swatch"><input type="checkbox" name="colour" value="' + c.name + '"><i style="background:' + c.swatch + '"></i><span>' + c.name + '</span></label>';
+    return '<label class="swatch"><input type="checkbox" name="colour" value="' + c.name + '"><i style="background:' + c.swatch + '"></i><span>' + t(c.name) + '</span></label>';
   }).join('');
   $('date').max = new Date().toISOString().slice(0, 10);
 
@@ -344,27 +364,27 @@ textarea.input::placeholder { line-height: 1.5; }
     $('exotic-field').style.display = ex ? '' : 'none';
     $('colour-field').style.display = ex ? 'none' : '';
     $('exotic-colour-field').style.display = ex ? '' : 'none';
-    $('chip-label').textContent = ex ? 'Ringed, tagged or microchipped' : 'Microchipped';
-    $('area-label').textContent = missing ? 'Area or street last seen' : 'Area or street where found';
-    $('date-label').textContent = missing ? 'Date last seen' : 'Date found';
-    $('name-hint').textContent = missing ? '' : '(if on a tag)';
+    $('chip-label').textContent = t(ex ? 'Ringed, tagged or microchipped' : 'Microchipped');
+    $('area-label').textContent = t(missing ? 'Area or street last seen' : 'Area or street where found');
+    $('date-label').textContent = t(missing ? 'Date last seen' : 'Date found');
+    $('name-hint').textContent = missing ? '' : t('(if on a tag)');
     $('name').required = missing;
     var ad = val('status') === 'adoption';
     $('adopt-fields').style.display = ad ? 'flex' : 'none';
     $('collar-row').style.display = ad ? 'none' : '';
     $('time-field').style.display = ad ? 'none' : '';
     $('lister-field').style.display = ad ? '' : 'none';
-    document.querySelector('h1.title').textContent = ad ? 'List a pet for adoption' : 'Report a pet';
+    document.querySelector('h1.title').textContent = t(ad ? 'List a pet for adoption' : 'Report a missing or found pet');
     if (ad) {
-      $('area-label').textContent = 'Area where the pet is now';
-      $('date-label').textContent = 'Available from';
+      $('area-label').textContent = t('Area where the pet is now');
+      $('date-label').textContent = t('Available from');
       $('name-hint').textContent = '';
       $('name').required = true;
       $('date').removeAttribute('max');
     } else {
       $('date').max = new Date().toISOString().slice(0, 10);
     }
-    $('browse-link').href = ad ? 'adopt.html' : missing ? 'missing.html' : 'found.html';
+    $('browse-link').href = '/' + lp(ad ? 'adopt.html' : missing ? 'missing.html' : 'found.html');
   }
   document.querySelectorAll('input[name="status"], input[name="species"]').forEach(function(r){ r.addEventListener('change', syncType); });
   $('colours').addEventListener('change', function(){ $('colour-err').classList.remove('on'); });
@@ -394,30 +414,30 @@ textarea.input::placeholder { line-height: 1.5; }
 
   function buildReview(){
     var ex = isExotic();
-    var ids = [$('collar').checked ? 'Collar' : '', $('chipped').checked ? (ex ? 'Ringed / chipped' : 'Microchipped') : ''].filter(Boolean).join(', ');
+    var ids = [$('collar').checked ? t('Collar') : '', $('chipped').checked ? t(ex ? 'Ringed / chipped' : 'Microchipped') : ''].filter(Boolean).join(', ');
     var rows = [
-      ['Listing', { missing: 'Missing', found: 'Found', adoption: 'For adoption' }[val('status')]],
-      ['Animal', ex ? 'Other / exotic · ' + $('exoticType').value : val('species')],
-      ['Colour', ex ? ($('exoticColour').value || '—') : colours().join(', ')],
+      ['Listing', API.statusLabel(val('status'))],
+      ['Animal', ex ? t('Other / exotic') + ' · ' + t($('exoticType').value) : t(val('species'))],
+      ['Colour', ex ? ($('exoticColour').value || '—') : colours().map(function(c){ return t(c); }).join(', ')],
       ['Markings', $('colorDesc').value || '—'],
       ['Breed', $('breed').value || '—'],
       ['Name', $('name').value || '—'],
-      ['Size · sex', val('size') + ' · ' + (val('sex') === 'Unknown' ? 'Not sure' : val('sex'))],
-      ['Identification', ids || 'None'],
-      ['Location', [$('area').value, $('district').value, $('postcode').value].filter(Boolean).join(', ')],
-      ['Date', $('date').value + ($('time').value ? ' · ' + $('time').value : '')],
-      ['Map location', pin ? 'Exact pin' : autoSpot() ? 'Centre of ' + autoSpot().name : 'District centre'],
-      ['Photos', files.filter(Boolean).length + ' of 3']
+      ['Size · sex', t(val('size')) + ' · ' + t(val('sex') === 'Unknown' ? 'Not sure' : val('sex'))],
+      ['Identification', ids || t('None')],
+      ['Location', [$('area').value, t($('district').value), $('postcode').value].filter(Boolean).join(', ')],
+      ['Date', ($('date').value ? API.fmtDate($('date').value, true) : '—') + ($('time').value ? ' · ' + $('time').value : '')],
+      ['Map location', pin ? t('Exact pin') : (autoSpot() && (autoSpot().area || pcSpot)) ? t('Centre of {place}', { place: autoSpot().name }) : t('District centre') + ($('district').value ? ': ' + t($('district').value) : '')],
+      ['Photos', t('{n} of 3', { n: files.filter(Boolean).length })]
     ];
     if (val('status') === 'adoption') {
       rows.splice(7, 1,
-        ['Age', ($('ageBand').value || '—') + ($('ageText').value ? ' · ' + $('ageText').value : '')],
-        ['Good with', Array.prototype.map.call(document.querySelectorAll('input[name="good"]:checked'), function(i){ return i.value; }).join(', ') || '—'],
-        ['Health', [$('neutered').checked ? 'Neutered' : '', $('vaccinated').checked ? 'Vaccinated' : '', $('chipped').checked ? 'Microchipped' : ''].filter(Boolean).join(', ') || 'None listed'],
-        ['Listed by', $('lister').value || '—']);
+        ['Age', t($('ageBand').value || '—') + ($('ageText').value ? ' · ' + $('ageText').value : '')],
+        ['Good with', Array.prototype.map.call(document.querySelectorAll('input[name="good"]:checked'), function(i){ return t(i.value); }).join(', ') || '—'],
+        ['Health', [$('neutered').checked ? t('Neutered') : '', $('vaccinated').checked ? t('Vaccinated') : '', $('chipped').checked ? t('Microchipped') : ''].filter(Boolean).join(', ') || 'None listed'],
+        ['Listed by', t($('lister').value || '—')]);
       rows[rows.length - 1] = ['Available from', $('date').value || '—'];
     }
-    $('review').innerHTML = rows.map(function(r){ return '<div class="review-row"><span class="k">' + r[0] + '</span><span class="v">' + String(r[1]).replace(/</g, '&lt;') + '</span></div>'; }).join('');
+    $('review').innerHTML = rows.map(function(r){ return '<div class="review-row"><span class="k">' + t(r[0]) + '</span><span class="v">' + String(r[1]).replace(/</g, '&lt;') + '</span></div>'; }).join('');
   }
 
   // ---------- photos ----------
@@ -427,8 +447,8 @@ textarea.input::placeholder { line-height: 1.5; }
     input.addEventListener('change', function(){
       var f = input.files && input.files[0];
       if (!f) return;
-      if (!/^image\//.test(f.type)) { alert('Please choose a photo.'); input.value = ''; return; }
-      if (f.size > 25 * 1024 * 1024) { alert('That photo is too large (max 25 MB).'); input.value = ''; return; }
+      if (!/^image\//.test(f.type)) { alert(t('Please choose a photo.')); input.value = ''; return; }
+      if (f.size > 25 * 1024 * 1024) { alert(t('That photo is too large (max 25 MB).')); input.value = ''; return; }
       files[i] = f;
       var old = slot.querySelector('img'); if (old) old.remove();
       var img = document.createElement('img'); img.src = URL.createObjectURL(f); img.alt = 'Selected photo ' + (i + 1);
@@ -450,7 +470,7 @@ textarea.input::placeholder { line-height: 1.5; }
     if (areaSpot) return areaSpot;
     if (pcSpot) return pcSpot;
     var c = API.districtCentre($('district').value);
-    return c ? { lat: c[0], lng: c[1], exact: false, name: $('district').value + ' (district centre)' } : null;
+    return c ? { lat: c[0], lng: c[1], exact: false, name: t('{d} (district centre)', { d: t($('district').value) }) } : null;
   }
   function refreshAuto(move){
     if (!pinMap) return;
@@ -459,7 +479,7 @@ textarea.input::placeholder { line-height: 1.5; }
     if (pin || !s) return;
     autoMarker = L.circleMarker([s.lat, s.lng], { radius: 11, color: '#c67139', weight: 2, dashArray: '4 4', fillColor: '#c67139', fillOpacity: 0.15 }).addTo(pinMap);
     if (move) pinMap.setView([s.lat, s.lng], s.exact ? 15 : s.area ? 14 : 11);
-    $('pin-status').textContent = 'The dashed circle shows where the marker will go (' + s.name + '). Tap the map to place it more exactly.';
+    $('pin-status').textContent = t('The dashed circle shows where the marker will go ({place}). Tap the map to place it more exactly.', { place: s.name });
   }
   function setPin(lat, lng, label){
     pin = { lat: lat, lng: lng };
@@ -467,7 +487,7 @@ textarea.input::placeholder { line-height: 1.5; }
     else pinMarker = L.marker([lat, lng], { draggable: true, icon: L.divIcon({ className: '', html: '<div style="width:20px;height:20px;border-radius:50%;background:#c67139;border:3px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.35)"></div>', iconSize: [20,20], iconAnchor: [10,10] }) })
       .addTo(pinMap).on('dragend', function(e){ var ll = e.target.getLatLng(); pin = { lat: ll.lat, lng: ll.lng }; });
     if (autoMarker) { pinMap.removeLayer(autoMarker); autoMarker = null; }
-    $('pin-status').textContent = label || 'Pin placed. Drag it to adjust.';
+    $('pin-status').textContent = label || t('Pin placed. Drag it to adjust.');
   }
   function initPin(){
     if (typeof L === 'undefined') { $('pin-map').parentNode.style.display = 'none'; return; }
@@ -517,7 +537,7 @@ textarea.input::placeholder { line-height: 1.5; }
           if (my !== areaSeq) return;
           if (!r || (d && r.district && r.district !== d)) return attempt(i + 1);
           areaSpot = { lat: r.lat, lng: r.lng, exact: false, area: true, name: r.name.split(' · ')[0], district: r.district };
-          $('area-hint').textContent = '\u2713 Found ' + areaSpot.name + (r.district ? ', ' + r.district : '') + '. The marker will go in its centre unless you drop a pin.';
+          $('area-hint').textContent = '\u2713 ' + t('Found {place}. The marker will go in its centre unless you drop a pin.', { place: areaSpot.name + (r.district ? ', ' + t(r.district) : '') });
           if (r.district && !$('district').value) { $('district').value = r.district; saveDraft(); }
           refreshAuto(!pin);
         });
@@ -526,12 +546,12 @@ textarea.input::placeholder { line-height: 1.5; }
   }
   $('area').addEventListener('input', lookupArea);
   $('locate').addEventListener('click', function(){
-    if (!navigator.geolocation) return alert('Location is not available on this device.');
-    $('pin-status').textContent = 'Finding you…';
+    if (!navigator.geolocation) return alert(t('Location is not available on this device.'));
+    $('pin-status').textContent = t('Finding you…');
     navigator.geolocation.getCurrentPosition(function(pos){
-      setPin(pos.coords.latitude, pos.coords.longitude, 'Pin placed at your location. Drag it to adjust.');
+      setPin(pos.coords.latitude, pos.coords.longitude, t('Pin placed at your location. Drag it to adjust.'));
       pinMap.setView([pos.coords.latitude, pos.coords.longitude], 15);
-    }, function(){ $('pin-status').textContent = 'Could not get your location. Tap the map instead.'; }, { enableHighAccuracy: true, timeout: 10000 });
+    }, function(){ $('pin-status').textContent = t('Could not get your location. Tap the map instead.'); }, { enableHighAccuracy: true, timeout: 10000 });
   });
 
   // ---------- draft (so a stressed owner doesn't lose their progress) ----------
@@ -541,7 +561,7 @@ textarea.input::placeholder { line-height: 1.5; }
     var d = { radios: {}, checks: {}, pin: pin };
     fields.forEach(function(id){ if ($(id)) d[id] = $(id).value; });
     document.querySelectorAll('#form input[type=radio]:checked').forEach(function(r){ d.radios[r.name] = r.value; });
-    document.querySelectorAll('#form input[type=checkbox]').forEach(function(c){ if (c.checked && c.id !== 'agree') d.checks[(c.name || c.id) + ':' + c.value] = 1; });
+    document.querySelectorAll('#form input[type=checkbox]').forEach(function(c){ if (c.checked && c.id !== 'agree' && c.id !== 'consent') d.checks[(c.name || c.id) + ':' + c.value] = 1; });
     try { localStorage.setItem(DRAFT, JSON.stringify(d)); } catch (e) {}
   }
   function loadDraft(){
@@ -576,19 +596,19 @@ textarea.input::placeholder { line-height: 1.5; }
       good_with: ad ? checked('good') : [], lister: ad ? $('lister').value : ''
     };
     var contact = { name: $('cname').value.trim(), phone: $('cphone').value.trim(), email: $('cemail').value.trim() };
-    var btn = $('submit-btn'); btn.disabled = true; btn.textContent = files.some(Boolean) ? 'Uploading photos…' : 'Sending…';
+    var btn = $('submit-btn'); btn.disabled = true; btn.textContent = t(files.some(Boolean) ? 'Uploading photos…' : 'Sending…');
     $('submit-err').classList.remove('on');
     API.submitListing(listing, files.filter(Boolean), contact).then(function(){
       try { localStorage.removeItem(DRAFT); } catch (e) {}
-      $('email-note').textContent = contact.email ? ', or confirm the email we sent to ' + contact.email + ' to manage it from any device' : '';
+      $('email-note').textContent = contact.email ? t(', or confirm the email we sent to {email} to manage it from any device', { email: contact.email }) : '';
       $('form').style.display = 'none';
       $('intro').style.display = 'none';
       $('success').style.display = 'block';
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }).catch(function(err){
-      $('submit-err').textContent = (err && err.message) || 'Something went wrong. Please try again.';
+      $('submit-err').textContent = (err && err.message) || t('Something went wrong. Please try again.');
       $('submit-err').classList.add('on');
-      btn.disabled = false; btn.textContent = 'Submit for review';
+      btn.disabled = false; btn.textContent = t('Submit for review');
     });
   });
 

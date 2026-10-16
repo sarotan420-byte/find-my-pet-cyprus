@@ -5,8 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Pet listing — Find My Pet Cyprus</title>
 <script src="./ds-base.js"></script>
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<link rel="stylesheet" href="site.css?v=9" />
+<script src="i18n.js?v=9"></script>
+<link rel="stylesheet" href="vendor/leaflet/leaflet.css" />
+<script src="vendor/leaflet/leaflet.js"></script>
 <style>
 :root { --edge: clamp(16px, 4vw, 48px); --white: #fff; }
 body { margin: 0; background: var(--white); text-wrap: pretty; }
@@ -52,7 +54,7 @@ body { margin: 0; background: var(--white); text-wrap: pretty; }
 #mini-map { width: 100%; height: 220px; border-radius: var(--radius-lg); overflow: hidden; margin-top: var(--space-3); }
 
 .side-card { background: var(--color-surface); border-radius: calc(var(--radius-lg) * 1.15); padding: var(--space-4); position: sticky; top: 80px; box-shadow: var(--shadow-sm); }
-.side-card h3 { font-family: var(--font-heading); font-weight: var(--font-heading-weight); font-size: 19px; margin: 0 0 6px; }
+.side-card h3, .side-card .side-title { font-family: var(--font-heading); font-weight: var(--font-heading-weight); font-size: 19px; margin: 0 0 6px; }
 .side-card p { font-size: 13.5px; color: color-mix(in srgb, var(--color-text) 70%, transparent); margin: 0 0 var(--space-3); }
 .reveal { display: flex; flex-direction: column; gap: 8px; }
 .reveal .contact-line { display: none; font-size: 15px; padding: 10px 12px; background: var(--color-accent-100); border-radius: var(--radius-md); font-weight: 600; color: var(--color-accent-800); }
@@ -79,72 +81,92 @@ body { margin: 0; background: var(--white); text-wrap: pretty; }
     <a href="index.html">Map</a>
   </span>
   <span class="actions">
+    <a class="lang-switch" href="el/index.html" lang="el" hreflang="el" title="Ελληνικά">ΕΛ</a>
     <a href="account.html">Sign in</a>
     <a href="submit.html" class="btn btn-primary">Report a pet</a>
   </span>
 </nav>
 
 <div class="wrap" id="content">
-  <a class="back" id="back" href="search.html">← Back to listings</a>
+  <a class="back" id="back" href="missing.html">← Back to listings</a>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.79.0/dist/umd/supabase.js"></script>
+<footer class="site-foot">
+  <div class="foot-in">
+    <div><b>Find My Pet Cyprus</b><span>Free community website for lost, found and adoptable pets across Cyprus. Every listing is checked by a moderator.</span></div>
+    <nav aria-label="Pets by district"><h2>Pets by district</h2><ul>
+      <li><a href="area/nicosia.html">Nicosia</a></li><li><a href="area/limassol.html">Limassol</a></li><li><a href="area/larnaca.html">Larnaca</a></li>
+      <li><a href="area/paphos.html">Paphos</a></li><li><a href="area/famagusta.html">Famagusta</a></li><li><a href="area/kyrenia.html">Kyrenia</a></li>
+    </ul></nav>
+    <nav aria-label="Site links"><h2>Find My Pet Cyprus</h2><ul>
+      <li><a href="submit.html">Report a missing or found pet</a></li><li><a href="adopt.html">Pets for adoption</a></li>
+      <li><a href="privacy.html">Privacy policy</a></li><li><a href="terms.html">Terms of use</a></li><li><a href="account.html">Your account</a></li>
+    </ul></nav>
+    <p class="foot-note">© 2026 Find My Pet Cyprus · No advertising or tracking cookies · This site does not replace reporting to the police, your municipality or a vet.</p>
+  </div>
+</footer>
+
+<script src="vendor/supabase.js"></script>
 <script src="config.js?v=8"></script>
 <script src="data.js?v=8"></script>
 <script src="api.js?v=8"></script>
 <script>
 (function(){
-  var id = Number(new URLSearchParams(location.search).get('id'));
+  var id = window.LISTING_ID || Number(new URLSearchParams(location.search).get('id'));
   var content = document.getElementById('content');
   function notFound(msg){
-    content.insertAdjacentHTML('beforeend', '<div class="missing-box"><h1 class="pet-name" style="font-size:26px">Listing not available</h1><p class="desc">' + msg + '</p><p><a class="btn btn-primary" href="index.html">Back to the map</a></p></div>');
+    var ssr = document.getElementById('ssr'); if (ssr) return;   // keep the pre-built page if live data can't load
+    content.insertAdjacentHTML('beforeend', '<div class="missing-box"><h1 class="pet-name" style="font-size:26px">' + t('Listing not available') + '</h1><p class="desc">' + msg + '</p><p><a class="btn btn-primary" href="' + lp('index.html') + '">' + t('Back to the map') + '</a></p></div>');
   }
   API.ready.then(function(){ return id ? API.getListing(id) : null; }).then(function(p){
-    if (!p) return notFound('It may have been removed, marked as reunited, or is still waiting for review.');
+    if (!p) { var ssr0 = document.getElementById('ssr'); if (ssr0) ssr0.remove(); return notFound(t('It may have been removed, marked as reunited, or is still waiting for review.')); }
     render(p);
-  }).catch(function(){ notFound('Could not load this listing. Please check your connection and try again.'); });
+  }).catch(function(){ notFound(t('Could not load this listing. Please check your connection and try again.')); });
 
   function render(p){
+  var ssr = document.getElementById('ssr'); if (ssr) ssr.remove();
   var isAdopt = p.status === 'adoption';
-  var unnamed = p.name === 'Unnamed';
-  var title = unnamed ? p.color + ' ' + (p.exoticType || p.species).toLowerCase() : p.name;
-  document.title = title + ' — Find My Pet Cyprus';
-  var md = document.querySelector('meta[name="description"]'); if (md) md.setAttribute('content', (p.desc || '').slice(0, 155));
-  document.getElementById('back').href = isAdopt ? 'adopt.html' : p.status === 'missing' ? 'missing.html' : 'found.html';
+  var title = API.petTitle(p);
+  var kind = API.kind(p);
+  document.title = title + ' — ' + API.statusLabel(p.status) + ' ' + kind.toLowerCase() + ', ' + t(p.district) + ' | Find My Pet Cyprus';
+  var md = document.querySelector('meta[name="description"]'); if (md) md.setAttribute('content', (p.desc || '').replace(/&[a-z#0-9]+;/gi, ' ').slice(0, 155));
+  if (!document.querySelector('link[rel="canonical"]')) { var cl = document.createElement('link'); cl.rel = 'canonical'; cl.href = 'https://www.findmypetcy.com/' + lp(API.petPath(p)); document.head.appendChild(cl); }
+  document.getElementById('back').href = lp(isAdopt ? 'adopt.html' : p.status === 'missing' ? 'missing.html' : 'found.html');
 
-  var statusLabel = isAdopt ? 'For adoption' : p.status === 'missing' ? 'Missing' : 'Found';
+  var statusLabel = API.statusLabel(p.status);
   var tagClass = p.status === 'missing' ? 'tag-accent' : 'tag-accent-2';
   var photos = p.photos && p.photos.length ? p.photos : [p.photo];
   var notice = '';
-  if (p.closed) notice = '<div class="notice">This listing has been closed by the person who posted it.</div>';
-  else if (p.moderationStatus && p.moderationStatus !== 'approved') notice = '<div class="notice">Only you can see this. It is ' + ({ pending: 'waiting for review', changes: 'waiting for changes', rejected: 'not approved' }[p.moderationStatus] || p.moderationStatus) + '.</div>';
-  var when = isAdopt ? 'Available from ' : p.status === 'missing' ? 'Missing since ' : 'Found ';
+  if (p.closed) notice = '<div class="notice">' + t('This listing has been closed by the person who posted it.') + '</div>';
+  else if (p.moderationStatus && p.moderationStatus !== 'approved') notice = '<div class="notice">' + t({ pending: 'Only you can see this. It is waiting for review.', changes: 'Only you can see this. It is waiting for changes.', rejected: 'Only you can see this. It was not approved.' }[p.moderationStatus] || 'Only you can see this. It is waiting for review.') + '</div>';
+  var when = t(isAdopt ? 'Available from {date}' : p.status === 'missing' ? 'Missing since {date}' : 'Found {date}', { date: API.fmtDate(p.date, true) });
+  var shareUrl = 'https://www.findmypetcy.com/' + lp(API.petPath(p));
 
   content.insertAdjacentHTML('beforeend', notice +
     '<div class="layout">' +
       '<div>' +
-        '<button type="button" class="photo-main" id="photo-main" aria-label="View photo full size"><span class="blur" id="main-blur" style="background-image:url(\'' + photos[0] + '\')"></span><img id="main-photo" src="' + photos[0] + '" alt="' + title + '"><span class="zoom">⤢ Full size</span></button>' +
-        (photos.length > 1 ? '<div class="thumbs">' + photos.map(function(u, i){ return '<button type="button" data-src="' + u + '" aria-current="' + (i === 0) + '" aria-label="Photo ' + (i + 1) + '"><img src="' + u + '" alt=""></button>'; }).join('') + '</div>' : '') +
+        '<button type="button" class="photo-main" id="photo-main" aria-label="' + t('View photo full size') + '"><span class="blur" id="main-blur" style="background-image:url(\'' + photos[0] + '\')"></span><img id="main-photo" src="' + photos[0] + '" alt="' + title + ' — ' + statusLabel + ' ' + kind.toLowerCase() + ', ' + API.areaText(p) + '"><span class="zoom">⤢ ' + t('Full size') + '</span></button>' +
+        (photos.length > 1 ? '<div class="thumbs">' + photos.map(function(u, i){ return '<button type="button" data-src="' + u + '" aria-current="' + (i === 0) + '" aria-label="' + t('Photo {n}', { n: i + 1 }) + '"><img src="' + u + '" alt=""></button>'; }).join('') + '</div>' : '') +
         '<div class="head-row"><h1 class="pet-name">' + title + '</h1><span class="tag ' + tagClass + '">' + statusLabel + '</span></div>' +
-        '<p class="meta-line">' + (p.exoticType || p.species) + ' · ' + p.area + ' · ' + when + new Date(p.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'long' }) + (p.time ? ', around ' + p.time : '') + '</p>' +
+        '<p class="meta-line">' + kind + ' · ' + API.areaText(p) + ' · ' + when + (p.time ? ', ' + t('around {time}', { time: p.time }) : '') + '</p>' +
         '<p class="desc">' + p.desc + '</p>' +
         '<div class="facts">' +
-          '<div class="fact"><div class="k">Breed</div><div class="v">' + p.breed + '</div></div>' +
-          '<div class="fact"><div class="k">Colour</div><div class="v">' + p.color + (p.markings ? ' · ' + p.markings : '') + '</div></div>' +
-          '<div class="fact"><div class="k">' + (isAdopt ? 'Age' : 'Size · sex') + '</div><div class="v">' + (isAdopt ? (p.age || '—') + (p.ageText ? ' · ' + p.ageText : '') : p.size + ' · ' + (p.sex === 'Unknown' ? 'sex unknown' : p.sex)) + '</div></div>' +
+          '<div class="fact"><div class="k">' + t('Breed') + '</div><div class="v">' + t(p.breed) + '</div></div>' +
+          '<div class="fact"><div class="k">' + t('Colour') + '</div><div class="v">' + p.color + (p.markings ? ' · ' + p.markings : '') + '</div></div>' +
+          '<div class="fact"><div class="k">' + t(isAdopt ? 'Age' : 'Size · sex') + '</div><div class="v">' + (isAdopt ? t(p.age || '—') + (p.ageText ? ' · ' + p.ageText : '') : t(p.size) + ' · ' + (p.sex === 'Unknown' ? t('sex unknown') : t(p.sex))) + '</div></div>' +
         '</div>' +
         '<div id="mini-map"></div>' +
       '</div>' +
       '<div>' +
         '<div class="side-card">' +
-          '<h3>' + (isAdopt ? 'Interested in ' + title + '?' : p.status === 'missing' ? 'Seen this pet?' : 'Is this your pet?') + '</h3>' +
-          '<p>Contact details are shared only after you tap the button, which keeps them out of search engines and spam.</p>' +
+          '<h2 class="side-title">' + (isAdopt ? t('Interested in {name}?', { name: title }) : t(p.status === 'missing' ? 'Seen this pet?' : 'Is this your pet?')) + '</h2>' +
+          '<p>' + t('Contact details are shared only after you tap the button, which keeps them out of search engines and spam.') + '</p>' +
           '<div class="reveal" id="reveal">' +
-            '<button class="btn btn-primary btn-block" id="reveal-btn" type="button">Show contact details</button>' +
+            '<button class="btn btn-primary btn-block" id="reveal-btn" type="button">' + t('Show contact details') + '</button>' +
             '<div class="contact-line" id="contact-line"></div>' +
           '</div>' +
-          '<a class="btn btn-secondary btn-block" style="margin-top:10px" href="poster.html?id=' + p.id + '">Make a poster to print or share</a>' +
-          '<div class="share-row"><a class="btn btn-secondary" href="index.html">Nearby listings</a><button class="btn btn-secondary" type="button" id="share-btn">Share link</button></div>' +
+          '<a class="btn btn-secondary btn-block" style="margin-top:10px" href="' + lp('poster.html?id=' + p.id) + '">' + t('Make a poster to print or share') + '</a>' +
+          '<div class="share-row"><a class="btn btn-secondary" href="' + lp('index.html') + '">' + t('Nearby listings') + '</a><button class="btn btn-secondary" type="button" id="share-btn" data-url="' + shareUrl + '">' + t('Share link') + '</button></div>' +
         '</div>' +
       '</div>' +
     '</div>'
@@ -161,15 +183,15 @@ body { margin: 0; background: var(--white); text-wrap: pretty; }
 
   var cur = 0;
   var lb = document.createElement('div');
-  lb.className = 'lightbox'; lb.setAttribute('role', 'dialog'); lb.setAttribute('aria-modal', 'true'); lb.setAttribute('aria-label', 'Photo viewer');
-  lb.innerHTML = '<img alt="">' + '<button type="button" class="lb-close" aria-label="Close">✕</button>' +
-    (photos.length > 1 ? '<button type="button" class="lb-prev" aria-label="Previous photo">‹</button><button type="button" class="lb-next" aria-label="Next photo">›</button>' : '') +
+  lb.className = 'lightbox'; lb.setAttribute('role', 'dialog'); lb.setAttribute('aria-modal', 'true'); lb.setAttribute('aria-label', t('Photo viewer'));
+  lb.innerHTML = '<img alt="">' + '<button type="button" class="lb-close" aria-label="' + t('Close') + '">✕</button>' +
+    (photos.length > 1 ? '<button type="button" class="lb-prev" aria-label="' + t('Previous photo') + '">‹</button><button type="button" class="lb-next" aria-label="' + t('Next photo') + '">›</button>' : '') +
     '<div class="lb-count"></div>';
   document.body.appendChild(lb);
   function lbShow(i){
     cur = (i + photos.length) % photos.length;
     lb.querySelector('img').src = photos[cur];
-    lb.querySelector('img').alt = title + ' — photo ' + (cur + 1);
+    lb.querySelector('img').alt = title + ' — ' + t('Photo {n}', { n: cur + 1 });
     lb.querySelector('.lb-count').textContent = photos.length > 1 ? (cur + 1) + ' / ' + photos.length : '';
   }
   function lbOpen(){ lbShow(cur); lb.classList.add('on'); document.body.style.overflow = 'hidden'; lb.querySelector('.lb-close').focus(); }
@@ -189,18 +211,19 @@ body { margin: 0; background: var(--white); text-wrap: pretty; }
   lb.addEventListener('touchend', function(e){ if (tx == null || photos.length < 2) return; var dx = e.changedTouches[0].clientX - tx; if (Math.abs(dx) > 50) lbShow(cur + (dx < 0 ? 1 : -1)); tx = null; });
 
   document.getElementById('reveal-btn').addEventListener('click', function(){
-    var btn = this; btn.disabled = true; btn.textContent = 'Loading…';
+    var btn = this; btn.disabled = true; btn.textContent = t('Loading…');
     API.revealContact(p.id, p).then(function(c){
       var line = document.getElementById('contact-line');
-      line.innerHTML = c ? c.name + ' · <a href="tel:' + c.phone.replace(/[^\d+]/g, '') + '">' + c.phone + '</a>' : 'Contact details are not available.';
+      line.innerHTML = c ? c.name + ' · <a href="tel:' + c.phone.replace(/[^\d+]/g, '') + '">' + c.phone + '</a>' : t('Contact details are not available.');
       document.getElementById('reveal').classList.add('on');
-    }).catch(function(){ btn.disabled = false; btn.textContent = 'Show contact details'; alert('Could not load contact details. Please try again.'); });
+    }).catch(function(){ btn.disabled = false; btn.textContent = t('Show contact details'); alert(t('Could not load contact details. Please try again.')); });
   });
 
   document.getElementById('share-btn').addEventListener('click', function(){
-    var data = { title: document.title, url: location.href };
+    var url = this.dataset.url || location.href;
+    var data = { title: document.title, url: url };
     if (navigator.share) navigator.share(data).catch(function(){});
-    else if (navigator.clipboard) navigator.clipboard.writeText(location.href).then(function(){ document.getElementById('share-btn').textContent = 'Link copied'; });
+    else if (navigator.clipboard) navigator.clipboard.writeText(url).then(function(){ document.getElementById('share-btn').textContent = t('Link copied'); });
   });
 
   var map = L.map('mini-map', { zoomControl: false, dragging: true, scrollWheelZoom: false }).setView([p.lat, p.lng], 13);

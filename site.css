@@ -1,0 +1,13 @@
+/* Shared site chrome: language switch + footer */
+.lang-switch { font-size: 13px; font-weight: 700; letter-spacing: .04em; text-decoration: none; color: var(--color-text); border: 1px solid var(--color-neutral-300); border-radius: 999px; padding: 4px 10px; }
+.lang-switch:hover { border-color: var(--color-accent); color: var(--color-accent-700); }
+.site-foot { border-top: 1px solid var(--color-neutral-200); margin-top: calc(2 * var(--space-6)); background: #fff; }
+.site-foot .foot-in { max-width: 1320px; margin: 0 auto; padding: var(--space-6) clamp(16px, 4vw, 48px); display: grid; grid-template-columns: 1.2fr 1fr 1fr; gap: var(--space-6); font-size: 13.5px; color: color-mix(in srgb, var(--color-text) 72%, transparent); }
+@media (max-width: 760px) { .site-foot .foot-in { grid-template-columns: 1fr; gap: var(--space-4); } }
+.site-foot b { display: block; font-family: var(--font-heading); font-weight: var(--font-heading-weight); font-size: 17px; color: var(--color-text); margin-bottom: 4px; }
+.site-foot h2 { font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; margin: 0 0 8px; font-family: var(--font-body); color: color-mix(in srgb, var(--color-text) 60%, transparent); }
+.site-foot ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.site-foot a { color: inherit; }
+.site-foot .foot-note { grid-column: 1 / -1; margin: 0; font-size: 12.5px; border-top: 1px solid var(--color-neutral-100); padding-top: var(--space-3); }
+/* Greek: buttons and small labels read better in the body font (the Greek display face is for large headings) */
+:lang(el) .btn, :lang(el) .chip, :lang(el) .seg button { font-family: var(--font-body); font-weight: 700; letter-spacing: 0; }

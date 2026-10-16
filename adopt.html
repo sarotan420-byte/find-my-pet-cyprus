@@ -7,6 +7,8 @@
 <meta name="description" content="Adopt a dog, cat or other pet in Cyprus. Browse pets from shelters, rescue groups and foster homes, filtered by age, size, colour and who they're good with." />
 <link rel="canonical" href="/adopt" />
 <script src="./ds-base.js"></script>
+<link rel="stylesheet" href="site.css?v=9" />
+<script src="i18n.js?v=9"></script>
 <style>
 :root { --edge: clamp(16px, 4vw, 48px); --white: #fff; }
 body { margin: 0; background: var(--white); text-wrap: pretty; }
@@ -130,6 +132,7 @@ a:hover { color: var(--color-accent-800); }
     <a href="index.html">Map</a>
   </span>
   <span class="actions">
+    <a class="lang-switch" href="el/index.html" lang="el" hreflang="el" title="Ελληνικά">ΕΛ</a>
     <a href="account.html">Sign in</a>
     <a href="submit.html" class="btn btn-primary">Report a pet</a>
   </span>
@@ -269,7 +272,22 @@ a:hover { color: var(--color-accent-800); }
   </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.79.0/dist/umd/supabase.js"></script>
+<footer class="site-foot">
+  <div class="foot-in">
+    <div><b>Find My Pet Cyprus</b><span>Free community website for lost, found and adoptable pets across Cyprus. Every listing is checked by a moderator.</span></div>
+    <nav aria-label="Pets by district"><h2>Pets by district</h2><ul>
+      <li><a href="area/nicosia.html">Nicosia</a></li><li><a href="area/limassol.html">Limassol</a></li><li><a href="area/larnaca.html">Larnaca</a></li>
+      <li><a href="area/paphos.html">Paphos</a></li><li><a href="area/famagusta.html">Famagusta</a></li><li><a href="area/kyrenia.html">Kyrenia</a></li>
+    </ul></nav>
+    <nav aria-label="Site links"><h2>Find My Pet Cyprus</h2><ul>
+      <li><a href="submit.html">Report a missing or found pet</a></li><li><a href="adopt.html">Pets for adoption</a></li>
+      <li><a href="privacy.html">Privacy policy</a></li><li><a href="terms.html">Terms of use</a></li><li><a href="account.html">Your account</a></li>
+    </ul></nav>
+    <p class="foot-note">© 2026 Find My Pet Cyprus · No advertising or tracking cookies · This site does not replace reporting to the police, your municipality or a vet.</p>
+  </div>
+</footer>
+
+<script src="vendor/supabase.js"></script>
 <script src="config.js?v=8"></script>
 <script src="data.js?v=8"></script>
 <script src="api.js?v=8"></script>
@@ -282,9 +300,9 @@ API.ready.then(function(){
   var AGE_ORDER = window.AGES;
   var BOOLS = { neutered: 'Neutered', vaccinated: 'Vaccinated', chipped: 'Microchipped' };
 
-  $('ages').innerHTML = AGE_ORDER.map(function(a){ return '<label class="opt"><input type="checkbox" value="' + a + '"><span>' + a + '</span></label>'; }).join('');
-  $('colours').innerHTML = window.COLOURS.map(function(c){ return '<label class="swatch"><input type="checkbox" value="' + c.name + '"><i style="background:' + c.swatch + '"></i><span>' + c.name + '</span></label>'; }).join('');
-  window.AREAS.forEach(function(a){ var o = document.createElement('option'); o.value = a; o.textContent = a; $('district').appendChild(o); });
+  $('ages').innerHTML = AGE_ORDER.map(function(a){ return '<label class="opt"><input type="checkbox" value="' + a + '"><span>' + t(a) + '</span></label>'; }).join('');
+  $('colours').innerHTML = window.COLOURS.map(function(c){ return '<label class="swatch"><input type="checkbox" value="' + c.name + '"><i style="background:' + c.swatch + '"></i><span>' + t(c.name) + '</span></label>'; }).join('');
+  window.AREAS.forEach(function(a){ var o = document.createElement('option'); o.value = a; o.textContent = t(a); $('district').appendChild(o); });
 
   function checked(sel){ return Array.prototype.map.call(document.querySelectorAll(sel + ' input:checked'), function(i){ return i.value; }); }
   var NEAR = NearFilter({ input: 'near', radius: 'near-r', status: 'near-status', onChange: function(){ if (NEAR.get() && !nearUsed) { nearUsed = true; $('sort').value = 'near'; } update(); } });
@@ -315,16 +333,16 @@ API.ready.then(function(){
   function chips(){
     var out = [];
     if (s.q) out.push(['q', '“' + s.q + '”']);
-    var n = NEAR.get(); if (n) out.push(['near', 'Within ' + n.r + ' km of ' + n.label]);
-    if (s.species) out.push(['species', s.species === 'Other' ? 'Other / exotic' : s.species]);
-    s.ages.forEach(function(v){ out.push(['#ages|' + v, v]); });
-    if (s.species !== 'Other') s.colours.forEach(function(v){ out.push(['#colours|' + v, v]); });
-    s.sizes.forEach(function(v){ out.push(['#sizes|' + v, v]); });
-    s.good.forEach(function(v){ out.push(['#good|' + v, 'Good with ' + v.toLowerCase()]); });
-    if (s.sex) out.push(['sex', s.sex]);
-    if (s.district) out.push(['district', s.district]);
-    if (s.lister) out.push(['lister', s.lister]);
-    for (var k in BOOLS) if (s[k]) out.push([k, BOOLS[k]]);
+    var n = NEAR.get(); if (n) out.push(['near', t('Within {r} km of {place}', { r: n.r, place: n.label })]);
+    if (s.species) out.push(['species', t(s.species === 'Other' ? 'Other / exotic' : s.species)]);
+    s.ages.forEach(function(v){ out.push(['#ages|' + v, t(v)]); });
+    if (s.species !== 'Other') s.colours.forEach(function(v){ out.push(['#colours|' + v, t(v)]); });
+    s.sizes.forEach(function(v){ out.push(['#sizes|' + v, t(v)]); });
+    s.good.forEach(function(v){ out.push(['#good|' + v, t('Good with {x}', { x: t(v).toLowerCase() })]); });
+    if (s.sex) out.push(['sex', t(s.sex)]);
+    if (s.district) out.push(['district', t(s.district)]);
+    if (s.lister) out.push(['lister', t(s.lister)]);
+    for (var k in BOOLS) if (s[k]) out.push([k, t(BOOLS[k])]);
     return out;
   }
   function clearOne(k){
@@ -350,7 +368,7 @@ API.ready.then(function(){
       var nr = NEAR.get(); if (s.sort === 'near' && nr) return API.km(nr, a) - API.km(nr, b);
       return new Date(b.date) - new Date(a.date);
     });
-    $('count').textContent = rows.length + ' of ' + pets.length + ' pets for adoption';
+    $('count').textContent = t('{n} of {total} pets for adoption', { n: rows.length, total: pets.length });
     var c = chips();
     $('active').innerHTML = c.map(function(x){ return '<button type="button" class="pill" data-k="' + x[0] + '">' + x[1] + ' <span aria-hidden="true">✕</span></button>'; }).join('') + (c.length ? '<button type="button" class="clear-all" id="clear-all">Clear all</button>' : '');
     $('active').querySelectorAll('.pill').forEach(function(b){ b.addEventListener('click', function(){ clearOne(b.dataset.k); }); });
@@ -358,19 +376,19 @@ API.ready.then(function(){
     $('filter-count').textContent = c.length ? '(' + c.length + ')' : '';
 
     $('results').innerHTML = rows.length ? rows.map(function(p){
-      var kind = p.species === 'Other' ? (p.exoticType || 'Exotic') : p.species;
-      return '<a class="row" href="listing.html?id=' + p.id + '">' +
-        '<div class="ph"><img src="' + p.photo + '" alt="' + p.name + ', ' + p.color.toLowerCase() + ' ' + kind.toLowerCase() + '"></div>' +
+      var kind = API.kind(p), title = API.petTitle(p);
+      return '<a class="row" href="' + lp(API.petPath(p)) + '">' +
+        '<div class="ph"><img src="' + p.photo + '" alt="' + title + ' — ' + t('for adoption') + ', ' + API.areaText(p) + '" loading="lazy"></div>' +
         '<div class="body">' +
-          '<div class="top"><h2 class="nm">' + p.name + '</h2><span class="date">' + p.age + '</span></div>' +
-          '<div class="sub">' + kind + ' · ' + p.ageText + ' · ' + p.sex + '</div>' +
-          '<div class="traits"><span>' + p.breed + '</span><span>' + p.size + '</span>' +
-            '<span class="cols">' + p.colours.map(function(cn){ var w = window.COLOURS.find(function(x){ return x.name === cn; }); return '<i title="' + cn + '" style="background:' + (w ? w.swatch : '#ccc') + '"></i>'; }).join('') + p.color + '</span></div>' +
-          (p.goodWith.length ? '<div class="good"><b>Good with</b>' + p.goodWith.map(function(g){ return '<span>' + g.toLowerCase() + '</span>'; }).join('') + '</div>' : '') +
-          '<div class="health">' + Object.keys(BOOLS).map(function(k){ return '<span class="' + (p[k] ? '' : 'no') + '">' + ic(p[k]) + BOOLS[k] + '</span>'; }).join('') + '</div>' +
-          '<div class="foot"><span class="loc">' + p.area + (NEAR.get() ? ' · ' + API.km(NEAR.get(), p).toFixed(1) + ' km' : '') + ' <span class="lister">· ' + p.lister + '</span></span><span class="btn btn-primary meet">Meet ' + p.name + '</span></div>' +
+          '<div class="top"><h2 class="nm">' + title + '</h2><span class="date">' + t(p.age || '') + '</span></div>' +
+          '<div class="sub">' + [kind, p.ageText, p.sex !== 'Unknown' ? t(p.sex) : ''].filter(Boolean).join(' · ') + '</div>' +
+          '<div class="traits"><span>' + t(p.breed) + '</span><span>' + t(p.size) + '</span>' +
+            '<span class="cols">' + p.colours.map(function(cn){ var w = window.COLOURS.find(function(x){ return x.name === cn; }); return '<i title="' + t(cn) + '" style="background:' + (w ? w.swatch : '#ccc') + '"></i>'; }).join('') + p.color + '</span></div>' +
+          (p.goodWith.length ? '<div class="good"><b>' + t('Good with') + '</b>' + p.goodWith.map(function(g){ return '<span>' + t(g).toLowerCase() + '</span>'; }).join('') + '</div>' : '') +
+          '<div class="health">' + Object.keys(BOOLS).map(function(k){ return '<span class="' + (p[k] ? '' : 'no') + '">' + ic(p[k]) + t(BOOLS[k]) + '</span>'; }).join('') + '</div>' +
+          '<div class="foot"><span class="loc">' + API.areaText(p) + (NEAR.get() ? ' · ' + API.km(NEAR.get(), p).toFixed(1) + ' ' + t('km') : '') + (p.lister ? ' <span class="lister">· ' + t(p.lister) + '</span>' : '') + '</span><span class="btn btn-primary meet">' + t('Meet {name}', { name: title }) + '</span></div>' +
         '</div></a>';
-    }).join('') : '<div class="empty"><h3>No matches</h3><p>Try removing a filter. New pets are added as soon as a moderator approves them.</p></div>';
+    }).join('') : '<div class="empty"><h3>' + t('No matches') + '</h3><p>' + t('Try removing a filter. New pets are added as soon as a moderator approves them.') + '</p></div>';
   }
 
   function update(){ read(); render(); }

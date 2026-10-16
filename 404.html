@@ -6,18 +6,26 @@
 <meta name="robots" content="noindex" />
 <title>Page not found — Find My Pet Cyprus</title>
 <script>
-// Send links from the previous version of the site to the new pages.
+// Send links from the previous version of the site, and pets whose page is still being built, to the right place.
 (function(){
   var p = location.pathname.replace(/\/+$/, '').toLowerCase();
+  var el = /^\/el(\/|$)/.test(p); if (el) p = p.replace(/^\/el/, '') || '/';
+  var pre = el ? '/el' : '';
   var m, to = null;
-  if ((m = p.match(/^\/(?:listing|pet)\/(\d+)/))) to = '/listing.html?id=' + m[1];
-  else if ((m = p.match(/^\/area\/([a-z-]+)/))) to = '/missing.html?district=' + m[1].charAt(0).toUpperCase() + m[1].slice(1);
-  else if (p === '/search' || p === '/map') to = '/index.html';
-  else if (p === '/submit' || p === '/report') to = '/submit.html';
-  else if (p === '/account') to = '/account.html';
+  if ((m = p.match(/^\/(?:listing|pet)\/(\d+)/))) to = pre + '/listing.html?id=' + m[1];
+  else if ((m = p.match(/^\/area\/([a-z-]+)/))) to = pre + '/missing.html?district=' + m[1].charAt(0).toUpperCase() + m[1].slice(1);
+  else if (p === '/search' || p === '/map') to = pre + '/index.html';
+  else if (p === '/submit' || p === '/report') to = pre + '/submit.html';
+  else if (p === '/account') to = pre + '/account.html';
   else if (p === '/admin' || p === '/moderation') to = '/moderation.html';
-  else if (/^\/(missing|found|adopt)$/.test(p)) to = p + '.html';
-  if (to) location.replace(to + (to.indexOf('?') > -1 ? location.search.replace(/^\?/, '&') : location.search) + location.hash);
+  else if (/^\/(missing|found|adopt|privacy|terms)$/.test(p)) to = pre + p + '.html';
+  if (to) { location.replace(to + (to.indexOf('?') > -1 ? location.search.replace(/^\?/, '&') : location.search) + location.hash); return; }
+  if (el) document.addEventListener('DOMContentLoaded', function(){
+    document.documentElement.lang = 'el';
+    document.querySelector('h1').textContent = 'Η σελίδα δεν βρέθηκε';
+    document.querySelector('p').textContent = 'Η σελίδα δεν υπάρχει ή έχει μετακινηθεί.';
+    var a = document.querySelector('a'); a.textContent = 'Στον χάρτη'; a.href = '/el/';
+  });
 })();
 </script>
 <style>

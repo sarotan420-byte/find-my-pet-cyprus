@@ -6,11 +6,11 @@ window.NearFilter = function(o){
     q = (q || '').trim();
     var my = ++seq;
     if (!q) { cur = null; status.textContent = ''; o.onChange(); return Promise.resolve(); }
-    status.textContent = 'Looking up…';
+    status.textContent = t('Looking up…');
     return API.geocode(q).then(function(r){
       if (my !== seq) return;
-      if (!r) { cur = null; status.textContent = 'Couldn’t find that. Try a 4-digit postcode or a town name.'; }
-      else { cur = { lat: r.lat, lng: r.lng, label: r.name, q: q }; status.textContent = (r.exact ? '' : 'Approximate: ') + r.name; }
+      if (!r) { cur = null; status.textContent = t('Couldn’t find that. Try a 4-digit postcode or a town name.'); }
+      else { cur = { lat: r.lat, lng: r.lng, label: r.name, q: q }; status.textContent = (r.exact ? '' : t('Approximate:') + ' ') + r.name; }
       o.onChange();
     });
   }

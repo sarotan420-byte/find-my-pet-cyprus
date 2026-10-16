@@ -16,9 +16,9 @@ API.ready.then(function(){
 
   // Build colour chips
   $('colours').innerHTML = window.COLOURS.map(function(c){
-    return '<label class="swatch"><input type="checkbox" value="' + c.name + '"><i style="background:' + c.swatch + '"></i><span>' + c.name + '</span></label>';
+    return '<label class="swatch"><input type="checkbox" value="' + c.name + '"><i style="background:' + c.swatch + '"></i><span>' + t(c.name) + '</span></label>';
   }).join('');
-  window.AREAS.forEach(function(a){ var o = document.createElement('option'); o.value = a; o.textContent = a; $('district').appendChild(o); });
+  window.AREAS.forEach(function(a){ var o = document.createElement('option'); o.value = a; o.textContent = t(a); $('district').appendChild(o); });
 
   // Sync controls from state
   $('q').value = state.q; $('species').value = state.species; $('sex').value = state.sex;
@@ -69,15 +69,15 @@ API.ready.then(function(){
   function activeChips(){
     var out = [];
     if (state.q) out.push(['q', '“' + state.q + '”']);
-    var n = NEAR.get(); if (n) out.push(['near', 'Within ' + n.r + ' km of ' + n.label]);
-    if (state.species) out.push(['species', state.species]);
-    if (state.species !== 'Other') state.colours.forEach(function(c){ out.push(['colour:' + c, c]); });
-    state.size.forEach(function(s){ out.push(['size:' + s, s]); });
-    if (state.sex) out.push(['sex', state.sex]);
-    if (state.district) out.push(['district', state.district]);
-    if (state.collar) out.push(['collar', 'Wearing collar']);
-    if (state.chipped) out.push(['chipped', 'Microchipped']);
-    if (state.since) out.push(['since', 'Last ' + state.since + ' days']);
+    var n = NEAR.get(); if (n) out.push(['near', t('Within {r} km of {place}', { r: n.r, place: n.label })]);
+    if (state.species) out.push(['species', t(state.species === 'Other' ? 'Other / exotic' : state.species)]);
+    if (state.species !== 'Other') state.colours.forEach(function(c){ out.push(['colour:' + c, t(c)]); });
+    state.size.forEach(function(s){ out.push(['size:' + s, t(s)]); });
+    if (state.sex) out.push(['sex', t(state.sex)]);
+    if (state.district) out.push(['district', t(state.district)]);
+    if (state.collar) out.push(['collar', t('Wearing collar')]);
+    if (state.chipped) out.push(['chipped', t('Microchipped')]);
+    if (state.since) out.push(['since', t('Last {n} days', { n: state.since })]);
     return out;
   }
 
@@ -101,7 +101,7 @@ API.ready.then(function(){
     history.replaceState(null, '', location.pathname + (qs ? '?' + qs : ''));
   }
 
-  function fmtDate(d){ return new Date(d).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }); }
+  function fmtDate(d){ return API.fmtDate(d); }
 
   function render(){
     var rows = pets.filter(matches).sort(function(a, b){
@@ -111,31 +111,31 @@ API.ready.then(function(){
       return new Date(b.date) - new Date(a.date);
     });
 
-    $('count').textContent = rows.length + ' of ' + pets.length + ' ' + STATUS + ' pets';
+    $('count').textContent = t(STATUS === 'missing' ? '{n} of {total} missing pets' : '{n} of {total} found pets', { n: rows.length, total: pets.length });
     var chips = activeChips();
     $('active').innerHTML = chips.map(function(c){ return '<button type="button" class="pill" data-k="' + c[0] + '">' + c[1] + ' <span aria-hidden="true">✕</span></button>'; }).join('') +
-      (chips.length ? '<button type="button" class="clear-all" id="clear-all">Clear all</button>' : '');
+      (chips.length ? '<button type="button" class="clear-all" id="clear-all">' + t('Clear all') + '</button>' : '');
     $('active').querySelectorAll('.pill').forEach(function(b){ b.addEventListener('click', function(){ clearOne(b.dataset.k); }); });
     if ($('clear-all')) $('clear-all').addEventListener('click', clearAll);
     $('filter-count').textContent = chips.length ? '(' + chips.length + ')' : '';
 
     $('results').innerHTML = rows.length ? rows.map(function(p){
-      var unnamed = p.name === 'Unnamed';
-      return '<a class="row" href="listing.html?id=' + p.id + '">' +
-        '<div class="ph"><img src="' + p.photo + '" alt="' + (unnamed ? p.color + ' ' + (p.exoticType || p.species).toLowerCase() : p.name) + '"></div>' +
+      var title = API.petTitle(p);
+      return '<a class="row" href="' + lp(API.petPath(p)) + '">' +
+        '<div class="ph"><img src="' + p.photo + '" alt="' + title + ' — ' + API.statusLabel(p.status) + ', ' + API.areaText(p) + '" loading="lazy"></div>' +
         '<div class="body">' +
-          '<div class="top"><h2 class="nm">' + (unnamed ? p.color + ' ' + (p.exoticType || p.species).toLowerCase() : p.name) + '</h2><span class="date">' + (STATUS === 'missing' ? 'Missing since ' : 'Found ') + fmtDate(p.date) + '</span></div>' +
+          '<div class="top"><h2 class="nm">' + title + '</h2><span class="date">' + t(STATUS === 'missing' ? 'Missing since {date}' : 'Found {date}', { date: fmtDate(p.date) }) + '</span></div>' +
           '<div class="traits">' +
-            '<span>' + (p.species === 'Other' ? (p.exoticType || 'Exotic') : p.species) + '</span><span>' + p.breed + '</span><span>' + p.size + '</span>' + (p.sex !== 'Unknown' ? '<span>' + p.sex + '</span>' : '') +
-            '<span class="cols">' + (p.colours || []).map(function(c){ var s = window.COLOURS.find(function(x){ return x.name === c; }); return '<i title="' + c + '" style="background:' + (s ? s.swatch : '#ccc') + '"></i>'; }).join('') + p.color + '</span>' +
+            '<span>' + API.kind(p) + '</span><span>' + t(p.breed) + '</span><span>' + t(p.size) + '</span>' + (p.sex !== 'Unknown' ? '<span>' + t(p.sex) + '</span>' : '') +
+            '<span class="cols">' + (p.colours || []).map(function(c){ var s = window.COLOURS.find(function(x){ return x.name === c; }); return '<i title="' + t(c) + '" style="background:' + (s ? s.swatch : '#ccc') + '"></i>'; }).join('') + p.color + '</span>' +
           '</div>' +
           '<p class="desc">' + p.desc + '</p>' +
-          '<div class="foot"><span class="loc">' + p.area + (NEAR.get() ? ' · ' + API.km(NEAR.get(), p).toFixed(1) + ' km away' : '') + '</span>' +
-            (p.chipped ? '<span class="tag tag-accent-2">Microchipped</span>' : '') +
-            (p.collar ? '<span class="tag tag-neutral">Collar</span>' : '') +
+          '<div class="foot"><span class="loc">' + API.areaText(p) + (NEAR.get() ? ' · ' + t('{km} km away', { km: API.km(NEAR.get(), p).toFixed(1) }) : '') + '</span>' +
+            (p.chipped ? '<span class="tag tag-accent-2">' + t('Microchipped') + '</span>' : '') +
+            (p.collar ? '<span class="tag tag-neutral">' + t('Collar') + '</span>' : '') +
           '</div>' +
         '</div></a>';
-    }).join('') : '<div class="empty"><h3>No matches</h3><p>Try removing a filter. New listings appear here as soon as a moderator approves them.</p><a class="btn btn-primary" href="submit.html">Report a ' + STATUS + ' pet</a></div>';
+    }).join('') : '<div class="empty"><h3>' + t('No matches') + '</h3><p>' + t('Try removing a filter. New listings appear here as soon as a moderator approves them.') + '</p><a class="btn btn-primary" href="' + lp('submit.html?type=' + STATUS) + '">' + t(STATUS === 'missing' ? 'Report a missing pet' : 'Report a found pet') + '</a></div>';
   }
 
   function syncColourGroup(){ $('colour-group').style.display = state.species === 'Other' ? 'none' : ''; }

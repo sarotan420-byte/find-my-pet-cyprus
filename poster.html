@@ -6,6 +6,8 @@
 <meta name="robots" content="noindex" />
 <title>Poster — Find My Pet Cyprus</title>
 <script src="./ds-base.js"></script>
+<link rel="stylesheet" href="site.css?v=9" />
+<script src="i18n.js?v=9"></script>
 <style>
 :root { --edge: clamp(16px, 4vw, 48px); --white: #fff; }
 body { margin: 0; background: var(--white); text-wrap: pretty; }
@@ -99,6 +101,7 @@ body { margin: 0; background: var(--white); text-wrap: pretty; }
     <a href="index.html">Map</a>
   </span>
   <span class="actions">
+    <a class="lang-switch" href="el/index.html" lang="el" hreflang="el" title="Ελληνικά">ΕΛ</a>
     <a href="account.html">Sign in</a>
     <a href="submit.html" class="btn btn-primary">Report a pet</a>
   </span>
@@ -108,9 +111,24 @@ body { margin: 0; background: var(--white); text-wrap: pretty; }
   <p class="msg" id="loading">Loading…</p>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.79.0/dist/umd/supabase.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/html-to-image@1.11.11/dist/html-to-image.js"></script>
+<footer class="site-foot">
+  <div class="foot-in">
+    <div><b>Find My Pet Cyprus</b><span>Free community website for lost, found and adoptable pets across Cyprus. Every listing is checked by a moderator.</span></div>
+    <nav aria-label="Pets by district"><h2>Pets by district</h2><ul>
+      <li><a href="area/nicosia.html">Nicosia</a></li><li><a href="area/limassol.html">Limassol</a></li><li><a href="area/larnaca.html">Larnaca</a></li>
+      <li><a href="area/paphos.html">Paphos</a></li><li><a href="area/famagusta.html">Famagusta</a></li><li><a href="area/kyrenia.html">Kyrenia</a></li>
+    </ul></nav>
+    <nav aria-label="Site links"><h2>Find My Pet Cyprus</h2><ul>
+      <li><a href="submit.html">Report a missing or found pet</a></li><li><a href="adopt.html">Pets for adoption</a></li>
+      <li><a href="privacy.html">Privacy policy</a></li><li><a href="terms.html">Terms of use</a></li><li><a href="account.html">Your account</a></li>
+    </ul></nav>
+    <p class="foot-note">© 2026 Find My Pet Cyprus · No advertising or tracking cookies · This site does not replace reporting to the police, your municipality or a vet.</p>
+  </div>
+</footer>
+
+<script src="vendor/supabase.js"></script>
+<script src="vendor/qrcode.js"></script>
+<script src="vendor/html-to-image.js"></script>
 <script src="config.js?v=8"></script>
 <script src="data.js?v=8"></script>
 <script src="api.js?v=8"></script>
@@ -121,59 +139,59 @@ body { margin: 0; background: var(--white); text-wrap: pretty; }
   var page = $('page');
   var SITE = 'www.findmypetcy.com';
 
-  function fail(msg){ page.innerHTML = '<div class="msg"><p>' + msg + '</p><p><a class="btn btn-primary" href="index.html">Back to the map</a></p></div>'; }
+  function fail(msg){ page.innerHTML = '<div class="msg"><p>' + msg + '</p><p><a class="btn btn-primary" href="' + lp('index.html') + '">' + t('Back to the map') + '</a></p></div>'; }
 
   API.ready.then(function(){ return id ? API.getListing(id) : null; }).then(function(p){
-    if (!p) return fail('This listing isn’t available. It may be waiting for review or has been closed.');
+    if (!p) return fail(t('This listing isn’t available. It may be waiting for review or has been closed.'));
     return API.getUser().then(function(u){ build(p, !!(u && p.ownerId && u.id === p.ownerId)); });
-  }).catch(function(){ fail('Could not load this listing. Please check your connection and try again.'); });
+  }).catch(function(){ fail(t('Could not load this listing. Please check your connection and try again.')); });
 
   function build(p, isOwner){
-    var kind = (p.exoticType || p.species || 'pet').toLowerCase();
-    var unnamed = p.name === 'Unnamed';
-    var title = unnamed ? p.color + ' ' + kind : p.name;
+    var kind = API.kind(p).toLowerCase();
+    var title = API.petTitle(p);
     var photos = p.photos && p.photos.length ? p.photos : [p.photo];
     var posterTitle = title.length > 22 ? title.slice(0, 21) + '…' : title;
     var st = p.status;
     var band = st === 'missing' ? 'var(--miss)' : 'var(--found)';
-    var head = st === 'missing' ? 'Missing ' + kind : st === 'found' ? 'Found ' + kind : 'Adopt me';
-    var sub = st === 'missing' ? 'Have you seen me?' : st === 'found' ? 'Is this your pet?' : 'Looking for a loving home';
-    var dateTxt = new Date(p.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
-    var seenLbl = st === 'missing' ? 'Last seen' : st === 'found' ? 'Found in' : 'Available in';
-    var where = !p.areaOnly || p.areaOnly === p.district ? p.district : p.areaOnly.toLowerCase().indexOf(p.district.toLowerCase()) > -1 ? p.areaOnly : p.areaOnly + ', ' + p.district;
+    var head = st === 'missing' ? t('Missing {kind}', { kind: kind }) : st === 'found' ? t('Found {kind}', { kind: kind }) : t('Adopt me');
+    var sub = t(st === 'missing' ? 'Have you seen me?' : st === 'found' ? 'Is this your pet?' : 'Looking for a loving home');
+    var dateTxt = API.fmtDate(p.date, true);
+    var seenLbl = t(st === 'missing' ? 'Last seen' : st === 'found' ? 'Found in' : 'Available in');
+    var dName = t(p.district);
+    var where = !p.areaOnly || p.areaOnly === p.district ? dName : p.areaOnly.toLowerCase().indexOf(p.district.toLowerCase()) > -1 ? p.areaOnly : p.areaOnly + ', ' + dName;
     var facts = [];
-    if (p.breed && p.breed !== 'Unknown') facts.push(p.breed);
+    if (p.breed && p.breed !== 'Unknown') facts.push(t(p.breed));
     if (p.color && p.color !== '—') facts.push(p.color);
     if (p.markings) facts.push(p.markings);
-    if (p.size && p.size !== 'Size unknown') facts.push(p.size);
-    if (p.sex && p.sex !== 'Unknown') facts.push(p.sex);
-    if (st === 'adoption' && p.age) facts.push(p.age + (p.ageText ? ' · ' + p.ageText : ''));
-    if (p.collar) facts.push('Wearing a collar');
-    if (p.chipped) facts.push(p.species === 'Other' ? 'Ringed / tagged' : 'Microchipped');
-    if (st === 'adoption' && p.neutered) facts.push('Neutered');
-    var url = 'https://' + SITE + '/listing.html?id=' + p.id;
+    if (p.size && p.size !== 'Size unknown') facts.push(t(p.size));
+    if (p.sex && p.sex !== 'Unknown') facts.push(t(p.sex));
+    if (st === 'adoption' && p.age) facts.push(t(p.age) + (p.ageText ? ' · ' + p.ageText : ''));
+    if (p.collar) facts.push(t('Wearing a collar'));
+    if (p.chipped) facts.push(t(p.species === 'Other' ? 'Ringed / tagged' : 'Microchipped'));
+    if (st === 'adoption' && p.neutered) facts.push(t('Neutered'));
+    var url = 'https://' + SITE + '/' + lp(API.petPath(p));
 
     var qr = qrcode(0, 'M'); qr.addData(url); qr.make();
     var qrSrc = qr.createDataURL(10, 0);
 
     page.innerHTML =
       '<div class="controls">' +
-        '<a class="back" href="listing.html?id=' + p.id + '">← Back to the listing</a>' +
-        '<h1>Make a poster</h1>' +
-        '<p>Print it for lamp posts, vets and shops, or share the image on Facebook, Instagram and WhatsApp groups.</p>' +
-        '<div><span class="lbl">Format</span><div class="seg" role="group" aria-label="Format">' +
-          '<button type="button" data-f="a4" aria-pressed="true">Print (A4)</button><button type="button" data-f="social" aria-pressed="false">Social (4:5)</button></div></div>' +
-        (photos.length > 1 ? '<div><span class="lbl">Photo</span><div class="pick" id="pick">' + photos.map(function(u, i){ return '<button type="button" data-i="' + i + '" aria-pressed="' + (i === 0) + '" aria-label="Use photo ' + (i + 1) + '" style="background-image:url(\'' + u + '\')"></button>'; }).join('') + '</div></div>' : '') +
-        '<div><span class="lbl">Photo framing</span><div class="seg" role="group" aria-label="Photo framing" id="fitseg">' +
-          '<button type="button" data-fit="whole" aria-pressed="true">Whole photo</button><button type="button" data-fit="fill" aria-pressed="false">Fill the frame</button></div>' +
-          '<div class="hint" id="fit-hint">Shows the entire photo, nothing cut off.</div></div>' +
-        '<label class="check"><input type="checkbox" id="show-phone"' + (isOwner ? ' checked' : '') + '> <span>Show the contact phone number' + (isOwner ? ' (yours)' : '') + '</span></label>' +
+        '<a class="back" href="' + lp(API.petPath(p)) + '">← ' + t('Back to the listing') + '</a>' +
+        '<h1>' + t('Make a poster') + '</h1>' +
+        '<p>' + t('Print it for lamp posts, vets and shops, or share the image on Facebook, Instagram and WhatsApp groups.') + '</p>' +
+        '<div><span class="lbl">' + t('Format') + '</span><div class="seg" role="group" aria-label="' + t('Format') + '">' +
+          '<button type="button" data-f="a4" aria-pressed="true">' + t('Print (A4)') + '</button><button type="button" data-f="social" aria-pressed="false">' + t('Social (4:5)') + '</button></div></div>' +
+        (photos.length > 1 ? '<div><span class="lbl">' + t('Photo') + '</span><div class="pick" id="pick">' + photos.map(function(u, i){ return '<button type="button" data-i="' + i + '" aria-pressed="' + (i === 0) + '" aria-label="' + t('Use photo {n}', { n: i + 1 }) + '" style="background-image:url(\'' + u + '\')"></button>'; }).join('') + '</div></div>' : '') +
+        '<div><span class="lbl">' + t('Photo framing') + '</span><div class="seg" role="group" aria-label="' + t('Photo framing') + '" id="fitseg">' +
+          '<button type="button" data-fit="whole" aria-pressed="true">' + t('Whole photo') + '</button><button type="button" data-fit="fill" aria-pressed="false">' + t('Fill the frame') + '</button></div>' +
+          '<div class="hint" id="fit-hint">' + t('Shows the entire photo, nothing cut off.') + '</div></div>' +
+        '<label class="check"><input type="checkbox" id="show-phone"' + (isOwner ? ' checked' : '') + '> <span>' + t(isOwner ? 'Show the contact phone number (yours)' : 'Show the contact phone number') + '</span></label>' +
         '<div class="acts">' +
-          '<button class="btn btn-primary btn-block" type="button" id="print">Print or save as PDF</button>' +
-          '<button class="btn btn-secondary btn-block" type="button" id="download">Download image</button>' +
-          '<button class="btn btn-secondary btn-block" type="button" id="share" hidden>Share image</button>' +
+          '<button class="btn btn-primary btn-block" type="button" id="print">' + t('Print or save as PDF') + '</button>' +
+          '<button class="btn btn-secondary btn-block" type="button" id="download">' + t('Download image') + '</button>' +
+          '<button class="btn btn-secondary btn-block" type="button" id="share" hidden>' + t('Share image') + '</button>' +
         '</div>' +
-        '<p class="note">The QR code opens this listing, so people can always reach the latest details.</p>' +
+        '<p class="note">' + t('The QR code opens this listing, so people can always reach the latest details.') + '</p>' +
       '</div>' +
       '<div class="stage" id="stage"><div class="scaler" id="scaler">' +
         '<div class="poster a4" id="poster" style="--band:' + band + '">' +
@@ -186,8 +204,8 @@ body { margin: 0; background: var(--white); text-wrap: pretty; }
             '<p class="desc" id="desc"></p>' +
             '<div class="call" id="call" hidden></div>' +
           '</div>' +
-          '<div class="foot"><img class="qr" src="' + qrSrc + '" alt="QR code linking to the listing">' +
-            '<div class="txt">Scan for photos, map and contact details<br><b>' + SITE + '</b><br>Listing #' + p.id + '</div>' +
+          '<div class="foot"><img class="qr" src="' + qrSrc + '" alt="' + t('QR code linking to the listing') + '">' +
+            '<div class="txt">' + t('Scan for photos, map and contact details') + '<br><b>' + SITE + '</b><br>' + t('Listing #{id}', { id: p.id }) + '</div>' +
             '<div class="brand">Find My Pet<br>Cyprus<small>Missing &amp; found pets across Cyprus</small></div></div>' +
         '</div>' +
       '</div></div>';
@@ -196,8 +214,8 @@ body { margin: 0; background: var(--white); text-wrap: pretty; }
     var rawDesc = (p.desc || '').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'");
     function setDesc(){
       var max = poster.classList.contains('a4') ? 330 : ($('call') && !$('call').hidden ? 100 : 160);
-      var t = rawDesc.length > max ? rawDesc.slice(0, max).replace(/\s+\S*$/, '') + '…' : rawDesc;
-      $('desc').textContent = t;
+      var txt = rawDesc.length > max ? rawDesc.slice(0, max).replace(/\s+\S*$/, '') + '…' : rawDesc;
+      $('desc').textContent = txt;
     }
     setDesc();
     function fit(){
@@ -224,10 +242,10 @@ body { margin: 0; background: var(--white); text-wrap: pretty; }
       var on = this.checked, box = $('call');
       if (!on) { box.hidden = true; setDesc(); return; }
       (phone ? Promise.resolve(phone) : API.revealContact(p.id, p).then(function(c){ phone = c; return c; })).then(function(c){
-        if (!c || !c.phone || c.phone === 'Not given') { box.hidden = true; $('show-phone').checked = false; alert('No phone number was given for this listing.'); return; }
-        box.textContent = (st === 'adoption' ? 'Call ' : st === 'missing' ? 'Seen me? Call ' : 'Call ') + c.phone + (c.name && c.name !== 'Owner' ? ' (' + c.name.replace(/&amp;/g, '&') + ')' : '');
+        if (!c || !c.phone || c.phone === 'Not given') { box.hidden = true; $('show-phone').checked = false; alert(t('No phone number was given for this listing.')); return; }
+        box.textContent = t(st === 'missing' ? 'Seen me? Call {phone}' : 'Call {phone}', { phone: c.phone }) + (c.name && c.name !== 'Owner' ? ' (' + c.name.replace(/&amp;/g, '&') + ')' : '');
         box.hidden = false; setDesc();
-      }).catch(function(){ alert('Could not load the phone number.'); });
+      }).catch(function(){ alert(t('Could not load the phone number.')); });
     };
     if ($('show-phone').checked) $('show-phone').onchange.call($('show-phone'));
 
@@ -245,7 +263,7 @@ body { margin: 0; background: var(--white); text-wrap: pretty; }
         $('fitseg').querySelectorAll('button').forEach(function(x){ x.setAttribute('aria-pressed', x === b); });
         var whole = b.dataset.fit === 'whole';
         ph.classList.toggle('whole', whole); ph.classList.toggle('fill', !whole);
-        $('fit-hint').textContent = whole ? 'Shows the entire photo, nothing cut off.' : 'Drag the photo on the poster to choose which part shows.';
+        $('fit-hint').textContent = t(whole ? 'Shows the entire photo, nothing cut off.' : 'Drag the photo on the poster to choose which part shows.');
       };
     });
     var drag = null;
@@ -279,26 +297,26 @@ body { margin: 0; background: var(--white); text-wrap: pretty; }
     function toBlob(blob){ return blob; }
 
     $('download').onclick = function(){
-      var b = this; b.disabled = true; b.textContent = 'Preparing…';
+      var b = this; b.disabled = true; b.textContent = t('Preparing…');
       render().then(toBlob).then(function(blob){
         var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = fileName;
         document.body.appendChild(a); a.click(); a.remove();
         setTimeout(function(){ URL.revokeObjectURL(a.href); }, 5000);
-      }).catch(function(){ alert('Sorry, the image could not be created. Try "Print or save as PDF" instead.'); })
-        .then(function(){ b.disabled = false; b.textContent = 'Download image'; });
+      }).catch(function(){ alert(t('Sorry, the image could not be created. Try "Print or save as PDF" instead.')); })
+        .then(function(){ b.disabled = false; b.textContent = t('Download image'); });
     };
 
     if (navigator.canShare && window.File) {
       try { if (navigator.canShare({ files: [new File([''], 'x.png', { type: 'image/png' })] })) $('share').hidden = false; } catch (e) {}
     }
     $('share').onclick = function(){
-      var b = this; b.disabled = true; b.textContent = 'Preparing…';
+      var b = this; b.disabled = true; b.textContent = t('Preparing…');
       render().then(toBlob).then(function(blob){
         var file = new File([blob], fileName, { type: 'image/png' });
         return navigator.share({ files: [file], title: document.title, text: head + ': ' + title + ' — ' + url });
-      }).catch(function(){}).then(function(){ b.disabled = false; b.textContent = 'Share image'; });
+      }).catch(function(){}).then(function(){ b.disabled = false; b.textContent = t('Share image'); });
     };
-    document.title = 'Poster: ' + title.replace(/&[a-z#0-9]+;/gi, '') + ' — Find My Pet Cyprus';
+    document.title = t('Poster: {name}', { name: title.replace(/&[a-z#0-9]+;/gi, '') }) + ' — Find My Pet Cyprus';
   }
 })();
 </script>

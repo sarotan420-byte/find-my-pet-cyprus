@@ -1,0 +1,12 @@
+{
+  "name": "find-my-pet-cyprus",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node build/build.mjs",
+    "cleanup": "node build/cleanup.mjs"
+  },
+  "devDependencies": {
+    "node-html-parser": "6.1.13"
+  }
+}

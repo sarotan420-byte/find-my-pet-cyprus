@@ -6,8 +6,10 @@
 <title>Find My Pet Cyprus — report and search missing &amp; found pets</title>
 <meta name="description" content="Search a live map of missing and found pets across Cyprus by city, area or postcode, or report a pet in minutes. Every listing is checked before it goes public." />
 <script src="./ds-base.js"></script>
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<link rel="stylesheet" href="site.css?v=9" />
+<script src="i18n.js?v=9"></script>
+<link rel="stylesheet" href="vendor/leaflet/leaflet.css" />
+<script src="vendor/leaflet/leaflet.js"></script>
 <style>
 :root { --edge: clamp(16px, 4vw, 48px); --white: #fff; }
 html { scroll-behavior: smooth; }
@@ -106,6 +108,7 @@ footer a { color: inherit; }
   <a href="adopt.html">Adopt</a>
   </span>
   <span class="actions">
+    <a class="lang-switch" href="el/index.html" lang="el" hreflang="el" title="Ελληνικά">ΕΛ</a>
     <a href="account.html">Sign in</a>
     <a href="submit.html" class="btn btn-primary">Report a pet</a>
   </span>
@@ -114,7 +117,7 @@ footer a { color: inherit; }
 <div class="wrap">
   <section class="intro">
     <div>
-      <h1>Missing and found pets across Cyprus</h1>
+      <h1>Lost and found pets across Cyprus</h1>
       <p>Search by city, area or postcode. Every listing is checked by a moderator before it appears on the map.</p>
     </div>
     <a href="submit.html" class="btn btn-secondary">Report missing or found</a>
@@ -146,7 +149,7 @@ footer a { color: inherit; }
         <div class="r-opts" id="radius" role="group" aria-label="Search radius"></div>
       </div>
       <div class="list" id="list"></div>
-      <div class="panel-foot"><a class="btn btn-secondary btn-block" id="open-full" href="search.html">Open full search</a></div>
+      <div class="panel-foot"><a class="btn btn-secondary btn-block" id="open-full" href="missing.html">See full list</a></div>
     </aside>
 
     <div class="legend"><span><i style="background:var(--color-accent)"></i>Missing</span><span><i style="background:var(--color-accent-2)"></i>Found</span></div>
@@ -166,13 +169,24 @@ footer a { color: inherit; }
     <a href="submit.html" class="btn btn-primary">Report now</a>
   </section>
 
-  <footer>
-    <span>© 2026 Find My Pet Cyprus. Not a substitute for contacting local authorities or a vet.</span>
-    <span><a href="missing.html">Missing pets</a> · <a href="found.html">Found pets</a> · <a href="adopt.html">Adopt</a> · <a href="submit.html">Report a pet</a> · <a href="account.html">Account</a></span>
-  </footer>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.79.0/dist/umd/supabase.js"></script>
+<footer class="site-foot">
+  <div class="foot-in">
+    <div><b>Find My Pet Cyprus</b><span>Free community website for lost, found and adoptable pets across Cyprus. Every listing is checked by a moderator.</span></div>
+    <nav aria-label="Pets by district"><h2>Pets by district</h2><ul>
+      <li><a href="area/nicosia.html">Nicosia</a></li><li><a href="area/limassol.html">Limassol</a></li><li><a href="area/larnaca.html">Larnaca</a></li>
+      <li><a href="area/paphos.html">Paphos</a></li><li><a href="area/famagusta.html">Famagusta</a></li><li><a href="area/kyrenia.html">Kyrenia</a></li>
+    </ul></nav>
+    <nav aria-label="Site links"><h2>Find My Pet Cyprus</h2><ul>
+      <li><a href="submit.html">Report a missing or found pet</a></li><li><a href="adopt.html">Pets for adoption</a></li>
+      <li><a href="privacy.html">Privacy policy</a></li><li><a href="terms.html">Terms of use</a></li><li><a href="account.html">Your account</a></li>
+    </ul></nav>
+    <p class="foot-note">© 2026 Find My Pet Cyprus · No advertising or tracking cookies · This site does not replace reporting to the police, your municipality or a vet.</p>
+  </div>
+</footer>
+
+<script src="vendor/supabase.js"></script>
 <script src="config.js?v=8"></script>
 <script src="data.js?v=8"></script>
 <script src="api.js?v=8"></script>
@@ -180,25 +194,29 @@ footer a { color: inherit; }
 API.ready.then(function(){
   // Demo gazetteer: cities, areas and postcode prefixes. Production would use a geocoder.
   var PLACES = [
-    { name: 'Nicosia', kind: 'City', lat: 35.1725, lng: 33.365, z: 12 },
-    { name: 'Limassol', kind: 'City', lat: 34.6841, lng: 33.0379, z: 12 },
-    { name: 'Larnaca', kind: 'City', lat: 34.9229, lng: 33.6233, z: 12 },
-    { name: 'Paphos', kind: 'City', lat: 34.7754, lng: 32.4245, z: 12 },
-    { name: 'Paralimni', kind: 'Town', lat: 35.0375, lng: 33.9833, z: 13 },
-    { name: 'Ayia Napa', kind: 'Town', lat: 34.9823, lng: 34.0, z: 13 },
-    { name: 'Strovolos', kind: 'Area · Nicosia', lat: 35.1446, lng: 33.3199, z: 14 },
-    { name: 'Lakatamia', kind: 'Area · Nicosia', lat: 35.1167, lng: 33.3167, z: 14 },
-    { name: 'Engomi', kind: 'Area · Nicosia', lat: 35.1617, lng: 33.3317, z: 14 },
-    { name: 'Germasogeia', kind: 'Area · Limassol', lat: 34.7167, lng: 33.0833, z: 14 },
-    { name: 'Agios Nikolaos', kind: 'Area · Limassol', lat: 34.684, lng: 33.045, z: 15 },
-    { name: 'Mesa Geitonia', kind: 'Area · Limassol', lat: 34.7036, lng: 33.0436, z: 14 },
-    { name: 'Finikoudes', kind: 'Area · Larnaca', lat: 34.9137, lng: 33.6375, z: 15 },
-    { name: 'Aradippou', kind: 'Area · Larnaca', lat: 34.9517, lng: 33.5917, z: 14 },
-    { name: 'Kato Paphos', kind: 'Area · Paphos', lat: 34.7564, lng: 32.4136, z: 14 },
-    { name: 'Peyia', kind: 'Area · Paphos', lat: 34.8833, lng: 32.3833, z: 14 },
-    { name: 'Polis Chrysochous', kind: 'Town', lat: 35.0333, lng: 32.4167, z: 13 }
+    { name: 'Nicosia', gr: 'Λευκωσία', kind: 'City', lat: 35.1725, lng: 33.365, z: 12 },
+    { name: 'Limassol', gr: 'Λεμεσός', kind: 'City', lat: 34.6841, lng: 33.0379, z: 12 },
+    { name: 'Larnaca', gr: 'Λάρνακα', kind: 'City', lat: 34.9229, lng: 33.6233, z: 12 },
+    { name: 'Paphos', gr: 'Πάφος', kind: 'City', lat: 34.7754, lng: 32.4245, z: 12 },
+    { name: 'Paralimni', gr: 'Παραλίμνι', kind: 'Town', lat: 35.0375, lng: 33.9833, z: 13 },
+    { name: 'Ayia Napa', gr: 'Αγία Νάπα', kind: 'Town', lat: 34.9823, lng: 34.0, z: 13 },
+    { name: 'Strovolos', gr: 'Στρόβολος', kind: 'Area · Nicosia', lat: 35.1446, lng: 33.3199, z: 14 },
+    { name: 'Lakatamia', gr: 'Λακατάμια', kind: 'Area · Nicosia', lat: 35.1167, lng: 33.3167, z: 14 },
+    { name: 'Engomi', gr: 'Έγκωμη', kind: 'Area · Nicosia', lat: 35.1617, lng: 33.3317, z: 14 },
+    { name: 'Germasogeia', gr: 'Γερμασόγεια', kind: 'Area · Limassol', lat: 34.7167, lng: 33.0833, z: 14 },
+    { name: 'Agios Nikolaos', gr: 'Άγιος Νικόλαος', kind: 'Area · Limassol', lat: 34.684, lng: 33.045, z: 15 },
+    { name: 'Mesa Geitonia', gr: 'Μέσα Γειτονιά', kind: 'Area · Limassol', lat: 34.7036, lng: 33.0436, z: 14 },
+    { name: 'Finikoudes', gr: 'Φοινικούδες', kind: 'Area · Larnaca', lat: 34.9137, lng: 33.6375, z: 15 },
+    { name: 'Aradippou', gr: 'Αραδίππου', kind: 'Area · Larnaca', lat: 34.9517, lng: 33.5917, z: 14 },
+    { name: 'Kato Paphos', gr: 'Κάτω Πάφος', kind: 'Area · Paphos', lat: 34.7564, lng: 32.4136, z: 14 },
+    { name: 'Peyia', gr: 'Πέγεια', kind: 'Area · Paphos', lat: 34.8833, lng: 32.3833, z: 14 },
+    { name: 'Polis Chrysochous', gr: 'Πόλη Χρυσοχούς', kind: 'Town', lat: 35.0333, lng: 32.4167, z: 13 }
   ];
   var QUICK = ['Nicosia', 'Limassol', 'Larnaca', 'Paphos', 'Paralimni'];
+  function norm(x){ return String(x || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase(); }
+  PLACES.forEach(function(p){ p.en = p.name; if (window.LANG === 'el' && p.gr) p.name = p.gr; p.keys = [norm(p.en), norm(p.gr)]; });
+  function kindLabel(k){ return String(k || 'Postcode').split(' · ').map(function(x){ return t(x); }).join(' · '); }
+  function placeMatch(fn){ return PLACES.find(function(p){ return p.keys.some(fn); }); }
 
   var css = getComputedStyle(document.documentElement);
   var C_MISS = css.getPropertyValue('--color-accent').trim() || '#c67139';
@@ -221,7 +239,7 @@ API.ready.then(function(){
   window.PETS.forEach(function(p){
     var c = p.status === 'missing' ? C_MISS : C_FOUND;
     var m = L.marker([p.lat, p.lng], { icon: L.divIcon({ className: '', html: '<div style="width:18px;height:18px;border-radius:50%;background:' + c + ';border:3px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.3)"></div>', iconSize: [18,18], iconAnchor: [9 - OFF[p.id][0], 9 - OFF[p.id][1]], popupAnchor: [OFF[p.id][0], OFF[p.id][1] - 9] }) }).addTo(map);
-    m.bindPopup('<div style="font-family:var(--font-body);min-width:150px"><div style="font-family:var(--font-heading);font-size:15px">' + p.name + '</div><div style="font-size:12px;opacity:.7;margin:2px 0 6px">' + p.species + ' · ' + p.area + '</div><a href="listing.html?id=' + p.id + '">View listing →</a></div>');
+    m.bindPopup('<div style="font-family:var(--font-body);min-width:150px"><div style="font-family:var(--font-heading);font-size:15px">' + API.petTitle(p) + '</div><div style="font-size:12px;opacity:.7;margin:2px 0 6px">' + API.kind(p) + ' · ' + API.areaText(p) + '</div><a href="' + lp(API.petPath(p)) + '">' + t('View listing →') + '</a></div>');
     m.on('click', function(){ highlight(p.id); });
     markers[p.id] = m;
   });
@@ -238,12 +256,12 @@ API.ready.then(function(){
   }
 
   function resolve(q){
-    q = q.trim().toLowerCase();
+    q = norm(q.trim());
     if (!q) return null;
     if (/^\d{1,4}$/.test(q)) return null;
-    return PLACES.find(function(p){ return p.name.toLowerCase() === q; })
-        || PLACES.find(function(p){ return p.name.toLowerCase().indexOf(q) === 0; })
-        || PLACES.find(function(p){ return p.name.toLowerCase().indexOf(q) > -1; });
+    return placeMatch(function(k){ return k === q; })
+        || placeMatch(function(k){ return k.indexOf(q) === 0; })
+        || placeMatch(function(k){ return k && k.indexOf(q) > -1; });
   }
 
   function render(){
@@ -260,20 +278,20 @@ API.ready.then(function(){
       var el = markers[id].getElement(); if (el) el.style.opacity = on ? '1' : '0.25';
     });
 
-    $('count').textContent = rows.length + (rows.length === 1 ? ' listing' : ' listings');
-    $('where').textContent = state.center ? 'Within ' + state.radius + ' km of ' + state.label : state.label;
+    $('count').textContent = t(rows.length === 1 ? '{n} listing' : '{n} listings', { n: rows.length });
+    $('where').textContent = state.center ? t('Within {r} km of {place}', { r: state.radius, place: state.label }) : t(state.label);
     $('reset').style.display = state.center ? '' : 'none';
     $('radius-row').style.display = state.center ? 'flex' : 'none';
-    $('open-full').href = 'search.html' + (state.center ? '?q=' + encodeURIComponent(state.label) : '');
+    $('open-full').href = lp(state.status === 'found' ? 'found.html' : 'missing.html') + (state.center ? '?near=' + encodeURIComponent(state.q) + '&r=' + state.radius : '');
 
     $('list').innerHTML = rows.length ? rows.map(function(r){
       var p = r.p;
-      return '<a class="item" data-id="' + p.id + '" href="listing.html?id=' + p.id + '">' +
-        '<img src="' + p.photo + '" alt="">' +
-        '<div><div class="t"><span class="n">' + p.name + '</span><span class="tag ' + (p.status === 'missing' ? 'tag-accent' : 'tag-accent-2') + '">' + (p.status === 'missing' ? 'Missing' : 'Found') + '</span></div>' +
-        '<div class="m">' + p.species + ' · ' + p.area + '</div>' +
-        '<div class="m">' + (r.d != null ? r.d.toFixed(1) + ' km away · ' : '') + new Date(p.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) + '</div></div></a>';
-    }).join('') : '<div class="empty">No listings in this area yet.<br>Try a wider radius.</div>';
+      return '<a class="item" data-id="' + p.id + '" href="' + lp(API.petPath(p)) + '">' +
+        '<img src="' + p.photo + '" alt="" loading="lazy">' +
+        '<div><div class="t"><span class="n">' + API.petTitle(p) + '</span><span class="tag ' + (p.status === 'missing' ? 'tag-accent' : 'tag-accent-2') + '">' + API.statusLabel(p.status) + '</span></div>' +
+        '<div class="m">' + API.kind(p) + ' · ' + API.areaText(p) + '</div>' +
+        '<div class="m">' + (r.d != null ? t('{km} km away', { km: r.d.toFixed(1) }) + ' · ' : '') + API.fmtDate(p.date) + '</div></div></a>';
+    }).join('') : '<div class="empty">' + t('No listings in this area yet.') + '<br>' + t('Try a wider radius.') + '</div>';
 
     $('list').querySelectorAll('.item').forEach(function(el){
       el.addEventListener('mouseenter', function(){ var m = markers[el.dataset.id]; if (m) m.openPopup(); });
@@ -322,21 +340,21 @@ API.ready.then(function(){
     var q = $('q').value.trim().toLowerCase();
     if (!q) return closeSuggest();
     if (/^\d{1,4}$/.test(q)) {
-      if (q.length < 4) { $('suggest').innerHTML = '<div class="empty" style="padding:12px">Keep typing: Cyprus postcodes have 4 digits.</div>'; $('suggest').classList.add('on'); sugItems = []; return; }
-      $('suggest').innerHTML = '<div class="empty" style="padding:12px">Looking up postcode ' + q + '…</div>'; $('suggest').classList.add('on');
+      if (q.length < 4) { $('suggest').innerHTML = '<div class="empty" style="padding:12px">' + t('Keep typing: Cyprus postcodes have 4 digits.') + '</div>'; $('suggest').classList.add('on'); sugItems = []; return; }
+      $('suggest').innerHTML = '<div class="empty" style="padding:12px">' + t('Looking up postcode {pc}…', { pc: q }) + '</div>'; $('suggest').classList.add('on');
       API.geocode(q).then(function(r){
         if ($('q').value.trim() !== q) return;
         sugItems = r ? [r] : [];
-        if (!r) { $('suggest').innerHTML = '<div class="empty" style="padding:12px">Postcode not found.</div>'; return; }
-        $('suggest').innerHTML = '<button type="button" data-i="0"><span>' + API.esc(r.name) + '</span><span class="kind">' + (r.exact ? 'Postcode' : 'Approx.') + '</span></button>';
+        if (!r) { $('suggest').innerHTML = '<div class="empty" style="padding:12px">' + t('Postcode not found.') + '</div>'; return; }
+        $('suggest').innerHTML = '<button type="button" data-i="0"><span>' + API.esc(r.name) + '</span><span class="kind">' + t(r.exact ? 'Postcode' : 'Approx.') + '</span></button>';
         $('suggest').querySelector('button').addEventListener('mousedown', function(e){ e.preventDefault(); go(r, q); });
       });
       return;
     } else {
-      sugItems = PLACES.filter(function(p){ return p.name.toLowerCase().indexOf(q) > -1; }).slice(0, 6);
+      var nq = norm(q); sugItems = PLACES.filter(function(p){ return p.keys.some(function(k){ return k && k.indexOf(nq) > -1; }); }).slice(0, 6);
     }
-    if (!sugItems.length) { $('suggest').innerHTML = '<div class="empty" style="padding:12px">Press Enter to search for “' + API.esc($('q').value.trim()) + '”.</div>'; $('suggest').classList.add('on'); return; }
-    $('suggest').innerHTML = sugItems.map(function(p, i){ return '<button type="button" data-i="' + i + '"><span>' + p.name + '</span><span class="kind">' + (p.kind || 'Postcode') + '</span></button>'; }).join('');
+    if (!sugItems.length) { $('suggest').innerHTML = '<div class="empty" style="padding:12px">' + t('Press Enter to search for “{q}”.', { q: API.esc($('q').value.trim()) }) + '</div>'; $('suggest').classList.add('on'); return; }
+    $('suggest').innerHTML = sugItems.map(function(p, i){ return '<button type="button" data-i="' + i + '"><span>' + p.name + '</span><span class="kind">' + kindLabel(p.kind) + '</span></button>'; }).join('');
     $('suggest').classList.add('on');
     $('suggest').querySelectorAll('button').forEach(function(b){ b.addEventListener('mousedown', function(e){ e.preventDefault(); go(sugItems[Number(b.dataset.i)]); }); });
   }
@@ -356,16 +374,16 @@ API.ready.then(function(){
     var place = sugIdx > -1 && sugItems[sugIdx] ? sugItems[sugIdx] : resolve(q);
     if (place) return go(place, q);
     if (!q) return reset();
-    $('suggest').innerHTML = '<div class="empty" style="padding:12px">Searching…</div>'; $('suggest').classList.add('on');
+    $('suggest').innerHTML = '<div class="empty" style="padding:12px">' + t('Searching…') + '</div>'; $('suggest').classList.add('on');
     API.geocode(q).then(function(r){
       if (r) go(r, q);
-      else { $('suggest').innerHTML = '<div class="empty" style="padding:12px">Couldn\u2019t find “' + API.esc(q) + '”. Try a town, area or 4-digit postcode.</div>'; $('suggest').classList.add('on'); }
+      else { $('suggest').innerHTML = '<div class="empty" style="padding:12px">' + t('Couldn’t find “{q}”. Try a town, area or 4-digit postcode.', { q: API.esc(q) }) + '</div>'; $('suggest').classList.add('on'); }
     });
   });
   $('status').addEventListener('change', function(){ state.status = this.value; render(); });
   $('reset').addEventListener('click', reset);
   function paintRadius(){
-    $('radius').innerHTML = API.RADII.map(function(r){ return '<button type="button" data-r="' + r + '" aria-pressed="' + (r === state.radius) + '">' + r + ' km</button>'; }).join('');
+    $('radius').innerHTML = API.RADII.map(function(r){ return '<button type="button" data-r="' + r + '" aria-pressed="' + (r === state.radius) + '">' + r + ' ' + t('km') + '</button>'; }).join('');
     $('radius').querySelectorAll('button').forEach(function(b){
       b.onclick = function(){
         state.radius = Number(b.dataset.r); userRadius = true; paintRadius();
@@ -377,8 +395,8 @@ API.ready.then(function(){
   }
 
   function paintQuick(){
-    $('quick').innerHTML = QUICK.map(function(n){ return '<button type="button" class="chip' + (state.label === n ? ' on' : '') + '" data-n="' + n + '">' + n + '</button>'; }).join('');
-    $('quick').querySelectorAll('.chip').forEach(function(b){ b.addEventListener('click', function(){ go(PLACES.find(function(p){ return p.name === b.dataset.n; })); }); });
+    $('quick').innerHTML = QUICK.map(function(n){ var pl = PLACES.find(function(p){ return p.en === n; }); return '<button type="button" class="chip' + (state.label === pl.name ? ' on' : '') + '" data-n="' + n + '">' + pl.name + '</button>'; }).join('');
+    $('quick').querySelectorAll('.chip').forEach(function(b){ b.addEventListener('click', function(){ go(PLACES.find(function(p){ return p.en === b.dataset.n; })); }); });
   }
 
   paintQuick();
