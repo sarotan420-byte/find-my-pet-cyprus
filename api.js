@@ -25,7 +25,7 @@ window.API = (function(){
     return {
       id: r.id, status: r.status, species: r.species, exoticType: esc(r.exotic_type),
       name: r.name ? esc(r.name) : 'Unnamed', breed: esc(r.breed) || 'Unknown',
-      size: r.size, sex: r.sex, colours: colours.map(esc), color: esc(color) || '—',
+      size: r.size || 'Size unknown', sex: r.sex || 'Unknown', colours: colours.map(esc), color: esc(color) || '—',
       markings: esc(r.markings), collar: r.collar, chipped: r.chipped,
       area: esc(r.district + ' — ' + r.area), areaOnly: esc(r.area), district: r.district, postcode: esc(r.postcode),
       lat: r.lat, lng: r.lng, date: r.event_date, time: r.event_time,

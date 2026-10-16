@@ -110,7 +110,7 @@ body { margin: 0; }
         '<div class="facts">' +
           '<div class="fact"><div class="k">Breed</div><div class="v">' + p.breed + '</div></div>' +
           '<div class="fact"><div class="k">Colour</div><div class="v">' + p.color + (p.markings ? ' · ' + p.markings : '') + '</div></div>' +
-          '<div class="fact"><div class="k">' + (isAdopt ? 'Age' : 'Size · sex') + '</div><div class="v">' + (isAdopt ? (p.age || '—') + (p.ageText ? ' · ' + p.ageText : '') : p.size + ' · ' + (p.sex === 'Unknown' ? 'Not sure' : p.sex)) + '</div></div>' +
+          '<div class="fact"><div class="k">' + (isAdopt ? 'Age' : 'Size · sex') + '</div><div class="v">' + (isAdopt ? (p.age || '—') + (p.ageText ? ' · ' + p.ageText : '') : p.size + ' · ' + (p.sex === 'Unknown' ? 'sex unknown' : p.sex)) + '</div></div>' +
         '</div>' +
         '<div id="mini-map"></div>' +
       '</div>' +

@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="robots" content="noindex" />
+<title>Page not found — Find My Pet Cyprus</title>
+<script>
+// Send links from the previous version of the site to the new pages.
+(function(){
+  var p = location.pathname.replace(/\/+$/, '').toLowerCase();
+  var m, to = null;
+  if ((m = p.match(/^\/(?:listing|pet)\/(\d+)/))) to = '/listing.html?id=' + m[1];
+  else if ((m = p.match(/^\/area\/([a-z-]+)/))) to = '/missing.html?district=' + m[1].charAt(0).toUpperCase() + m[1].slice(1);
+  else if (p === '/search' || p === '/map') to = '/index.html';
+  else if (p === '/submit' || p === '/report') to = '/submit.html';
+  else if (p === '/account') to = '/account.html';
+  else if (p === '/admin' || p === '/moderation') to = '/moderation.html';
+  else if (/^\/(missing|found|adopt)$/.test(p)) to = p + '.html';
+  if (to) location.replace(to + (to.indexOf('?') > -1 ? location.search.replace(/^\?/, '&') : location.search) + location.hash);
+})();
+</script>
+<style>
+  body { margin: 0; font-family: system-ui, sans-serif; background: #fff; color: #201e1d; display: flex; min-height: 100vh; align-items: center; justify-content: center; padding: 16px; text-align: center; }
+  a { display: inline-block; margin-top: 12px; padding: 10px 20px; border-radius: 999px; background: #c67139; color: #fff; text-decoration: none; font-weight: 600; }
+</style>
+</head>
+<body>
+  <div>
+    <h1 style="font-size:28px;margin:0 0 8px">Page not found</h1>
+    <p style="margin:0">This page doesn't exist or has moved.</p>
+    <a href="/index.html">Go to the map</a>
+  </div>
+</body>
+</html>
