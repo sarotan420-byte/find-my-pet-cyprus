@@ -1,0 +1,414 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Report a missing or found pet — Find My Pet Cyprus</title>
+<meta name="description" content="Report a missing or found pet anywhere in Cyprus. Listings are checked by a moderator before going public." />
+<script src="./ds-base.js"></script>
+<style>
+:root { --edge: clamp(16px, 4vw, 48px); --white: #fff; }
+body { margin: 0; background: var(--white); text-wrap: pretty; }
+a { color: var(--color-accent-700); }
+a:hover { color: var(--color-accent-800); }
+.nav { padding-inline: max(var(--edge), calc((100% - 1320px) / 2 + var(--edge))); position: sticky; top: 0; z-index: 50; background: rgba(255,255,255,.94); backdrop-filter: blur(6px); border-bottom: 1px solid var(--color-neutral-200); }
+.nav .links { display: flex; gap: var(--space-4); margin-right: auto; margin-left: var(--space-4); }
+.nav .links a, .nav .actions > a:not(.btn) { color: var(--color-text); text-decoration: none; }
+.nav .actions { display: flex; align-items: center; gap: var(--space-3); }
+@media (max-width: 720px) { .nav .links { display: none; } }
+
+.wrap { max-width: 680px; margin: 0 auto; padding: var(--space-6) var(--edge) calc(3 * var(--space-6)); }
+h1.title { font-family: var(--font-heading); font-weight: var(--font-heading-weight); font-size: clamp(30px, 3.6vw, 40px); margin: 0 0 8px; }
+.lede { font-size: 15px; line-height: 1.6; color: color-mix(in srgb, var(--color-text) 72%, transparent); margin: 0 0 var(--space-6); max-width: 52ch; }
+
+.progress { display: flex; gap: 8px; margin-bottom: var(--space-2); }
+.progress i { flex: 1; height: 6px; border-radius: 999px; background: var(--color-neutral-200); }
+.progress i.done { background: var(--color-accent-2); }
+.progress i.current { background: var(--color-accent); }
+.step-label { font-size: 12px; letter-spacing: .06em; text-transform: uppercase; font-weight: 700; color: var(--color-accent-700); margin: var(--space-3) 0 var(--space-4); display: block; }
+
+.step { display: none; flex-direction: column; gap: var(--space-4); }
+.step.active { display: flex; }
+.step h2 { font-family: var(--font-heading); font-weight: var(--font-heading-weight); font-size: 22px; margin: 0; }
+
+.field > label, .field > .lbl { display: block; font-size: 13.5px; margin-bottom: 6px; font-weight: 600; }
+.hint { font-weight: 400; font-size: 12.5px; color: color-mix(in srgb, var(--color-text) 60%, transparent); }
+.input { background: var(--white); border-color: var(--color-neutral-300); }
+textarea.input { height: auto; min-height: 140px; border-radius: var(--radius-lg); padding: 12px 16px; line-height: 1.5; resize: vertical; white-space: pre-wrap; overflow-y: auto; box-sizing: border-box; width: 100%; font: inherit; }
+textarea.input::placeholder { line-height: 1.5; }
+.field-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-3); }
+@media (max-width: 520px) { .field-grid { grid-template-columns: 1fr; } }
+
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: var(--space-3); }
+.choice { cursor: pointer; border: 2px solid var(--color-neutral-200); border-radius: calc(1.15 * var(--radius-lg)); padding: var(--space-4); display: flex; flex-direction: column; gap: 4px; background: var(--white); }
+.choice:hover { border-color: var(--color-accent-300); }
+.choice input { position: absolute; opacity: 0; width: 0; height: 0; }
+.choice:has(input:checked) { border-color: var(--color-accent); background: var(--color-accent-100); }
+.choice:has(input:focus-visible) { outline: 2px solid var(--color-accent); outline-offset: 2px; }
+.choice .t { font-family: var(--font-heading); font-size: 18px; }
+.choice .d { font-size: 13px; line-height: 1.45; color: color-mix(in srgb, var(--color-text) 70%, transparent); }
+
+.opts { display: flex; flex-wrap: wrap; gap: 6px; }
+.opt input { position: absolute; opacity: 0; width: 0; height: 0; }
+.opt span { display: inline-block; padding: 9px 16px; border-radius: 999px; border: 1.5px solid var(--color-neutral-300); font-size: 14px; cursor: pointer; }
+.opt span:hover { border-color: var(--color-accent); }
+.opt input:checked + span { background: var(--color-text); border-color: var(--color-text); color: var(--white); }
+.opt input:focus-visible + span { outline: 2px solid var(--color-accent); outline-offset: 2px; }
+
+.swatches { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 6px; }
+.swatch { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: 12px; cursor: pointer; font-size: 14px; border: 1.5px solid var(--color-neutral-200); min-height: 44px; box-sizing: border-box; }
+.swatch:hover { border-color: var(--color-accent-300); }
+.swatch input { position: absolute; opacity: 0; width: 0; height: 0; }
+.swatch i { width: 20px; height: 20px; border-radius: 50%; box-shadow: inset 0 0 0 1px rgba(0,0,0,.18); flex: none; }
+.swatch:has(input:checked) { border-color: var(--color-text); background: var(--color-neutral-100); font-weight: 600; }
+.swatch:has(input:focus-visible) { outline: 2px solid var(--color-accent); outline-offset: 2px; }
+.err { display: none; font-size: 13px; color: var(--color-accent-800); margin-top: 6px; }
+.err.on { display: block; }
+
+.check { display: flex; align-items: center; gap: 10px; font-size: 14.5px; cursor: pointer; min-height: 32px; }
+.check input { width: 18px; height: 18px; accent-color: var(--color-accent); }
+
+.photo-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-3); }
+.photo-row image-slot { width: 100%; aspect-ratio: 1; }
+
+.actions-row { display: flex; justify-content: space-between; align-items: center; margin-top: var(--space-2); gap: var(--space-3); }
+.actions-row .btn { min-height: 44px; padding-inline: var(--space-5, 24px); }
+
+.review { border: 1px solid var(--color-neutral-200); border-radius: var(--radius-lg); padding: 4px var(--space-4); }
+.review-row { display: flex; justify-content: space-between; gap: var(--space-3); font-size: 14px; padding: 10px 0; border-bottom: 1px solid var(--color-neutral-200); }
+.review-row:last-child { border-bottom: none; }
+.review-row .k { color: color-mix(in srgb, var(--color-text) 60%, transparent); flex: none; }
+.review-row .v { text-align: right; }
+.note { font-size: 13.5px; line-height: 1.55; background: var(--color-accent-2-100); color: var(--color-accent-2-900); padding: var(--space-3) var(--space-4); border-radius: var(--radius-lg); }
+
+.success { padding: calc(2 * var(--space-6)) 0; }
+.success .circle { width: 64px; height: 64px; border-radius: 50%; background: var(--color-accent-2-100); display: flex; align-items: center; justify-content: center; margin-bottom: var(--space-4); color: var(--color-accent-2-800); }
+.success h2 { font-family: var(--font-heading); font-weight: var(--font-heading-weight); font-size: 28px; margin: 0 0 8px; }
+.success p { font-size: 15px; line-height: 1.6; color: color-mix(in srgb, var(--color-text) 72%, transparent); max-width: 46ch; margin: 0 0 var(--space-4); }
+.success .row { display: flex; gap: var(--space-3); flex-wrap: wrap; }
+</style>
+</head>
+<body>
+<nav class="nav">
+  <a class="nav-brand" href="index.html" style="text-decoration:none;color:inherit">Find My Pet Cyprus</a>
+  <span class="links">
+    <a href="missing.html">Missing pets</a>
+    <a href="found.html">Found pets</a>
+    <a href="adopt.html">Adopt</a>
+    <a href="index.html">Map</a>
+  </span>
+  <span class="actions">
+    <a href="account.html">Sign in</a>
+  </span>
+</nav>
+
+<div class="wrap">
+  <div id="intro">
+    <h1 class="title">Report a pet</h1>
+    <p class="lede">This takes a few minutes. A moderator checks every listing before it goes public. The more detail you add, the easier it is for someone to recognise the pet.</p>
+    <div class="progress" id="progress"></div>
+  </div>
+
+  <form id="form" novalidate>
+    <!-- 1 -->
+    <div class="step active">
+      <span class="step-label">Step 1 of 5 · The basics</span>
+      <div class="field">
+        <span class="lbl">What are you listing?</span>
+        <div class="cards">
+          <label class="choice"><input type="radio" name="status" value="missing" checked><span class="t">Missing</span><span class="d">My pet, or one I look after, is lost.</span></label>
+          <label class="choice"><input type="radio" name="status" value="found"><span class="t">Found</span><span class="d">I've found or am looking after a pet that isn't mine.</span></label>
+          <label class="choice"><input type="radio" name="status" value="adoption"><span class="t">For adoption</span><span class="d">I'm rehoming a pet, or listing one for a shelter or rescue.</span></label>
+        </div>
+      </div>
+      <div class="field">
+        <span class="lbl">What kind of animal?</span>
+        <div class="cards">
+          <label class="choice"><input type="radio" name="species" value="Dog" checked><span class="t">Dog</span></label>
+          <label class="choice"><input type="radio" name="species" value="Cat"><span class="t">Cat</span></label>
+          <label class="choice"><input type="radio" name="species" value="Other"><span class="t">Other / exotic</span><span class="d">Birds, rabbits, reptiles…</span></label>
+        </div>
+      </div>
+      <div class="field" id="exotic-field" style="display:none">
+        <label for="exoticType">Type of animal</label>
+        <select class="input" id="exoticType"></select>
+      </div>
+      <div class="actions-row"><span></span><button type="button" class="btn btn-primary" data-next>Continue</button></div>
+    </div>
+
+    <!-- 2 -->
+    <div class="step">
+      <span class="step-label">Step 2 of 5 · Appearance</span>
+      <div class="field" id="colour-field">
+        <span class="lbl">Coat colour <span class="hint">· pick all that apply</span></span>
+        <div class="swatches" id="colours"></div>
+        <div class="err" id="colour-err">Pick at least one colour.</div>
+      </div>
+      <div class="field" id="exotic-colour-field" style="display:none">
+        <label for="exoticColour">Colour / markings</label>
+        <input class="input" id="exoticColour" placeholder="e.g. Green with yellow head" />
+      </div>
+      <div class="field">
+        <label for="colorDesc">Markings <span class="hint">(optional)</span></label>
+        <input class="input" id="colorDesc" placeholder="e.g. White socks, black patch over one eye" />
+      </div>
+      <div class="field-grid">
+        <div class="field">
+          <label for="breed">Breed <span class="hint">(if known)</span></label>
+          <input class="input" id="breed" placeholder="e.g. Labrador, mixed breed" />
+        </div>
+        <div class="field">
+          <label for="name">Name <span class="hint" id="name-hint">(if known)</span></label>
+          <input class="input" id="name" placeholder="e.g. Bella" />
+        </div>
+      </div>
+      <div class="field">
+        <span class="lbl">Size</span>
+        <div class="opts">
+          <label class="opt"><input type="radio" name="size" value="Small"><span>Small</span></label>
+          <label class="opt"><input type="radio" name="size" value="Medium" checked><span>Medium</span></label>
+          <label class="opt"><input type="radio" name="size" value="Large"><span>Large</span></label>
+        </div>
+      </div>
+      <div class="field">
+        <span class="lbl">Sex</span>
+        <div class="opts">
+          <label class="opt"><input type="radio" name="sex" value="Male"><span>Male</span></label>
+          <label class="opt"><input type="radio" name="sex" value="Female"><span>Female</span></label>
+          <label class="opt"><input type="radio" name="sex" value="Unknown" checked><span>Not sure</span></label>
+        </div>
+      </div>
+      <div class="field">
+        <span class="lbl">Identification</span>
+        <label class="check" id="collar-row"><input type="checkbox" id="collar"> Wearing a collar or harness</label>
+        <label class="check"><input type="checkbox" id="chipped"> <span id="chip-label">Microchipped</span></label>
+      </div>
+      <div id="adopt-fields" style="display:none;flex-direction:column;gap:var(--space-4)">
+        <div class="field-grid">
+          <div class="field">
+            <label for="ageBand">Age</label>
+            <select class="input" id="ageBand" required><option value="">Select</option></select>
+          </div>
+          <div class="field">
+            <label for="ageText">Age in years or months <span class="hint">(approx.)</span></label>
+            <input class="input" id="ageText" placeholder="e.g. 2 years, 4 months" />
+          </div>
+        </div>
+        <div class="field">
+          <span class="lbl">Good with <span class="hint">· pick all that apply</span></span>
+          <div class="opts" id="good">
+            <label class="opt"><input type="checkbox" name="good" value="Children"><span>Children</span></label>
+            <label class="opt"><input type="checkbox" name="good" value="Dogs"><span>Dogs</span></label>
+            <label class="opt"><input type="checkbox" name="good" value="Cats"><span>Cats</span></label>
+          </div>
+        </div>
+        <div class="field">
+          <span class="lbl">Health</span>
+          <label class="check"><input type="checkbox" id="neutered"> Neutered / spayed</label>
+          <label class="check"><input type="checkbox" id="vaccinated"> Vaccinated</label>
+        </div>
+      </div>
+      <div class="actions-row"><button type="button" class="btn btn-secondary" data-back>Back</button><button type="button" class="btn btn-primary" data-next>Continue</button></div>
+    </div>
+
+    <!-- 3 -->
+    <div class="step">
+      <span class="step-label">Step 3 of 5 · Where and when</span>
+      <div class="field-grid">
+        <div class="field">
+          <label for="district">District</label>
+          <select class="input" id="district" required><option value="">Select a district</option></select>
+        </div>
+        <div class="field">
+          <label for="postcode">Postcode <span class="hint">(optional)</span></label>
+          <input class="input" id="postcode" inputmode="numeric" maxlength="4" pattern="\d{4}" placeholder="e.g. 3021" />
+        </div>
+      </div>
+      <div class="field">
+        <label for="area"><span id="area-label">Area or street last seen</span></label>
+        <input class="input" id="area" required placeholder="e.g. Agios Nikolaos, near the church" />
+      </div>
+      <div class="field-grid">
+        <div class="field">
+          <label for="date" id="date-label">Date last seen</label>
+          <input class="input" id="date" type="date" required />
+        </div>
+        <div class="field" id="time-field">
+          <label for="time">Time <span class="hint">(approx.)</span></label>
+          <input class="input" id="time" type="time" />
+        </div>
+      </div>
+      <div class="actions-row"><button type="button" class="btn btn-secondary" data-back>Back</button><button type="button" class="btn btn-primary" data-next>Continue</button></div>
+    </div>
+
+    <!-- 4 -->
+    <div class="step">
+      <span class="step-label">Step 4 of 5 · Photos and description</span>
+      <div class="field">
+        <span class="lbl">Photos <span class="hint">· clear, recent and well-lit photos help the most</span></span>
+        <div class="photo-row">
+          <image-slot id="s-photo-1" shape="rounded" radius="16" placeholder="Main photo"></image-slot>
+          <image-slot id="s-photo-2" shape="rounded" radius="16" placeholder="Add photo"></image-slot>
+          <image-slot id="s-photo-3" shape="rounded" radius="16" placeholder="Add photo"></image-slot>
+        </div>
+      </div>
+      <div class="field">
+        <label for="desc">Description</label>
+        <textarea class="input" id="desc" required rows="5" placeholder="Temperament, anything distinctive, and what someone should do if they see the pet (e.g. don't chase, call instead)."></textarea>
+      </div>
+      <div class="actions-row"><button type="button" class="btn btn-secondary" data-back>Back</button><button type="button" class="btn btn-primary" data-next>Continue</button></div>
+    </div>
+
+    <!-- 5 -->
+    <div class="step">
+      <span class="step-label">Step 5 of 5 · Contact and review</span>
+      <div class="field-grid">
+        <div class="field"><label for="cname">Your name</label><input class="input" id="cname" required autocomplete="name" /></div>
+        <div class="field"><label for="cphone">Phone</label><input class="input" id="cphone" type="tel" required autocomplete="tel" placeholder="e.g. 99 123 456" /></div>
+      </div>
+      <div class="field"><label for="cemail">Email <span class="hint">(not shown publicly)</span></label><input class="input" id="cemail" type="email" autocomplete="email" /></div>
+      <div class="field" id="lister-field" style="display:none">
+        <label for="lister">You are listing as</label>
+        <select class="input" id="lister" required>
+          <option value="">Select</option>
+          <option>Owner rehoming</option>
+          <option>Foster home</option>
+          <option>Rescue group</option>
+          <option>Shelter</option>
+        </select>
+      </div>
+      <p class="note">Your phone number only appears to visitors who tap "Show contact details", so it isn't picked up by search engines.</p>
+      <h2>Check your listing</h2>
+      <div class="review" id="review"></div>
+      <label class="check"><input type="checkbox" id="agree" required> I confirm this listing is accurate to the best of my knowledge.</label>
+      <div class="actions-row"><button type="button" class="btn btn-secondary" data-back>Back</button><button type="submit" class="btn btn-primary">Submit for review</button></div>
+    </div>
+  </form>
+
+  <div class="success" id="success" style="display:none">
+    <div class="circle"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></div>
+    <h2>Sent for review</h2>
+    <p>A moderator checks new listings before they go live, usually within a few hours. Once it's approved you can manage it from your account.</p>
+    <div class="row">
+      <a href="account.html" class="btn btn-primary">Go to my account</a>
+      <a href="missing.html" class="btn btn-secondary" id="browse-link">Browse listings</a>
+    </div>
+  </div>
+</div>
+
+<script src="image-slot.js"></script>
+<script src="data.js"></script>
+<script>
+(function(){
+  var $ = function(id){ return document.getElementById(id); };
+  window.AREAS.forEach(function(a){ var o = document.createElement('option'); o.value = a; o.textContent = a; $('district').appendChild(o); });
+  window.AGES.forEach(function(a){ var o = document.createElement('option'); o.value = a; o.textContent = a; $('ageBand').appendChild(o); });
+  window.EXOTIC_TYPES.forEach(function(a){ var o = document.createElement('option'); o.value = a; o.textContent = a; $('exoticType').appendChild(o); });
+  $('colours').innerHTML = window.COLOURS.map(function(c){
+    return '<label class="swatch"><input type="checkbox" name="colour" value="' + c.name + '"><i style="background:' + c.swatch + '"></i><span>' + c.name + '</span></label>';
+  }).join('');
+  $('date').max = new Date().toISOString().slice(0, 10);
+
+  var steps = Array.prototype.slice.call(document.querySelectorAll('.step'));
+  var current = 0;
+  $('progress').innerHTML = steps.map(function(){ return '<i></i>'; }).join('');
+
+  function val(name){ var el = document.querySelector('input[name="' + name + '"]:checked'); return el ? el.value : ''; }
+  function isExotic(){ return val('species') === 'Other'; }
+  function colours(){ return Array.prototype.map.call(document.querySelectorAll('input[name="colour"]:checked'), function(i){ return i.value; }); }
+
+  function syncType(){
+    var ex = isExotic(), missing = val('status') === 'missing';
+    $('exotic-field').style.display = ex ? '' : 'none';
+    $('colour-field').style.display = ex ? 'none' : '';
+    $('exotic-colour-field').style.display = ex ? '' : 'none';
+    $('chip-label').textContent = ex ? 'Ringed, tagged or microchipped' : 'Microchipped';
+    $('area-label').textContent = missing ? 'Area or street last seen' : 'Area or street where found';
+    $('date-label').textContent = missing ? 'Date last seen' : 'Date found';
+    $('name-hint').textContent = missing ? '' : '(if on a tag)';
+    $('name').required = missing;
+    var ad = val('status') === 'adoption';
+    $('adopt-fields').style.display = ad ? 'flex' : 'none';
+    $('collar-row').style.display = ad ? 'none' : '';
+    $('time-field').style.display = ad ? 'none' : '';
+    $('lister-field').style.display = ad ? '' : 'none';
+    document.querySelector('h1.title').textContent = ad ? 'List a pet for adoption' : 'Report a pet';
+    if (ad) {
+      $('area-label').textContent = 'Area where the pet is now';
+      $('date-label').textContent = 'Available from';
+      $('name-hint').textContent = '';
+      $('name').required = true;
+      $('date').removeAttribute('max');
+    } else {
+      $('date').max = new Date().toISOString().slice(0, 10);
+    }
+    $('browse-link').href = ad ? 'adopt.html' : missing ? 'missing.html' : 'found.html';
+  }
+  document.querySelectorAll('input[name="status"], input[name="species"]').forEach(function(r){ r.addEventListener('change', syncType); });
+  $('colours').addEventListener('change', function(){ $('colour-err').classList.remove('on'); });
+
+  function validate(i){
+    var els = steps[i].querySelectorAll('[required]');
+    for (var k = 0; k < els.length; k++) {
+      if (els[k].offsetParent === null) continue;
+      if (!els[k].reportValidity()) return false;
+    }
+    if (i === 1 && !isExotic() && !colours().length) { $('colour-err').classList.add('on'); return false; }
+    if (i === 2 && $('postcode').value && !$('postcode').checkValidity()) { $('postcode').reportValidity(); return false; }
+    return true;
+  }
+
+  function show(i){
+    steps.forEach(function(s, k){ s.classList.toggle('active', k === i); });
+    $('progress').querySelectorAll('i').forEach(function(d, k){ d.className = k < i ? 'done' : k === i ? 'current' : ''; });
+    current = i;
+    if (i === steps.length - 1) buildReview();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  document.querySelectorAll('[data-next]').forEach(function(b){ b.addEventListener('click', function(){ if (validate(current)) show(current + 1); }); });
+  document.querySelectorAll('[data-back]').forEach(function(b){ b.addEventListener('click', function(){ show(current - 1); }); });
+
+  function buildReview(){
+    var ex = isExotic();
+    var ids = [$('collar').checked ? 'Collar' : '', $('chipped').checked ? (ex ? 'Ringed / chipped' : 'Microchipped') : ''].filter(Boolean).join(', ');
+    var rows = [
+      ['Listing', { missing: 'Missing', found: 'Found', adoption: 'For adoption' }[val('status')]],
+      ['Animal', ex ? 'Other / exotic · ' + $('exoticType').value : val('species')],
+      ['Colour', ex ? ($('exoticColour').value || '—') : colours().join(', ')],
+      ['Markings', $('colorDesc').value || '—'],
+      ['Breed', $('breed').value || '—'],
+      ['Name', $('name').value || '—'],
+      ['Size · sex', val('size') + ' · ' + (val('sex') === 'Unknown' ? 'Not sure' : val('sex'))],
+      ['Identification', ids || 'None'],
+      ['Location', [$('area').value, $('district').value, $('postcode').value].filter(Boolean).join(', ')],
+      ['Date', $('date').value + ($('time').value ? ' · ' + $('time').value : '')]
+    ];
+    if (val('status') === 'adoption') {
+      rows.splice(7, 1,
+        ['Age', ($('ageBand').value || '—') + ($('ageText').value ? ' · ' + $('ageText').value : '')],
+        ['Good with', Array.prototype.map.call(document.querySelectorAll('input[name="good"]:checked'), function(i){ return i.value; }).join(', ') || '—'],
+        ['Health', [$('neutered').checked ? 'Neutered' : '', $('vaccinated').checked ? 'Vaccinated' : '', $('chipped').checked ? 'Microchipped' : ''].filter(Boolean).join(', ') || 'None listed'],
+        ['Listed by', $('lister').value || '—']);
+      rows[rows.length - 1] = ['Available from', $('date').value || '—'];
+    }
+    $('review').innerHTML = rows.map(function(r){ return '<div class="review-row"><span class="k">' + r[0] + '</span><span class="v">' + String(r[1]).replace(/</g, '&lt;') + '</span></div>'; }).join('');
+  }
+
+  $('form').addEventListener('submit', function(e){
+    e.preventDefault();
+    if (!validate(current)) return;
+    $('form').style.display = 'none';
+    $('intro').style.display = 'none';
+    $('success').style.display = 'block';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+
+  var pre = new URLSearchParams(location.search).get('type');
+  if (pre) { var el = document.querySelector('input[name="status"][value="' + pre + '"]'); if (el) el.checked = true; }
+  syncType();
+  show(0);
+})();
+</script>
+</body>
+</html>

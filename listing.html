@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Pet listing — Find My Pet Cyprus</title>
+<script src="./ds-base.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+:root { --edge: clamp(16px, 4vw, 48px); }
+body { margin: 0; }
+.nav { padding-inline: var(--edge); position: sticky; top: 0; z-index: 30; background: color-mix(in srgb, var(--color-bg) 92%, transparent); backdrop-filter: blur(6px); }
+.nav .links { display: flex; gap: var(--space-4); margin-right: auto; margin-left: var(--space-4); }
+@media (max-width: 620px) { .nav .links { display: none; } }
+
+.wrap { max-width: 1080px; margin: 0 auto; padding: var(--space-6) var(--edge) calc(4 * var(--space-6)); }
+.back { font-size: 13px; color: color-mix(in srgb, var(--color-text) 65%, transparent); text-decoration: none; display: inline-block; margin-bottom: var(--space-4); }
+.back:hover { color: var(--color-accent); }
+
+.layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 380px); gap: calc(2 * var(--space-6)); }
+@media (max-width: 860px) { .layout { grid-template-columns: 1fr; } }
+
+.photo-main { border-radius: calc(2 * var(--radius-lg)); overflow: hidden; aspect-ratio: 4/3; box-shadow: var(--shadow-md); }
+.photo-main img { width: 100%; height: 100%; object-fit: cover; }
+
+.head-row { display: flex; align-items: center; gap: var(--space-3); margin: var(--space-4) 0 6px; flex-wrap: wrap; }
+.pet-name { font-family: var(--font-heading); font-weight: var(--font-heading-weight); font-size: 34px; margin: 0; }
+.meta-line { font-size: 14.5px; color: color-mix(in srgb, var(--color-text) 65%, transparent); margin: 0 0 var(--space-4); }
+.desc { font-size: 15.5px; line-height: 1.7; max-width: 62ch; }
+
+.facts { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-3); margin: var(--space-4) 0; }
+.fact { background: var(--color-surface); border-radius: var(--radius-md); padding: var(--space-3); }
+.fact .k { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: color-mix(in srgb, var(--color-text) 60%, transparent); margin-bottom: 3px; }
+.fact .v { font-family: var(--font-heading); font-size: 15px; }
+
+#mini-map { width: 100%; height: 220px; border-radius: var(--radius-lg); overflow: hidden; margin-top: var(--space-3); }
+
+.side-card { background: var(--color-surface); border-radius: calc(var(--radius-lg) * 1.15); padding: var(--space-4); position: sticky; top: 80px; box-shadow: var(--shadow-sm); }
+.side-card h3 { font-family: var(--font-heading); font-weight: var(--font-heading-weight); font-size: 19px; margin: 0 0 6px; }
+.side-card p { font-size: 13.5px; color: color-mix(in srgb, var(--color-text) 70%, transparent); margin: 0 0 var(--space-3); }
+.reveal { display: flex; flex-direction: column; gap: 8px; }
+.reveal .contact-line { display: none; font-size: 15px; padding: 10px 12px; background: var(--color-accent-100); border-radius: var(--radius-md); font-weight: 600; color: var(--color-accent-800); }
+.reveal.on .contact-line { display: block; }
+.reveal.on .btn-primary { display: none; }
+.share-row { display: flex; gap: 8px; margin-top: var(--space-3); }
+.share-row .btn { flex: 1; }
+</style>
+</head>
+<body>
+<nav class="nav">
+  <span class="nav-brand">Find My Pet Cyprus</span>
+  <span class="links">
+    <a href="search.html">Search map</a>
+    <a href="submit.html">Report a pet</a>
+  </span>
+</nav>
+
+<div class="wrap" id="content">
+  <a class="back" id="back" href="search.html">← Back to listings</a>
+</div>
+
+<script src="data.js"></script>
+<script>
+(function(){
+  var id = Number(new URLSearchParams(location.search).get('id')) || window.PETS[0].id;
+  var ALL = window.PETS.concat(window.ADOPT || []);
+  var p = ALL.find(function(x){ return x.id === id; }) || window.PETS[0];
+  var isAdopt = p.status === 'adoption';
+  document.title = p.name + ' — Find My Pet Cyprus';
+  document.getElementById('back').href = isAdopt ? 'adopt.html' : p.status === 'missing' ? 'missing.html' : 'found.html';
+
+  var content = document.getElementById('content');
+  var statusLabel = isAdopt ? 'For adoption' : p.status === 'missing' ? 'Missing' : 'Found';
+  var tagClass = p.status === 'missing' ? 'tag-accent' : 'tag-accent-2';
+
+  content.insertAdjacentHTML('beforeend',
+    '<div class="layout">' +
+      '<div>' +
+        '<div class="photo-main"><img src="' + p.photo + '" alt="' + p.name + '"></div>' +
+        '<div class="head-row"><h1 class="pet-name">' + p.name + '</h1><span class="tag ' + tagClass + '">' + statusLabel + '</span></div>' +
+        '<p class="meta-line">' + p.species + ' · ' + p.area + ' · Reported ' + new Date(p.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'long' }) + '</p>' +
+        '<p class="desc">' + p.desc + '</p>' +
+        '<div class="facts">' +
+          '<div class="fact"><div class="k">Breed</div><div class="v">' + p.breed + '</div></div>' +
+          '<div class="fact"><div class="k">Colour</div><div class="v">' + p.color + '</div></div>' +
+          '<div class="fact"><div class="k">Status</div><div class="v">' + statusLabel + '</div></div>' +
+        '</div>' +
+        '<div id="mini-map"></div>' +
+      '</div>' +
+      '<div>' +
+        '<div class="side-card">' +
+          '<h3>' + (isAdopt ? 'Interested in ' + p.name + '?' : p.status === 'missing' ? 'Seen this pet?' : 'Is this your pet?') + '</h3>' +
+          '<p>Contact details are shared only after you confirm — keeps them out of search engines and spam.</p>' +
+          '<div class="reveal" id="reveal">' +
+            '<button class="btn btn-primary btn-block" id="reveal-btn" type="button">Show contact details</button>' +
+            '<div class="contact-line">' + p.contactName + ' · 99 123 456</div>' +
+          '</div>' +
+          '<div class="share-row"><a class="btn btn-secondary" href="search.html">Nearby listings</a><a class="btn btn-secondary" href="submit.html">Report a sighting</a></div>' +
+        '</div>' +
+      '</div>' +
+    '</div>'
+  );
+
+  document.getElementById('reveal-btn').addEventListener('click', function(){
+    document.getElementById('reveal').classList.add('on');
+  });
+
+  var map = L.map('mini-map', { zoomControl: false, dragging: true, scrollWheelZoom: false }).setView([p.lat, p.lng], 12);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OpenStreetMap contributors' }).addTo(map);
+  var color = p.status === 'missing' ? '#c67139' : '#7a8a5e';
+  L.marker([p.lat, p.lng], { icon: L.divIcon({ className: '', html: '<div style="width:16px;height:16px;border-radius:50%;background:' + color + ';border:3px solid #f5ead8;box-shadow:0 1px 3px rgba(0,0,0,.3)"></div>', iconSize:[16,16], iconAnchor:[8,8] }) }).addTo(map);
+})();
+</script>
+</body>
+</html>

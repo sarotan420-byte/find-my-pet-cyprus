@@ -1,0 +1,360 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Find My Pet Cyprus — report and search missing &amp; found pets</title>
+<meta name="description" content="Search a live map of missing and found pets across Cyprus by city, area or postcode, or report a pet in minutes. Every listing is checked before it goes public." />
+<script src="./ds-base.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+:root { --edge: clamp(16px, 4vw, 48px); --white: #fff; }
+html { scroll-behavior: smooth; }
+body { margin: 0; background: var(--white); text-wrap: pretty; overflow-x: clip; }
+a { color: var(--color-accent-700); }
+a:hover { color: var(--color-accent-800); }
+.wrap { max-width: 1320px; margin: 0 auto; padding: 0 var(--edge); }
+.nav { padding-inline: max(var(--edge), calc((100% - 1320px) / 2 + var(--edge))); position: sticky; top: 0; z-index: 1000; background: rgba(255,255,255,.94); backdrop-filter: blur(6px); border-bottom: 1px solid var(--color-neutral-200); }
+.nav .links { display: flex; gap: var(--space-4); margin-right: auto; margin-left: var(--space-4); }
+.nav .links a, .nav .actions > a:not(.btn) { color: var(--color-text); text-decoration: none; }
+.nav .actions { display: flex; align-items: center; gap: var(--space-3); }
+@media (max-width: 620px) { .nav .links { display: none; } }
+
+.intro { display: flex; align-items: end; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap; padding: var(--space-6) 0 var(--space-4); }
+.intro h1 { font-family: var(--font-heading); font-weight: var(--font-heading-weight); font-size: clamp(30px, 3.6vw, 46px); line-height: 1.1; margin: 0; max-width: 20ch; }
+.intro p { font-size: 15.5px; line-height: 1.6; margin: 10px 0 0; max-width: 56ch; color: color-mix(in srgb, var(--color-text) 75%, transparent); }
+.intro .btn { min-height: 44px; padding-inline: var(--space-4); }
+
+/* Map feature */
+.map-feature { position: relative; height: min(78vh, 760px); min-height: 520px; border-radius: calc(2 * var(--radius-lg)); overflow: hidden; box-shadow: var(--shadow-md); background: var(--color-surface); }
+#map { position: absolute; inset: 0; }
+.searchbar { position: absolute; z-index: 500; top: var(--space-4); left: var(--space-4); right: var(--space-4); max-width: 760px;
+  background: var(--white); border-radius: 999px; box-shadow: var(--shadow-lg); padding: 6px; display: flex; align-items: center; gap: 6px; }
+.searchbar .q { flex: 1; min-width: 0; border: none; background: transparent; font: inherit; font-size: 16px; padding: 10px 14px; color: var(--color-text); outline: none; }
+.searchbar select { border: none; background: var(--color-neutral-100); border-radius: 999px; font: inherit; font-size: 14px; padding: 10px 14px; color: var(--color-text); cursor: pointer; }
+.searchbar .btn { min-height: 44px; padding-inline: var(--space-4); }
+.suggest { position: absolute; z-index: 501; top: calc(var(--space-4) + 64px); left: var(--space-4); width: min(420px, calc(100% - 2 * var(--space-4)));
+  background: var(--white); border-radius: var(--radius-lg); box-shadow: var(--shadow-lg); padding: 6px; display: none; flex-direction: column; }
+.suggest.on { display: flex; }
+.suggest button { all: unset; cursor: pointer; padding: 10px 12px; border-radius: var(--radius-md); font-size: 14.5px; display: flex; justify-content: space-between; gap: 12px; }
+.suggest button:hover, .suggest button.hl { background: var(--color-accent-100); }
+.suggest .kind { font-size: 12px; color: color-mix(in srgb, var(--color-text) 55%, transparent); }
+
+.quick { position: absolute; z-index: 500; top: calc(var(--space-4) + 66px); left: var(--space-4); display: flex; gap: 8px; flex-wrap: wrap; max-width: calc(100% - 2 * var(--space-4)); }
+.chip { all: unset; cursor: pointer; background: var(--white); box-shadow: var(--shadow-sm); border-radius: 999px; padding: 7px 14px; font-size: 13px; font-weight: 600; }
+.chip:hover { background: var(--color-accent-100); }
+.chip.on { background: var(--color-text); color: var(--white); }
+
+.panel { position: absolute; z-index: 500; right: var(--space-4); bottom: var(--space-4); top: calc(var(--space-4) + 120px); width: 340px;
+  background: var(--white); border-radius: calc(1.25 * var(--radius-lg)); box-shadow: var(--shadow-lg); display: flex; flex-direction: column; overflow: hidden; }
+.panel-head { padding: var(--space-3) var(--space-4); display: flex; justify-content: space-between; align-items: center; gap: 8px; border-bottom: 1px solid var(--color-neutral-200); }
+.panel-head .count { font-family: var(--font-heading); font-size: 17px; }
+.panel-head .where { font-size: 12.5px; color: color-mix(in srgb, var(--color-text) 60%, transparent); }
+.radius { display: flex; align-items: center; gap: 10px; padding: var(--space-2) var(--space-4); font-size: 12.5px; border-bottom: 1px solid var(--color-neutral-200); }
+.radius input { flex: 1; accent-color: var(--color-accent); }
+.radius b { font-family: var(--font-heading); font-weight: 400; min-width: 46px; text-align: right; }
+.list { flex: 1; overflow-y: auto; padding: 6px; display: flex; flex-direction: column; gap: 2px; }
+.item { display: flex; gap: 12px; padding: 8px; border-radius: var(--radius-md); text-decoration: none; color: inherit; }
+.item:hover, .item.active { background: var(--color-surface); color: inherit; }
+.item img { width: 64px; height: 64px; border-radius: 12px; object-fit: cover; flex: none; filter: saturate(.8) contrast(.95); }
+.item .t { display: flex; align-items: center; gap: 8px; }
+.item .n { font-family: var(--font-heading); font-size: 15px; }
+.item .m { font-size: 12px; color: color-mix(in srgb, var(--color-text) 62%, transparent); margin-top: 2px; }
+.empty { padding: var(--space-6) var(--space-4); text-align: center; font-size: 13.5px; color: color-mix(in srgb, var(--color-text) 60%, transparent); }
+.panel-foot { padding: var(--space-3); border-top: 1px solid var(--color-neutral-200); }
+.legend { position: absolute; z-index: 500; left: var(--space-4); bottom: var(--space-4); display: flex; gap: var(--space-3); background: var(--white); padding: 8px 14px; border-radius: 999px; font-size: 12.5px; box-shadow: var(--shadow-sm); }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.legend i { width: 10px; height: 10px; border-radius: 50%; }
+
+@media (max-width: 820px) {
+  .map-feature { height: auto; min-height: 0; display: flex; flex-direction: column; border-radius: var(--radius-lg); }
+  #map { position: relative; height: 58vh; min-height: 380px; }
+  .searchbar { left: var(--space-2); right: var(--space-2); top: var(--space-2); flex-wrap: wrap; border-radius: var(--radius-lg); }
+  .searchbar .q { flex-basis: 100%; }
+  .searchbar select { flex: 1; }
+  .quick { top: auto; bottom: calc(100% - 58vh + 52px); left: var(--space-2); display: none; }
+  .suggest { top: 120px; left: var(--space-2); }
+  .panel { position: relative; inset: auto; width: auto; max-height: none; border-radius: 0; box-shadow: none; }
+  .legend { top: 130px; bottom: auto; left: var(--space-2); }
+}
+
+.steps { padding: calc(2 * var(--space-6)) 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-6); }
+@media (max-width: 780px) { .steps { grid-template-columns: 1fr; } }
+.step { display: flex; gap: var(--space-3); }
+.step .num { width: 34px; height: 34px; border-radius: 50%; background: var(--color-accent-2-100); color: var(--color-accent-2-800); display: flex; align-items: center; justify-content: center; font-family: var(--font-heading); flex: none; }
+.step h3 { font-family: var(--font-heading); font-weight: var(--font-heading-weight); font-size: 19px; margin: 4px 0 6px; }
+.step p { font-size: 14.5px; line-height: 1.6; margin: 0; color: color-mix(in srgb, var(--color-text) 75%, transparent); max-width: 40ch; }
+
+.patch { background: var(--color-surface); border-radius: calc(2 * var(--radius-lg)); padding: var(--space-6) clamp(24px, 4vw, 56px);
+  display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap; }
+.patch h3 { font-family: var(--font-heading); font-weight: var(--font-heading-weight); font-size: 26px; margin: 0; }
+.patch p { font-size: 15px; line-height: 1.6; margin: 8px 0 0; max-width: 46ch; color: color-mix(in srgb, var(--color-text) 75%, transparent); }
+.patch .btn { min-height: 44px; padding-inline: var(--space-4); }
+footer { padding: var(--space-6) 0; font-size: 13px; color: color-mix(in srgb, var(--color-text) 65%, transparent); display: flex; justify-content: space-between; gap: var(--space-3); flex-wrap: wrap; }
+footer a { color: inherit; }
+</style>
+</head>
+<body>
+<nav class="nav">
+  <span class="nav-brand">Find My Pet Cyprus</span>
+  <span class="links">
+    <a href="missing.html">Missing pets</a>
+    <a href="found.html">Found pets</a>
+  <a href="adopt.html">Adopt</a>
+  </span>
+  <span class="actions">
+    <a href="account.html">Sign in</a>
+    <a href="submit.html" class="btn btn-primary">Report a pet</a>
+  </span>
+</nav>
+
+<div class="wrap">
+  <section class="intro">
+    <div>
+      <h1>Missing and found pets across Cyprus</h1>
+      <p>Search by city, area or postcode. Every listing is checked by a moderator before it appears on the map.</p>
+    </div>
+    <a href="submit.html" class="btn btn-secondary">Report missing or found</a>
+  </section>
+
+  <section class="map-feature" aria-label="Map of missing and found pets">
+    <div id="map"></div>
+
+    <form class="searchbar" id="searchbar" role="search" autocomplete="off">
+      <input class="q" id="q" type="search" placeholder="City, area or postcode — e.g. Limassol, Strovolos, 6023" aria-label="City, area or postcode" />
+      <select id="status" aria-label="Status">
+        <option value="all">Missing &amp; found</option>
+        <option value="missing">Missing only</option>
+        <option value="found">Found only</option>
+      </select>
+      <button class="btn btn-primary" type="submit">Search</button>
+    </form>
+    <div class="suggest" id="suggest" role="listbox"></div>
+
+    <div class="quick" id="quick"></div>
+
+    <aside class="panel">
+      <div class="panel-head">
+        <div><div class="count" id="count">6 listings</div><div class="where" id="where">All of Cyprus</div></div>
+        <button class="btn btn-ghost" id="reset" type="button" style="display:none">Clear</button>
+      </div>
+      <div class="radius" id="radius-row" style="display:none">
+        <span>Within</span>
+        <input type="range" id="radius" min="2" max="40" value="10" aria-label="Search radius in km" />
+        <b id="radius-val">10 km</b>
+      </div>
+      <div class="list" id="list"></div>
+      <div class="panel-foot"><a class="btn btn-secondary btn-block" id="open-full" href="search.html">Open full search</a></div>
+    </aside>
+
+    <div class="legend"><span><i style="background:var(--color-accent)"></i>Missing</span><span><i style="background:var(--color-accent-2)"></i>Found</span></div>
+  </section>
+
+  <section class="steps">
+    <div class="step"><span class="num">1</span><div><h3>Report</h3><p>Add photos, a description and the area last seen. It takes a few minutes.</p></div></div>
+    <div class="step"><span class="num">2</span><div><h3>Checked</h3><p>A moderator reviews each listing before it goes public, keeping the map free of spam and duplicates.</p></div></div>
+    <div class="step"><span class="num">3</span><div><h3>Reunited</h3><p>People nearby can find it by city, area or postcode and get in touch.</p></div></div>
+  </section>
+
+  <section class="patch">
+    <div>
+      <h3>Missing a pet right now?</h3>
+      <p>The sooner a listing is live, the sooner someone nearby can spot it.</p>
+    </div>
+    <a href="submit.html" class="btn btn-primary">Report now</a>
+  </section>
+
+  <footer>
+    <span>© 2026 Find My Pet Cyprus. Not a substitute for contacting local authorities or a vet.</span>
+    <span><a href="missing.html">Missing pets</a> · <a href="found.html">Found pets</a> · <a href="adopt.html">Adopt</a> · <a href="submit.html">Report a pet</a> · <a href="account.html">Account</a></span>
+  </footer>
+</div>
+
+<script src="data.js"></script>
+<script>
+(function(){
+  // Demo gazetteer: cities, areas and postcode prefixes. Production would use a geocoder.
+  var PLACES = [
+    { name: 'Nicosia', kind: 'City', lat: 35.1725, lng: 33.365, z: 12 },
+    { name: 'Limassol', kind: 'City', lat: 34.6841, lng: 33.0379, z: 12 },
+    { name: 'Larnaca', kind: 'City', lat: 34.9229, lng: 33.6233, z: 12 },
+    { name: 'Paphos', kind: 'City', lat: 34.7754, lng: 32.4245, z: 12 },
+    { name: 'Paralimni', kind: 'Town', lat: 35.0375, lng: 33.9833, z: 13 },
+    { name: 'Ayia Napa', kind: 'Town', lat: 34.9823, lng: 34.0, z: 13 },
+    { name: 'Strovolos', kind: 'Area · Nicosia', lat: 35.1446, lng: 33.3199, z: 14 },
+    { name: 'Lakatamia', kind: 'Area · Nicosia', lat: 35.1167, lng: 33.3167, z: 14 },
+    { name: 'Engomi', kind: 'Area · Nicosia', lat: 35.1617, lng: 33.3317, z: 14 },
+    { name: 'Germasogeia', kind: 'Area · Limassol', lat: 34.7167, lng: 33.0833, z: 14 },
+    { name: 'Agios Nikolaos', kind: 'Area · Limassol', lat: 34.684, lng: 33.045, z: 15 },
+    { name: 'Mesa Geitonia', kind: 'Area · Limassol', lat: 34.7036, lng: 33.0436, z: 14 },
+    { name: 'Finikoudes', kind: 'Area · Larnaca', lat: 34.9137, lng: 33.6375, z: 15 },
+    { name: 'Aradippou', kind: 'Area · Larnaca', lat: 34.9517, lng: 33.5917, z: 14 },
+    { name: 'Kato Paphos', kind: 'Area · Paphos', lat: 34.7564, lng: 32.4136, z: 14 },
+    { name: 'Peyia', kind: 'Area · Paphos', lat: 34.8833, lng: 32.3833, z: 14 },
+    { name: 'Polis Chrysochous', kind: 'Town', lat: 35.0333, lng: 32.4167, z: 13 }
+  ];
+  var POSTCODES = [ // first digits → district centre
+    { p: '1', name: 'Nicosia', lat: 35.1725, lng: 33.365 },
+    { p: '2', name: 'Nicosia district', lat: 35.12, lng: 33.3 },
+    { p: '3', name: 'Limassol', lat: 34.6841, lng: 33.0379 },
+    { p: '4', name: 'Limassol district', lat: 34.72, lng: 33.05 },
+    { p: '5', name: 'Famagusta district', lat: 35.02, lng: 33.95 },
+    { p: '6', name: 'Larnaca', lat: 34.9229, lng: 33.6233 },
+    { p: '7', name: 'Larnaca district', lat: 34.95, lng: 33.55 },
+    { p: '8', name: 'Paphos', lat: 34.7754, lng: 32.4245 }
+  ];
+  var QUICK = ['Nicosia', 'Limassol', 'Larnaca', 'Paphos', 'Paralimni'];
+
+  var css = getComputedStyle(document.documentElement);
+  var C_MISS = css.getPropertyValue('--color-accent').trim() || '#c67139';
+  var C_FOUND = css.getPropertyValue('--color-accent-2').trim() || '#7a8a5e';
+
+  var map = L.map('map', { zoomControl: false, scrollWheelZoom: false }).setView([35.0, 33.2], 9);
+  L.control.zoom({ position: 'bottomright' }).addTo(map);
+  if (window.innerWidth > 820) map.zoomControl = null;
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+    attribution: '&copy; OpenStreetMap contributors &copy; CARTO', maxZoom: 19, subdomains: 'abcd'
+  }).addTo(map);
+  map.on('click', function(){ map.scrollWheelZoom.enable(); });
+
+  var markers = {};
+  window.PETS.forEach(function(p){
+    var c = p.status === 'missing' ? C_MISS : C_FOUND;
+    var m = L.marker([p.lat, p.lng], { icon: L.divIcon({ className: '', html: '<div style="width:18px;height:18px;border-radius:50%;background:' + c + ';border:3px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.3)"></div>', iconSize: [18,18], iconAnchor: [9,9] }) }).addTo(map);
+    m.bindPopup('<div style="font-family:var(--font-body);min-width:150px"><div style="font-family:var(--font-heading);font-size:15px">' + p.name + '</div><div style="font-size:12px;opacity:.7;margin:2px 0 6px">' + p.species + ' · ' + p.area + '</div><a href="listing.html?id=' + p.id + '">View listing →</a></div>');
+    m.on('click', function(){ highlight(p.id); });
+    markers[p.id] = m;
+  });
+
+  var state = { center: null, label: 'All of Cyprus', radius: 10, status: 'all' };
+  var circle = null;
+  var $ = function(id){ return document.getElementById(id); };
+
+  function km(a, b){
+    var R = 6371, dLat = (b.lat - a.lat) * Math.PI / 180, dLng = (b.lng - a.lng) * Math.PI / 180;
+    var s = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(a.lat * Math.PI/180) * Math.cos(b.lat * Math.PI/180) * Math.sin(dLng/2) * Math.sin(dLng/2);
+    return 2 * R * Math.asin(Math.sqrt(s));
+  }
+
+  function resolve(q){
+    q = q.trim().toLowerCase();
+    if (!q) return null;
+    if (/^\d{1,4}$/.test(q)) {
+      var pc = POSTCODES.find(function(x){ return q[0] === x.p; });
+      return pc ? { name: 'Postcode ' + q + ' · ' + pc.name, lat: pc.lat, lng: pc.lng, z: 12 } : null;
+    }
+    return PLACES.find(function(p){ return p.name.toLowerCase() === q; })
+        || PLACES.find(function(p){ return p.name.toLowerCase().indexOf(q) === 0; })
+        || PLACES.find(function(p){ return p.name.toLowerCase().indexOf(q) > -1; });
+  }
+
+  function render(){
+    var rows = window.PETS.map(function(p){
+      return { p: p, d: state.center ? km(state.center, p) : null };
+    }).filter(function(r){
+      if (state.status !== 'all' && r.p.status !== state.status) return false;
+      if (state.center && r.d > state.radius) return false;
+      return true;
+    }).sort(function(a, b){ return a.d != null ? a.d - b.d : new Date(b.p.date) - new Date(a.p.date); });
+
+    Object.keys(markers).forEach(function(id){
+      var on = rows.some(function(r){ return r.p.id === Number(id); });
+      var el = markers[id].getElement(); if (el) el.style.opacity = on ? '1' : '0.25';
+    });
+
+    $('count').textContent = rows.length + (rows.length === 1 ? ' listing' : ' listings');
+    $('where').textContent = state.center ? 'Within ' + state.radius + ' km of ' + state.label : state.label;
+    $('reset').style.display = state.center ? '' : 'none';
+    $('radius-row').style.display = state.center ? 'flex' : 'none';
+    $('open-full').href = 'search.html' + (state.center ? '?q=' + encodeURIComponent(state.label) : '');
+
+    $('list').innerHTML = rows.length ? rows.map(function(r){
+      var p = r.p;
+      return '<a class="item" data-id="' + p.id + '" href="listing.html?id=' + p.id + '">' +
+        '<img src="' + p.photo + '" alt="">' +
+        '<div><div class="t"><span class="n">' + p.name + '</span><span class="tag ' + (p.status === 'missing' ? 'tag-accent' : 'tag-accent-2') + '">' + (p.status === 'missing' ? 'Missing' : 'Found') + '</span></div>' +
+        '<div class="m">' + p.species + ' · ' + p.area + '</div>' +
+        '<div class="m">' + (r.d != null ? r.d.toFixed(1) + ' km away · ' : '') + new Date(p.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) + '</div></div></a>';
+    }).join('') : '<div class="empty">No listings in this area yet.<br>Try a wider radius.</div>';
+
+    $('list').querySelectorAll('.item').forEach(function(el){
+      el.addEventListener('mouseenter', function(){ var m = markers[el.dataset.id]; if (m) m.openPopup(); });
+    });
+  }
+
+  function highlight(id){
+    $('list').querySelectorAll('.item').forEach(function(el){ el.classList.toggle('active', Number(el.dataset.id) === id); });
+  }
+
+  function go(place){
+    state.center = { lat: place.lat, lng: place.lng };
+    state.label = place.name;
+    $('q').value = place.name;
+    if (circle) map.removeLayer(circle);
+    circle = L.circle([place.lat, place.lng], { radius: state.radius * 1000, color: C_MISS, weight: 2, fillColor: C_MISS, fillOpacity: 0.07 }).addTo(map);
+    map.flyToBounds(circle.getBounds(), { padding: window.innerWidth > 820 ? [140, 380] : [20, 20], duration: 0.8 });
+    paintQuick();
+    closeSuggest();
+    render();
+  }
+
+  function reset(){
+    state.center = null; state.label = 'All of Cyprus';
+    if (circle) { map.removeLayer(circle); circle = null; }
+    $('q').value = '';
+    map.flyTo([35.0, 33.2], 9, { duration: 0.8 });
+    paintQuick(); render();
+  }
+
+  // Suggestions
+  var sugIdx = -1, sugItems = [];
+  function closeSuggest(){ $('suggest').classList.remove('on'); sugIdx = -1; }
+  function suggest(){
+    var q = $('q').value.trim().toLowerCase();
+    if (!q) return closeSuggest();
+    if (/^\d{1,4}$/.test(q)) {
+      var r = resolve(q); sugItems = r ? [r] : [];
+    } else {
+      sugItems = PLACES.filter(function(p){ return p.name.toLowerCase().indexOf(q) > -1; }).slice(0, 6);
+    }
+    if (!sugItems.length) { $('suggest').innerHTML = '<div class="empty" style="padding:12px">No match. Try a city, area or 4-digit postcode.</div>'; $('suggest').classList.add('on'); return; }
+    $('suggest').innerHTML = sugItems.map(function(p, i){ return '<button type="button" data-i="' + i + '"><span>' + p.name + '</span><span class="kind">' + (p.kind || 'Postcode') + '</span></button>'; }).join('');
+    $('suggest').classList.add('on');
+    $('suggest').querySelectorAll('button').forEach(function(b){ b.addEventListener('mousedown', function(e){ e.preventDefault(); go(sugItems[Number(b.dataset.i)]); }); });
+  }
+  $('q').addEventListener('input', suggest);
+  $('q').addEventListener('blur', function(){ setTimeout(closeSuggest, 100); });
+  $('q').addEventListener('keydown', function(e){
+    if (!$('suggest').classList.contains('on') || !sugItems.length) return;
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      sugIdx = (sugIdx + (e.key === 'ArrowDown' ? 1 : -1) + sugItems.length) % sugItems.length;
+      $('suggest').querySelectorAll('button').forEach(function(b, i){ b.classList.toggle('hl', i === sugIdx); });
+    } else if (e.key === 'Escape') closeSuggest();
+  });
+  $('searchbar').addEventListener('submit', function(e){
+    e.preventDefault();
+    var place = sugIdx > -1 && sugItems[sugIdx] ? sugItems[sugIdx] : resolve($('q').value);
+    if (place) go(place); else if (!$('q').value.trim()) reset(); else suggest();
+  });
+  $('status').addEventListener('change', function(){ state.status = this.value; render(); });
+  $('reset').addEventListener('click', reset);
+  $('radius').addEventListener('input', function(){
+    state.radius = Number(this.value); $('radius-val').textContent = state.radius + ' km';
+    if (circle) circle.setRadius(state.radius * 1000);
+    render();
+  });
+  $('radius').addEventListener('change', function(){ if (circle) map.flyToBounds(circle.getBounds(), { padding: window.innerWidth > 820 ? [140, 380] : [20, 20], duration: 0.5 }); });
+
+  function paintQuick(){
+    $('quick').innerHTML = QUICK.map(function(n){ return '<button type="button" class="chip' + (state.label === n ? ' on' : '') + '" data-n="' + n + '">' + n + '</button>'; }).join('');
+    $('quick').querySelectorAll('.chip').forEach(function(b){ b.addEventListener('click', function(){ go(PLACES.find(function(p){ return p.name === b.dataset.n; })); }); });
+  }
+
+  paintQuick();
+  render();
+})();
+</script>
+</body>
+</html>

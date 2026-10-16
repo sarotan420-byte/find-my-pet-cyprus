@@ -1,0 +1,358 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Pets for adoption in Cyprus — Find My Pet Cyprus</title>
+<meta name="description" content="Adopt a dog, cat or other pet in Cyprus. Browse pets from shelters, rescue groups and foster homes, filtered by age, size, colour and who they're good with." />
+<link rel="canonical" href="/adopt" />
+<script src="./ds-base.js"></script>
+<style>
+:root { --edge: clamp(16px, 4vw, 48px); --white: #fff; }
+body { margin: 0; background: var(--white); text-wrap: pretty; }
+a { color: var(--color-accent-700); }
+a:hover { color: var(--color-accent-800); }
+.nav { padding-inline: max(var(--edge), calc((100% - 1320px) / 2 + var(--edge))); position: sticky; top: 0; z-index: 50; background: rgba(255,255,255,.94); backdrop-filter: blur(6px); border-bottom: 1px solid var(--color-neutral-200); }
+.nav .links { display: flex; gap: var(--space-4); margin-right: auto; margin-left: var(--space-4); }
+.nav .links a, .nav .actions > a:not(.btn) { color: var(--color-text); text-decoration: none; }
+.nav .links a[aria-current] { color: var(--color-accent-700); font-weight: 600; }
+.nav .actions { display: flex; align-items: center; gap: var(--space-3); }
+@media (max-width: 720px) { .nav .links { display: none; } }
+
+.wrap { max-width: 1320px; margin: 0 auto; padding: 0 var(--edge) calc(3 * var(--space-6)); }
+.head { padding: var(--space-6) 0 var(--space-4); display: flex; align-items: end; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap; }
+.head h1 { font-family: var(--font-heading); font-weight: var(--font-heading-weight); font-size: clamp(30px, 3.6vw, 44px); line-height: 1.1; margin: 0; }
+.head p { font-size: 15px; line-height: 1.6; margin: 8px 0 0; max-width: 60ch; color: color-mix(in srgb, var(--color-text) 72%, transparent); }
+.switch { display: flex; background: var(--color-neutral-100); border-radius: 999px; padding: 4px; }
+.switch a { text-decoration: none; color: var(--color-text); padding: 9px 18px; border-radius: 999px; font-size: 14px; font-weight: 600; }
+.switch a[aria-current] { background: var(--white); box-shadow: var(--shadow-sm); }
+
+.layout { display: grid; grid-template-columns: 280px minmax(0, 1fr); gap: var(--space-6); align-items: start; }
+
+.filters { position: sticky; top: 80px; display: flex; flex-direction: column; gap: var(--space-4); max-height: calc(100vh - 100px); overflow-y: auto; padding: 2px 6px 2px 2px; }
+.fgroup { display: flex; flex-direction: column; gap: 8px; }
+.fgroup > .lbl { font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: color-mix(in srgb, var(--color-text) 62%, transparent); }
+.filters .input { background: var(--white); border-color: var(--color-neutral-300); }
+.searchbox { position: relative; }
+.searchbox .input { padding-left: 40px; }
+.searchbox svg { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); opacity: .55; }
+.opts { display: flex; flex-wrap: wrap; gap: 6px; }
+.opt input { position: absolute; opacity: 0; width: 0; height: 0; }
+.opt span { display: inline-block; padding: 7px 14px; border-radius: 999px; border: 1.5px solid var(--color-neutral-300); font-size: 13.5px; cursor: pointer; }
+.opt span:hover { border-color: var(--color-accent); }
+.opt input:checked + span { background: var(--color-text); border-color: var(--color-text); color: var(--white); }
+.opt input:focus-visible + span { outline: 2px solid var(--color-accent); outline-offset: 2px; }
+.swatches { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
+.swatch { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: 10px; cursor: pointer; font-size: 13.5px; border: 1.5px solid transparent; }
+.swatch:hover { background: var(--color-neutral-100); }
+.swatch input { position: absolute; opacity: 0; width: 0; height: 0; }
+.swatch i { width: 18px; height: 18px; border-radius: 50%; box-shadow: inset 0 0 0 1px rgba(0,0,0,.18); flex: none; }
+.swatch:has(input:checked) { border-color: var(--color-text); background: var(--color-neutral-100); font-weight: 600; }
+.swatch:has(input:focus-visible) { outline: 2px solid var(--color-accent); outline-offset: 1px; }
+.check { display: flex; align-items: center; gap: 10px; font-size: 14px; cursor: pointer; }
+.check input { width: 18px; height: 18px; accent-color: var(--color-accent); }
+.filters-head { display: none; }
+
+.main-top { display: flex; justify-content: space-between; align-items: center; gap: var(--space-3); margin-bottom: var(--space-3); flex-wrap: wrap; }
+.count { font-family: var(--font-heading); font-size: 18px; }
+.sortbox { display: flex; align-items: center; gap: 8px; font-size: 13.5px; }
+.sortbox select { width: auto; background: var(--white); }
+#toggle-filters { display: none; }
+.active { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: var(--space-3); }
+.active:empty { display: none; }
+.pill { all: unset; cursor: pointer; background: var(--color-accent-100); color: var(--color-accent-800); padding: 6px 12px; border-radius: 999px; font-size: 13px; font-weight: 600; }
+.pill:hover { background: var(--color-accent-200); }
+.clear-all { all: unset; cursor: pointer; font-size: 13px; text-decoration: underline; padding: 6px 8px; }
+
+.results { display: flex; flex-direction: column; gap: var(--space-3); }
+.row { display: grid; grid-template-columns: 200px minmax(0,1fr); gap: var(--space-4); text-decoration: none; color: inherit; padding: var(--space-3); border-radius: calc(1.25 * var(--radius-lg)); border: 1px solid var(--color-neutral-200); transition: box-shadow .15s, border-color .15s; }
+.row:hover { color: inherit; border-color: transparent; box-shadow: var(--shadow-md); }
+.row .ph { border-radius: var(--radius-lg); overflow: hidden; aspect-ratio: 1; background: var(--color-surface); }
+.row .ph img { width: 100%; height: 100%; object-fit: cover; filter: saturate(.8) contrast(.95); }
+.row .body { display: flex; flex-direction: column; gap: 8px; min-width: 0; padding: 4px 0; }
+.row .top { display: flex; justify-content: space-between; align-items: baseline; gap: var(--space-3); flex-wrap: wrap; }
+.row .nm { font-family: var(--font-heading); font-weight: var(--font-heading-weight); font-size: 22px; margin: 0; }
+.row .date { font-size: 13px; font-weight: 600; color: var(--color-accent-2-700); }
+.traits { display: flex; flex-wrap: wrap; gap: 6px; }
+.traits span { font-size: 13px; background: var(--color-neutral-100); padding: 4px 10px; border-radius: 999px; display: inline-flex; align-items: center; gap: 4px; }
+.traits .cols i { width: 12px; height: 12px; border-radius: 50%; box-shadow: inset 0 0 0 1px rgba(0,0,0,.2); }
+.traits .cols i:last-of-type { margin-right: 3px; }
+.desc { font-size: 14.5px; line-height: 1.55; margin: 0; color: color-mix(in srgb, var(--color-text) 78%, transparent); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.foot { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: auto; }
+.loc { font-size: 13.5px; font-weight: 600; margin-right: auto; }
+.empty { text-align: center; padding: calc(2 * var(--space-6)) var(--space-4); border: 1.5px dashed var(--color-neutral-300); border-radius: calc(1.5 * var(--radius-lg)); }
+.empty h3 { font-family: var(--font-heading); font-weight: var(--font-heading-weight); font-size: 22px; margin: 0 0 6px; }
+.empty p { font-size: 14.5px; margin: 0 auto var(--space-4); max-width: 44ch; color: color-mix(in srgb, var(--color-text) 70%, transparent); }
+
+@media (max-width: 900px) {
+  .layout { grid-template-columns: 1fr; }
+  #toggle-filters { display: inline-flex; }
+  .filters { display: none; position: fixed; inset: 0; z-index: 100; top: 0; max-height: none; background: var(--white); padding: var(--space-4); }
+  body.filters-open .filters { display: flex; }
+  body.filters-open { overflow: hidden; }
+  .filters-head { display: flex; justify-content: space-between; align-items: center; }
+  .filters-head b { font-family: var(--font-heading); font-weight: 400; font-size: 22px; }
+  .filters .done { position: sticky; bottom: 0; margin-top: auto; }
+}
+@media (min-width: 901px) { .filters .done { display: none; } }
+@media (max-width: 560px) {
+  .row { grid-template-columns: 110px minmax(0,1fr); gap: var(--space-3); padding: 10px; }
+  .row .nm { font-size: 18px; }
+  .desc { display: none; }
+}
+</style>
+<style>
+.row .sub { font-size: 14px; color: color-mix(in srgb, var(--color-text) 70%, transparent); margin-top: -4px; }
+.good { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; font-size: 13px; }
+.good b { font-weight: 600; margin-right: 2px; }
+.good span { background: var(--color-accent-2-100); color: var(--color-accent-2-800); padding: 4px 10px; border-radius: 999px; font-weight: 600; }
+.health { display: flex; gap: 12px; flex-wrap: wrap; font-size: 13px; }
+.health span { display: inline-flex; align-items: center; gap: 5px; }
+.health span.no { color: color-mix(in srgb, var(--color-text) 50%, transparent); }
+.lister { font-size: 12.5px; color: color-mix(in srgb, var(--color-text) 60%, transparent); }
+.meet { margin-left: auto; }
+.rehome { margin-top: var(--space-6); background: var(--color-surface); border-radius: calc(1.5 * var(--radius-lg)); padding: var(--space-4) var(--space-6); display: flex; justify-content: space-between; align-items: center; gap: var(--space-4); flex-wrap: wrap; }
+.rehome h3 { font-family: var(--font-heading); font-weight: var(--font-heading-weight); font-size: 20px; margin: 0 0 4px; }
+.rehome p { font-size: 14px; margin: 0; max-width: 52ch; color: color-mix(in srgb, var(--color-text) 72%, transparent); }
+</style>
+</head>
+<body>
+<nav class="nav">
+  <a class="nav-brand" href="index.html" style="text-decoration:none;color:inherit">Find My Pet Cyprus</a>
+  <span class="links">
+    <a href="missing.html">Missing pets</a>
+    <a href="found.html">Found pets</a>
+    <a href="adopt.html" aria-current="page">Adopt</a>
+    <a href="index.html">Map</a>
+  </span>
+  <span class="actions">
+    <a href="account.html">Sign in</a>
+    <a href="submit.html" class="btn btn-primary">Report a pet</a>
+  </span>
+</nav>
+
+<div class="wrap">
+  <header class="head">
+    <div>
+      <h1>Pets for adoption in Cyprus</h1>
+      <p>Dogs, cats and other pets looking for a home, listed by shelters, rescue groups, foster carers and owners who need to rehome. Every listing is checked by a moderator.</p>
+    </div>
+  </header>
+
+  <div class="layout">
+    <form class="filters" id="filters" aria-label="Filter pets for adoption">
+      <div class="filters-head"><b>Filters</b><button type="button" class="btn btn-ghost" id="close-filters">Close</button></div>
+
+      <div class="fgroup">
+        <label class="lbl" for="q">Keywords</label>
+        <div class="searchbox">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+          <input class="input" id="q" type="search" placeholder="Breed, name, calm…" />
+        </div>
+      </div>
+
+      <div class="fgroup">
+        <label class="lbl" for="species">Animal</label>
+        <select class="input" id="species">
+          <option value="">Any animal</option>
+          <option value="Dog">Dog</option>
+          <option value="Cat">Cat</option>
+          <option value="Other">Other / exotic (birds, rabbits, reptiles…)</option>
+        </select>
+      </div>
+
+      <div class="fgroup">
+        <span class="lbl">Age</span>
+        <div class="opts" id="ages"></div>
+      </div>
+
+      <div class="fgroup" id="colour-group">
+        <span class="lbl">Colour <span style="text-transform:none;letter-spacing:0;font-weight:400">· cats &amp; dogs, pick all that apply</span></span>
+        <div class="swatches" id="colours"></div>
+      </div>
+
+      <div class="fgroup">
+        <span class="lbl">Size</span>
+        <div class="opts" id="sizes">
+          <label class="opt"><input type="checkbox" value="Small"><span>Small</span></label>
+          <label class="opt"><input type="checkbox" value="Medium"><span>Medium</span></label>
+          <label class="opt"><input type="checkbox" value="Large"><span>Large</span></label>
+        </div>
+      </div>
+
+      <div class="fgroup">
+        <label class="lbl" for="sex">Sex</label>
+        <select class="input" id="sex">
+          <option value="">Any</option>
+          <option value="Male">Male</option>
+          <option value="Female">Female</option>
+        </select>
+      </div>
+
+      <div class="fgroup">
+        <span class="lbl">Good with</span>
+        <div class="opts" id="good">
+          <label class="opt"><input type="checkbox" value="Children"><span>Children</span></label>
+          <label class="opt"><input type="checkbox" value="Dogs"><span>Dogs</span></label>
+          <label class="opt"><input type="checkbox" value="Cats"><span>Cats</span></label>
+        </div>
+      </div>
+
+      <div class="fgroup">
+        <label class="lbl" for="district">District</label>
+        <select class="input" id="district"><option value="">All of Cyprus</option></select>
+      </div>
+
+      <div class="fgroup">
+        <span class="lbl">Health</span>
+        <label class="check"><input type="checkbox" id="neutered"> Neutered / spayed</label>
+        <label class="check"><input type="checkbox" id="vaccinated"> Vaccinated</label>
+        <label class="check"><input type="checkbox" id="chipped"> Microchipped</label>
+      </div>
+
+      <div class="fgroup">
+        <label class="lbl" for="lister">Listed by</label>
+        <select class="input" id="lister">
+          <option value="">Anyone</option>
+          <option value="Shelter">Shelter</option>
+          <option value="Rescue group">Rescue group</option>
+          <option value="Foster home">Foster home</option>
+          <option value="Owner rehoming">Owner rehoming</option>
+        </select>
+      </div>
+
+      <button type="button" class="btn btn-primary btn-block done" onclick="document.body.classList.remove('filters-open')">Show results</button>
+    </form>
+
+    <main>
+      <div class="main-top">
+        <span class="count" id="count" aria-live="polite"></span>
+        <div style="display:flex;gap:8px;align-items:center">
+          <button type="button" class="btn btn-secondary" id="toggle-filters">Filters <span id="filter-count"></span></button>
+          <label class="sortbox"><span>Sort</span>
+            <select class="input" id="sort">
+              <option value="newest">Newest first</option>
+              <option value="youngest">Youngest first</option>
+              <option value="oldest">Oldest first</option>
+            </select>
+          </label>
+        </div>
+      </div>
+      <div class="active" id="active"></div>
+      <div class="results" id="results"></div>
+
+      <div class="rehome">
+        <div>
+          <h3>Need to rehome a pet, or run a rescue?</h3>
+          <p>List a pet for adoption. A moderator checks each listing before it goes live.</p>
+        </div>
+        <a href="submit.html?type=adoption" class="btn btn-secondary">List a pet for adoption</a>
+      </div>
+    </main>
+  </div>
+</div>
+
+<script src="data.js"></script>
+<script>
+(function(){
+  var $ = function(id){ return document.getElementById(id); };
+  var pets = window.ADOPT;
+  var AGE_ORDER = window.AGES;
+  var BOOLS = { neutered: 'Neutered', vaccinated: 'Vaccinated', chipped: 'Microchipped' };
+
+  $('ages').innerHTML = AGE_ORDER.map(function(a){ return '<label class="opt"><input type="checkbox" value="' + a + '"><span>' + a + '</span></label>'; }).join('');
+  $('colours').innerHTML = window.COLOURS.map(function(c){ return '<label class="swatch"><input type="checkbox" value="' + c.name + '"><i style="background:' + c.swatch + '"></i><span>' + c.name + '</span></label>'; }).join('');
+  window.AREAS.forEach(function(a){ var o = document.createElement('option'); o.value = a; o.textContent = a; $('district').appendChild(o); });
+
+  function checked(sel){ return Array.prototype.map.call(document.querySelectorAll(sel + ' input:checked'), function(i){ return i.value; }); }
+  var s = {};
+  function read(){
+    s = { q: $('q').value.trim(), species: $('species').value, sex: $('sex').value, district: $('district').value, lister: $('lister').value, sort: $('sort').value,
+      ages: checked('#ages'), colours: checked('#colours'), sizes: checked('#sizes'), good: checked('#good'),
+      neutered: $('neutered').checked, vaccinated: $('vaccinated').checked, chipped: $('chipped').checked };
+    $('colour-group').style.display = s.species === 'Other' ? 'none' : '';
+  }
+
+  function match(p){
+    if (s.species && p.species !== s.species) return false;
+    if (s.sex && p.sex !== s.sex) return false;
+    if (s.district && p.district !== s.district) return false;
+    if (s.lister && p.lister !== s.lister) return false;
+    if (s.ages.length && s.ages.indexOf(p.age) === -1) return false;
+    if (s.sizes.length && s.sizes.indexOf(p.size) === -1) return false;
+    if (s.good.length && !s.good.every(function(g){ return p.goodWith.indexOf(g) > -1; })) return false;
+    if (s.colours.length && s.species !== 'Other' && (p.species === 'Other' || !s.colours.every(function(c){ return p.colours.indexOf(c) > -1; }))) return false;
+    for (var k in BOOLS) if (s[k] && !p[k]) return false;
+    if (s.q) { var hay = [p.name, p.breed, p.color, p.exoticType || '', p.area, p.desc].join(' ').toLowerCase(); if (!s.q.toLowerCase().split(/\s+/).every(function(w){ return hay.indexOf(w) > -1; })) return false; }
+    return true;
+  }
+
+  function chips(){
+    var out = [];
+    if (s.q) out.push(['q', '“' + s.q + '”']);
+    if (s.species) out.push(['species', s.species === 'Other' ? 'Other / exotic' : s.species]);
+    s.ages.forEach(function(v){ out.push(['#ages|' + v, v]); });
+    if (s.species !== 'Other') s.colours.forEach(function(v){ out.push(['#colours|' + v, v]); });
+    s.sizes.forEach(function(v){ out.push(['#sizes|' + v, v]); });
+    s.good.forEach(function(v){ out.push(['#good|' + v, 'Good with ' + v.toLowerCase()]); });
+    if (s.sex) out.push(['sex', s.sex]);
+    if (s.district) out.push(['district', s.district]);
+    if (s.lister) out.push(['lister', s.lister]);
+    for (var k in BOOLS) if (s[k]) out.push([k, BOOLS[k]]);
+    return out;
+  }
+  function clearOne(k){
+    if (k.indexOf('|') > -1) { var parts = k.split('|'); document.querySelectorAll(parts[0] + ' input').forEach(function(i){ if (i.value === parts[1]) i.checked = false; }); }
+    else if (BOOLS[k]) $(k).checked = false;
+    else $(k).value = '';
+    update();
+  }
+  function clearAll(){
+    document.querySelectorAll('#filters input[type=checkbox]').forEach(function(i){ i.checked = false; });
+    ['q','species','sex','district','lister'].forEach(function(k){ $(k).value = ''; });
+    update();
+  }
+
+  function ic(ok){ return ok ? '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>' : '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round"><path d="M5 12h14"/></svg>'; }
+
+  function render(){
+    var rows = pets.filter(match).sort(function(a, b){
+      if (s.sort === 'youngest') return AGE_ORDER.indexOf(a.age) - AGE_ORDER.indexOf(b.age);
+      if (s.sort === 'oldest') return AGE_ORDER.indexOf(b.age) - AGE_ORDER.indexOf(a.age);
+      return new Date(b.date) - new Date(a.date);
+    });
+    $('count').textContent = rows.length + ' of ' + pets.length + ' pets for adoption';
+    var c = chips();
+    $('active').innerHTML = c.map(function(x){ return '<button type="button" class="pill" data-k="' + x[0] + '">' + x[1] + ' <span aria-hidden="true">✕</span></button>'; }).join('') + (c.length ? '<button type="button" class="clear-all" id="clear-all">Clear all</button>' : '');
+    $('active').querySelectorAll('.pill').forEach(function(b){ b.addEventListener('click', function(){ clearOne(b.dataset.k); }); });
+    if ($('clear-all')) $('clear-all').addEventListener('click', clearAll);
+    $('filter-count').textContent = c.length ? '(' + c.length + ')' : '';
+
+    $('results').innerHTML = rows.length ? rows.map(function(p){
+      var kind = p.species === 'Other' ? (p.exoticType || 'Exotic') : p.species;
+      return '<a class="row" href="listing.html?id=' + p.id + '">' +
+        '<div class="ph"><img src="' + p.photo + '" alt="' + p.name + ', ' + p.color.toLowerCase() + ' ' + kind.toLowerCase() + '"></div>' +
+        '<div class="body">' +
+          '<div class="top"><h2 class="nm">' + p.name + '</h2><span class="date">' + p.age + '</span></div>' +
+          '<div class="sub">' + kind + ' · ' + p.ageText + ' · ' + p.sex + '</div>' +
+          '<div class="traits"><span>' + p.breed + '</span><span>' + p.size + '</span>' +
+            '<span class="cols">' + p.colours.map(function(cn){ var w = window.COLOURS.find(function(x){ return x.name === cn; }); return '<i title="' + cn + '" style="background:' + (w ? w.swatch : '#ccc') + '"></i>'; }).join('') + p.color + '</span></div>' +
+          (p.goodWith.length ? '<div class="good"><b>Good with</b>' + p.goodWith.map(function(g){ return '<span>' + g.toLowerCase() + '</span>'; }).join('') + '</div>' : '') +
+          '<div class="health">' + Object.keys(BOOLS).map(function(k){ return '<span class="' + (p[k] ? '' : 'no') + '">' + ic(p[k]) + BOOLS[k] + '</span>'; }).join('') + '</div>' +
+          '<div class="foot"><span class="loc">' + p.area + ' <span class="lister">· ' + p.lister + '</span></span><span class="btn btn-primary meet">Meet ' + p.name + '</span></div>' +
+        '</div></a>';
+    }).join('') : '<div class="empty"><h3>No matches</h3><p>Try removing a filter. New pets are added as soon as a moderator approves them.</p></div>';
+  }
+
+  function update(){ read(); render(); }
+  $('filters').addEventListener('input', update);
+  $('filters').addEventListener('change', update);
+  $('filters').addEventListener('submit', function(e){ e.preventDefault(); });
+  $('sort').addEventListener('change', update);
+  $('toggle-filters').addEventListener('click', function(){ document.body.classList.add('filters-open'); });
+  $('close-filters').addEventListener('click', function(){ document.body.classList.remove('filters-open'); });
+  update();
+})();
+</script>
+</body>
+</html>

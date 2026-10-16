@@ -1,7 +1,2 @@
-node_modules/
-dist/
-.astro/
-.env
-.env.local
 .DS_Store
-npm-debug.log*
+.image-slots.state.json

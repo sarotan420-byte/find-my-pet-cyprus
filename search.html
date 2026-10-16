@@ -1,0 +1,225 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Search map — Find My Pet Cyprus</title>
+<meta name="description" content="Filter missing and found pet listings across Cyprus by area, postcode, or a point and radius on the map." />
+<script src="./ds-base.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+:root { --edge: clamp(16px, 4vw, 48px); }
+body { margin: 0; }
+.nav { padding-inline: var(--edge); position: sticky; top: 0; z-index: 30; background: color-mix(in srgb, var(--color-bg) 92%, transparent); backdrop-filter: blur(6px); }
+.nav .links { display: flex; gap: var(--space-4); margin-right: auto; margin-left: var(--space-4); }
+.nav .actions { display: flex; align-items: center; gap: var(--space-3); }
+@media (max-width: 620px) { .nav .links { display: none; } }
+
+.layout { display: grid; grid-template-columns: 380px 1fr; height: calc(100dvh - 57px); }
+@media (max-width: 900px) { .layout { grid-template-columns: 1fr; height: auto; } }
+
+.panel { border-right: 1px solid var(--color-divider); display: flex; flex-direction: column; overflow: hidden; }
+@media (max-width: 900px) { .panel { border-right: none; border-bottom: 1px solid var(--color-divider); } }
+
+.filters { padding: var(--space-4); display: flex; flex-direction: column; gap: var(--space-3); border-bottom: 1px solid var(--color-divider); }
+.filters .seg { width: 100%; }
+.filters .seg-opt { flex: 1; justify-content: center; }
+.filter-row { display: flex; gap: var(--space-2); }
+.filter-row .field { flex: 1; }
+.field label { display: block; font-size: 12px; margin-bottom: 4px; color: color-mix(in srgb, var(--color-text) 70%, transparent); }
+.radius-row { display: flex; align-items: center; gap: var(--space-3); }
+.radius-row input[type="range"] { flex: 1; accent-color: var(--color-accent); }
+.radius-val { font-size: 13px; font-weight: 600; min-width: 52px; text-align: right; font-family: var(--font-heading); }
+.count-row { padding: var(--space-3) var(--space-4); font-size: 13px; color: color-mix(in srgb, var(--color-text) 70%, transparent); border-bottom: 1px solid var(--color-divider); display: flex; justify-content: space-between; align-items: center; }
+
+.results { overflow-y: auto; flex: 1; padding: var(--space-3) var(--space-3) var(--space-4); display: flex; flex-direction: column; gap: var(--space-3); }
+.result-card { text-decoration: none; color: inherit; display: flex; gap: var(--space-3); padding: var(--space-2);
+  border-radius: calc(var(--radius-lg) * 1.15); cursor: pointer; border: 1.5px solid transparent; }
+.result-card:hover, .result-card.active { background: var(--color-surface); }
+.result-card.active { border-color: var(--color-accent); }
+.result-card img { width: 84px; height: 84px; border-radius: var(--radius-md); object-fit: cover; flex: none; }
+.result-card .info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.result-card .top { display: flex; align-items: center; gap: 8px; }
+.result-card .name { font-family: var(--font-heading); font-size: 16px; }
+.result-card .meta { font-size: 12.5px; color: color-mix(in srgb, var(--color-text) 65%, transparent); }
+.result-card .desc { font-size: 12.5px; color: color-mix(in srgb, var(--color-text) 60%, transparent); overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.empty { padding: var(--space-6) var(--space-4); text-align: center; color: color-mix(in srgb, var(--color-text) 55%, transparent); font-size: 14px; }
+
+#map { width: 100%; height: 100%; min-height: 420px; }
+.leaflet-popup-content-wrapper { border-radius: var(--radius-md); font-family: var(--font-body); }
+.popup-card { display: flex; flex-direction: column; gap: 4px; min-width: 160px; }
+.popup-card .name { font-family: var(--font-heading); font-size: 15px; }
+.popup-card a { font-size: 12.5px; }
+
+.map-toggle { display: none; }
+@media (max-width: 900px) {
+  .map-toggle { display: flex; justify-content: center; padding: var(--space-2); border-bottom: 1px solid var(--color-divider); gap: var(--space-2); }
+  #map, .results { display: none; }
+  body[data-view="map"] #map { display: block; height: 60vh; }
+  body[data-view="list"] .results { display: flex; }
+}
+</style>
+</head>
+<body data-view="list">
+<nav class="nav">
+  <span class="nav-brand">Find My Pet Cyprus</span>
+  <span class="links">
+    <a href="search.html" aria-current="page">Search map</a>
+    <a href="submit.html">Report a pet</a>
+  </span>
+  <span class="actions">
+    <a href="account.html">Sign in</a>
+    <a href="submit.html" class="btn btn-primary">Report a pet</a>
+  </span>
+</nav>
+
+<div class="layout">
+  <div class="panel">
+    <div class="filters">
+      <div class="seg" role="group" aria-label="Pet status">
+        <label class="seg-opt"><input type="radio" name="status" value="all" checked><span>All</span></label>
+        <label class="seg-opt"><input type="radio" name="status" value="missing"><span>Missing</span></label>
+        <label class="seg-opt"><input type="radio" name="status" value="found"><span>Found</span></label>
+      </div>
+      <div class="filter-row">
+        <div class="field">
+          <label for="f-area">Area / town</label>
+          <select class="input" id="f-area">
+            <option value="">All of Cyprus</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="f-species">Species</label>
+          <select class="input" id="f-species">
+            <option value="">Any</option>
+            <option value="Dog">Dog</option>
+            <option value="Cat">Cat</option>
+          </select>
+        </div>
+      </div>
+      <div class="field">
+        <label for="f-postcode">Postcode or place name</label>
+        <input class="input" id="f-postcode" type="text" placeholder="e.g. 3021, or “Kato Paphos harbour”" />
+      </div>
+      <div class="field">
+        <label for="f-radius">Radius from that point</label>
+        <div class="radius-row">
+          <input type="range" id="f-radius" min="1" max="50" step="1" value="15" />
+          <span class="radius-val" id="f-radius-val">15 km</span>
+        </div>
+      </div>
+    </div>
+    <div class="count-row">
+      <span id="result-count">6 listings</span>
+      <div class="map-toggle" style="border:none;padding:0">
+        <button class="btn btn-secondary" id="btn-list" type="button">List</button>
+        <button class="btn btn-secondary" id="btn-map" type="button">Map</button>
+      </div>
+    </div>
+    <div class="results" id="results"></div>
+  </div>
+  <div id="map"></div>
+</div>
+
+<script src="data.js"></script>
+<script>
+(function(){
+  var areaSel = document.getElementById('f-area');
+  window.AREAS.forEach(function(a){ var o = document.createElement('option'); o.value = a; o.textContent = a; areaSel.appendChild(o); });
+
+  var map = L.map('map', { zoomControl: true }).setView([34.98, 33.15], 9);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; OpenStreetMap contributors', maxZoom: 18
+  }).addTo(map);
+
+  var markers = {};
+  function markerColor(status){ return status === 'missing' ? '#c67139' : '#7a8a5e'; }
+  window.PETS.forEach(function(p){
+    var icon = L.divIcon({
+      className: '', html: '<div style="width:16px;height:16px;border-radius:50%;background:' + markerColor(p.status) + ';border:3px solid #f5ead8;box-shadow:0 1px 3px rgba(0,0,0,.3)"></div>',
+      iconSize: [16,16], iconAnchor: [8,8]
+    });
+    var m = L.marker([p.lat, p.lng], { icon: icon }).addTo(map);
+    m.bindPopup('<div class="popup-card"><span class="name">' + p.name + '</span><span style="font-size:12px;opacity:.7">' + p.species + ' · ' + p.area + '</span><a href="listing.html?id=' + p.id + '">View listing →</a></div>');
+    m.on('click', function(){ setActive(p.id); });
+    markers[p.id] = m;
+  });
+
+  var radiusInput = document.getElementById('f-radius');
+  var radiusVal = document.getElementById('f-radius-val');
+  radiusInput.addEventListener('input', function(){ radiusVal.textContent = radiusInput.value + ' km'; render(); });
+
+  var statusRadios = document.querySelectorAll('input[name="status"]');
+  statusRadios.forEach(function(r){ r.addEventListener('change', render); });
+  areaSel.addEventListener('change', render);
+  document.getElementById('f-species').addEventListener('change', render);
+  document.getElementById('f-postcode').addEventListener('input', render);
+
+  var resultsEl = document.getElementById('results');
+  var countEl = document.getElementById('result-count');
+  var activeId = null;
+
+  function setActive(id){
+    activeId = id;
+    document.querySelectorAll('.result-card').forEach(function(c){ c.classList.toggle('active', Number(c.dataset.id) === id); });
+    var card = document.querySelector('.result-card[data-id="' + id + '"]');
+    if (card) card.scrollIntoView({ block: 'nearest' });
+    var m = markers[id];
+    if (m) { map.panTo(m.getLatLng()); m.openPopup(); }
+  }
+
+  function render(){
+    var status = document.querySelector('input[name="status"]:checked').value;
+    var area = areaSel.value;
+    var species = document.getElementById('f-species').value;
+    var q = document.getElementById('f-postcode').value.trim().toLowerCase();
+
+    var filtered = window.PETS.filter(function(p){
+      if (status !== 'all' && p.status !== status) return false;
+      if (area && p.area.indexOf(area) !== 0 && p.area.indexOf(area.split(' ')[0]) === -1) return false;
+      if (species && p.species !== species) return false;
+      if (q && p.area.toLowerCase().indexOf(q) === -1 && p.name.toLowerCase().indexOf(q) === -1) return false;
+      return true;
+    });
+
+    Object.keys(markers).forEach(function(id){
+      var visible = filtered.some(function(p){ return p.id === Number(id); });
+      var el = markers[id].getElement();
+      if (el) el.style.display = visible ? '' : 'none';
+    });
+
+    countEl.textContent = filtered.length + (filtered.length === 1 ? ' listing' : ' listings');
+
+    if (!filtered.length) {
+      resultsEl.innerHTML = '<div class="empty">No listings match those filters yet.<br>Try widening the area or radius.</div>';
+      return;
+    }
+
+    resultsEl.innerHTML = filtered.map(function(p){
+      return '<a class="result-card" data-id="' + p.id + '" href="listing.html?id=' + p.id + '">' +
+        '<img src="' + p.photo + '" alt="' + p.name + '">' +
+        '<div class="info">' +
+          '<div class="top"><span class="name">' + p.name + '</span><span class="tag ' + (p.status === 'missing' ? 'tag-accent' : 'tag-accent-2') + '">' + (p.status === 'missing' ? 'Missing' : 'Found') + '</span></div>' +
+          '<span class="meta">' + p.species + ' · ' + p.area + '</span>' +
+          '<span class="desc">' + p.desc + '</span>' +
+        '</div>' +
+      '</a>';
+    }).join('');
+
+    resultsEl.querySelectorAll('.result-card').forEach(function(card){
+      card.addEventListener('mouseenter', function(){
+        var id = Number(card.dataset.id);
+        setActive(id);
+      });
+    });
+  }
+
+  document.getElementById('btn-list').addEventListener('click', function(){ document.body.dataset.view = 'list'; });
+  document.getElementById('btn-map').addEventListener('click', function(){ document.body.dataset.view = 'map'; setTimeout(function(){ map.invalidateSize(); }, 50); });
+
+  render();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Account — Find My Pet Cyprus</title>
+<script src="./ds-base.js"></script>
+<style>
+:root { --edge: clamp(16px, 4vw, 48px); }
+body { margin: 0; }
+.nav { padding-inline: var(--edge); position: sticky; top: 0; z-index: 30; background: color-mix(in srgb, var(--color-bg) 92%, transparent); backdrop-filter: blur(6px); }
+.nav .links { display: flex; gap: var(--space-4); margin-right: auto; margin-left: var(--space-4); }
+@media (max-width: 620px) { .nav .links { display: none; } }
+
+.wrap { max-width: 720px; margin: 0 auto; padding: calc(2 * var(--space-6)) var(--edge) calc(4 * var(--space-6)); }
+
+.gate { max-width: 380px; margin: calc(2 * var(--space-6)) auto 0; display: flex; flex-direction: column; gap: var(--space-3); text-align: center; }
+.gate h1 { font-family: var(--font-heading); font-weight: var(--font-heading-weight); font-size: 30px; margin: 0 0 4px; }
+.gate p { font-size: 14.5px; color: color-mix(in srgb, var(--color-text) 70%, transparent); margin: 0 0 var(--space-3); }
+.gate .field { text-align: left; }
+.gate .field label { display: block; font-size: 13px; margin-bottom: 5px; font-weight: 600; }
+
+.head-row { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); margin-bottom: var(--space-6); }
+.head-row h1 { font-family: var(--font-heading); font-weight: var(--font-heading-weight); font-size: 30px; margin: 0; }
+
+.section-title { font-family: var(--font-heading); font-weight: var(--font-heading-weight); font-size: 19px; margin: 0 0 var(--space-3); }
+.block { margin-bottom: calc(2 * var(--space-6)); }
+
+.search-card { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3);
+  background: var(--color-surface); border-radius: var(--radius-lg); padding: var(--space-3) var(--space-4); margin-bottom: var(--space-2); }
+.search-card .desc { font-size: 14px; }
+.search-card .meta { font-size: 12px; color: color-mix(in srgb, var(--color-text) 60%, transparent); }
+.search-card .actions { display: flex; gap: 8px; }
+
+.mine-card { display: flex; gap: var(--space-3); align-items: center; padding: var(--space-2);
+  border-radius: var(--radius-lg); margin-bottom: 6px; }
+.mine-card img { width: 56px; height: 56px; border-radius: var(--radius-md); object-fit: cover; }
+.mine-card .info { flex: 1; }
+.mine-card .name { font-family: var(--font-heading); font-size: 15px; }
+.mine-card .meta { font-size: 12px; color: color-mix(in srgb, var(--color-text) 60%, transparent); }
+.status-pill { font-size: 11px; padding: 3px 10px; border-radius: 999px; }
+.status-pill.pending { background: var(--color-neutral-200); color: var(--color-neutral-800); }
+.status-pill.live { background: var(--color-accent-2-100); color: var(--color-accent-2-800); }
+
+.empty-note { font-size: 13.5px; color: color-mix(in srgb, var(--color-text) 60%, transparent); padding: var(--space-3) 0; }
+</style>
+</head>
+<body>
+<nav class="nav">
+  <span class="nav-brand">Find My Pet Cyprus</span>
+  <span class="links">
+    <a href="search.html">Search map</a>
+    <a href="submit.html">Report a pet</a>
+  </span>
+</nav>
+
+<div class="wrap">
+  <div class="gate" id="gate">
+    <h1>Sign in</h1>
+    <p>Save searches so new listings in your area are easy to check back on. (Automatic alerts are coming soon — for now, saved searches are one click away.)</p>
+    <div class="field"><label for="email">Email</label><input class="input" id="email" type="email" placeholder="you@example.com" /></div>
+    <button class="btn btn-primary btn-block" id="signin" type="button">Continue</button>
+  </div>
+
+  <div id="account" style="display:none">
+    <div class="head-row">
+      <h1>Your account</h1>
+      <div style="display:flex;gap:8px"><a class="btn btn-ghost" href="moderation.html">Moderation</a><button class="btn btn-secondary" id="signout" type="button">Sign out</button></div>
+    </div>
+
+    <div class="block">
+      <h2 class="section-title">Saved searches</h2>
+      <div class="search-card">
+        <div><div class="desc">Missing dogs · Limassol · within 15 km</div><div class="meta">Saved 2 days ago</div></div>
+        <div class="actions"><a class="btn btn-ghost" href="search.html">Open</a><button class="btn btn-icon" type="button" title="Remove" data-remove>✕</button></div>
+      </div>
+      <div class="search-card">
+        <div><div class="desc">Found cats · all of Cyprus</div><div class="meta">Saved 1 week ago</div></div>
+        <div class="actions"><a class="btn btn-ghost" href="search.html">Open</a><button class="btn btn-icon" type="button" title="Remove" data-remove>✕</button></div>
+      </div>
+    </div>
+
+    <div class="block">
+      <h2 class="section-title">Your listings</h2>
+      <div id="mine"></div>
+    </div>
+  </div>
+</div>
+
+<script src="data.js"></script>
+<script>
+(function(){
+  var gate = document.getElementById('gate');
+  var account = document.getElementById('account');
+
+  function signIn(){ gate.style.display = 'none'; account.style.display = 'block'; }
+  document.getElementById('signin').addEventListener('click', signIn);
+  document.getElementById('signout').addEventListener('click', function(){ account.style.display = 'none'; gate.style.display = 'flex'; });
+
+  document.querySelectorAll('[data-remove]').forEach(function(btn){
+    btn.addEventListener('click', function(){ btn.closest('.search-card').remove(); });
+  });
+
+  var mine = document.getElementById('mine');
+  var myPets = window.PETS.slice(0, 2);
+  if (!myPets.length) {
+    mine.innerHTML = '<p class="empty-note">You haven\u2019t reported any pets yet.</p>';
+  } else {
+    mine.innerHTML = myPets.map(function(p, i){
+      var pill = i === 0 ? '<span class="status-pill live">Live</span>' : '<span class="status-pill pending">In review</span>';
+      return '<a class="mine-card" href="listing.html?id=' + p.id + '" style="text-decoration:none;color:inherit">' +
+        '<img src="' + p.photo + '" alt="' + p.name + '">' +
+        '<div class="info"><div class="name">' + p.name + '</div><div class="meta">' + p.species + ' · ' + p.area + '</div></div>' +
+        pill +
+      '</a>';
+    }).join('');
+  }
+})();
+</script>
+</body>
+</html>
