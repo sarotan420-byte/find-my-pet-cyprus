@@ -172,9 +172,9 @@ footer a { color: inherit; }
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.79.0/dist/umd/supabase.js"></script>
-<script src="config.js"></script>
-<script src="data.js"></script>
-<script src="api.js"></script>
+<script src="config.js?v=3"></script>
+<script src="data.js?v=3"></script>
+<script src="api.js?v=3"></script>
 <script>
 API.ready.then(function(){
   // Demo gazetteer: cities, areas and postcode prefixes. Production would use a geocoder.
@@ -216,9 +216,7 @@ API.ready.then(function(){
   var map = L.map('map', { zoomControl: false, scrollWheelZoom: false }).setView([35.0, 33.2], 9);
   L.control.zoom({ position: 'bottomright' }).addTo(map);
   if (window.innerWidth > 820) map.zoomControl = null;
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-    attribution: '&copy; OpenStreetMap contributors &copy; CARTO', maxZoom: 19, subdomains: 'abcd'
-  }).addTo(map);
+  L.tileLayer(API.TILE_URL, API.TILE_OPTS).addTo(map);
   map.on('click', function(){ map.scrollWheelZoom.enable(); });
 
   var markers = {};

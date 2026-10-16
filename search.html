@@ -123,18 +123,16 @@ body { margin: 0; }
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.79.0/dist/umd/supabase.js"></script>
-<script src="config.js"></script>
-<script src="data.js"></script>
-<script src="api.js"></script>
+<script src="config.js?v=3"></script>
+<script src="data.js?v=3"></script>
+<script src="api.js?v=3"></script>
 <script>
 API.ready.then(function(){
   var areaSel = document.getElementById('f-area');
   window.AREAS.forEach(function(a){ var o = document.createElement('option'); o.value = a; o.textContent = a; areaSel.appendChild(o); });
 
   var map = L.map('map', { zoomControl: true }).setView([34.98, 33.15], 9);
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '&copy; OpenStreetMap contributors', maxZoom: 18
-  }).addTo(map);
+  L.tileLayer(API.TILE_URL, API.TILE_OPTS).addTo(map);
 
   var markers = {};
   function markerColor(status){ return status === 'missing' ? '#c67139' : '#7a8a5e'; }

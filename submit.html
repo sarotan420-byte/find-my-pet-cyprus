@@ -315,9 +315,9 @@ textarea.input::placeholder { line-height: 1.5; }
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.79.0/dist/umd/supabase.js"></script>
-<script src="config.js"></script>
-<script src="data.js"></script>
-<script src="api.js"></script>
+<script src="config.js?v=3"></script>
+<script src="data.js?v=3"></script>
+<script src="api.js?v=3"></script>
 <script>
 (function(){
   var $ = function(id){ return document.getElementById(id); };
@@ -454,7 +454,7 @@ textarea.input::placeholder { line-height: 1.5; }
     if (pinMap) { setTimeout(function(){ pinMap.invalidateSize(); }, 50); return; }
     var c = API.districtCentre($('district').value) || [35.0, 33.2];
     pinMap = L.map('pin-map', { scrollWheelZoom: false }).setView(c, $('district').value ? 11 : 8);
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', { attribution: '&copy; OpenStreetMap contributors &copy; CARTO', subdomains: 'abcd', maxZoom: 19 }).addTo(pinMap);
+    L.tileLayer(API.TILE_URL, API.TILE_OPTS).addTo(pinMap);
     pinMap.on('click', function(e){ setPin(e.latlng.lat, e.latlng.lng); });
     if (pin) setPin(pin.lat, pin.lng);
   }

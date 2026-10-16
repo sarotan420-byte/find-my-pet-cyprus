@@ -68,9 +68,9 @@ body { margin: 0; }
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.79.0/dist/umd/supabase.js"></script>
-<script src="config.js"></script>
-<script src="data.js"></script>
-<script src="api.js"></script>
+<script src="config.js?v=3"></script>
+<script src="data.js?v=3"></script>
+<script src="api.js?v=3"></script>
 <script>
 (function(){
   var id = Number(new URLSearchParams(location.search).get('id'));
@@ -151,7 +151,7 @@ body { margin: 0; }
   });
 
   var map = L.map('mini-map', { zoomControl: false, dragging: true, scrollWheelZoom: false }).setView([p.lat, p.lng], 13);
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', { attribution: '&copy; OpenStreetMap contributors &copy; CARTO', subdomains: 'abcd', maxZoom: 19 }).addTo(map);
+  L.tileLayer(API.TILE_URL, API.TILE_OPTS).addTo(map);
   var color = p.status === 'missing' ? '#c67139' : '#7a8a5e';
   L.marker([p.lat, p.lng], { icon: L.divIcon({ className: '', html: '<div style="width:16px;height:16px;border-radius:50%;background:' + color + ';border:3px solid #f5ead8;box-shadow:0 1px 3px rgba(0,0,0,.3)"></div>', iconSize:[16,16], iconAnchor:[8,8] }) }).addTo(map);
   }

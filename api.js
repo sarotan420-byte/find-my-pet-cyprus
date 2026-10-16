@@ -212,7 +212,12 @@ window.API = (function(){
       .then(function(r){ if (r.error) throw err(r.error); });
   }
 
+  // Map tiles. OpenStreetMap's free tiles; for heavy traffic switch to a keyed provider (e.g. MapTiler) here.
+  var TILE_URL = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
+  var TILE_OPTS = { maxZoom: 19, attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors' };
+
   return {
+    TILE_URL: TILE_URL, TILE_OPTS: TILE_OPTS,
     live: live, ready: ready, esc: esc, now: function(){ return live ? new Date() : DEMO_NOW; },
     districtCentre: function(d){ return DISTRICT_CENTRES[d]; },
     getUser: getUser, signIn: signIn, signOut: signOut, onAuth: onAuth, isModerator: isModerator,
