@@ -1,6 +1,14 @@
 // Greek translations. Keys are the English text exactly as written on the site.
 // {name}-style placeholders are filled in by the code. Add a line here when new English text is added.
 window.I18N_EL = {
+  // ---------- homepage guides ----------
+  'Helpful guides': 'Χρήσιμοι οδηγοί',
+  'Practical steps for the moments that matter most.': 'Πρακτικά βήματα για τις στιγμές που μετράνε περισσότερο.',
+  'Guide': 'Οδηγός',
+  '3 min read': '3 λεπτά ανάγνωση',
+  'The first hours matter most. Where to search, who to call, including local vet clinics, and how to spread the word quickly.': 'Οι πρώτες ώρες μετράνε περισσότερο. Πού να ψάξετε, σε ποιους να τηλεφωνήσετε, όπως στις κτηνιατρικές κλινικές, και πώς να ενημερώσετε γρήγορα όσο περισσότερους μπορείτε.',
+  'Found a dog or cat, or spotted one you could not catch? How to keep it safe, get the microchip checked and find the owner.': 'Βρήκατε σκύλο ή γάτα ή είδατε κάποιο που δεν καταφέρατε να πιάσετε; Πώς να το κρατήσετε ασφαλές, να ελεγχθεί το microchip και να βρεθεί ο ιδιοκτήτης.',
+  'Read the guide →': 'Διαβάστε τον οδηγό →',
   // ---------- homepage layout refresh ----------
   'Lost a pet? Read the step-by-step guide': 'Χάσατε κατοικίδιο; Διαβάστε τον οδηγό βήμα προς βήμα',
   'Found a pet? See what to do': 'Βρήκατε κατοικίδιο; Δείτε τι να κάνετε',

@@ -87,7 +87,8 @@ a:hover { color: var(--color-accent-800); }
   .legend { top: 130px; bottom: auto; left: var(--space-2); }
 }
 
-.why { padding: var(--section) 0 0; }
+.why { margin: var(--section) 0; padding: clamp(28px, 4vw, 56px); background: var(--color-accent-2-100); border-radius: calc(2 * var(--radius-lg)); }
+@media (max-width: 560px) { .why { padding: 24px 16px; border-radius: var(--radius-lg); } }
 .why-head h2 { font-family: var(--font-heading); font-weight: var(--font-heading-weight); font-size: clamp(24px, 2.6vw, 32px); line-height: 1.15; margin: 0; }
 .why-head p { font-size: 15.5px; line-height: 1.6; margin: 8px 0 0; color: color-mix(in srgb, var(--color-text) 75%, transparent); }
 .why-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-4); margin-top: var(--space-5, 24px); }
@@ -101,8 +102,8 @@ a:hover { color: var(--color-accent-800); }
 .why-card a { font-weight: 700; font-size: 14.5px; color: var(--color-accent-2-800); text-decoration: none; }
 .why-card a:hover { text-decoration: underline; }
 
-.steps { padding: var(--space-2, 8px) 0 var(--space-5, 24px); display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-6); }
-@media (max-width: 780px) { .steps { grid-template-columns: repeat(3, 1fr); gap: var(--space-2, 8px); padding: 4px 0 var(--space-3); }
+.steps { padding: var(--space-6) 0 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-6); }
+@media (max-width: 780px) { .steps { grid-template-columns: repeat(3, 1fr); gap: var(--space-2, 8px); padding: var(--space-4) 0 0; }
   .step { flex-direction: column; align-items: center; text-align: center; gap: 4px; }
   .step h3 { font-size: 14.5px; margin: 0; }
   .step .num { width: 28px; height: 28px; font-size: 14px; }
@@ -113,16 +114,22 @@ a:hover { color: var(--color-accent-800); }
 .step h3 { font-family: var(--font-heading); font-weight: var(--font-heading-weight); font-size: 19px; margin: 4px 0 6px; }
 .step p { font-size: 14.5px; line-height: 1.6; margin: 0; color: color-mix(in srgb, var(--color-text) 75%, transparent); max-width: 40ch; }
 
-.patch { margin-top: var(--section); background: color-mix(in srgb, var(--color-accent) 6%, #fff); border: 1px solid color-mix(in srgb, var(--color-accent) 22%, transparent); border-radius: calc(2 * var(--radius-lg)); padding: clamp(24px, 4vw, 48px) clamp(20px, 4vw, 56px); }
-.patch-main { display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap; }
-.patch-guides { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-3); margin-top: var(--space-5, 24px); padding-top: var(--space-5, 24px); border-top: 1px solid color-mix(in srgb, var(--color-accent) 18%, transparent); }
-@media (max-width: 640px) { .patch-guides { grid-template-columns: 1fr; } }
-.guide-btn { display: flex; align-items: center; justify-content: space-between; gap: 12px; background: #fff; border: 1px solid color-mix(in srgb, var(--color-text) 12%, transparent); border-radius: var(--radius-lg); padding: 14px 18px; text-decoration: none; color: var(--color-text); font-weight: 600; font-size: 15px; line-height: 1.35; }
-.guide-btn:hover { border-color: var(--color-accent); color: var(--color-text); }
-.guide-btn .arr { color: var(--color-accent-700); font-weight: 700; flex: none; }
-.patch h3 { font-family: var(--font-heading); font-weight: var(--font-heading-weight); font-size: 26px; margin: 0; }
-.patch p { font-size: 15px; line-height: 1.6; margin: 8px 0 0; max-width: 46ch; color: color-mix(in srgb, var(--color-text) 75%, transparent); }
-.patch .btn { min-height: 44px; padding-inline: var(--space-4); }
+.guides { margin-bottom: 0; }
+.guides-head h2 { font-family: var(--font-heading); font-weight: var(--font-heading-weight); font-size: clamp(24px, 2.6vw, 32px); line-height: 1.15; margin: 0; }
+.guides-head p { font-size: 15.5px; line-height: 1.6; margin: 8px 0 0; color: color-mix(in srgb, var(--color-text) 75%, transparent); }
+.guides-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-5, 24px); margin-top: var(--space-5, 24px); }
+@media (max-width: 720px) { .guides-grid { grid-template-columns: 1fr; } }
+.post { display: flex; flex-direction: column; background: #fff; border: 1px solid color-mix(in srgb, var(--color-text) 12%, transparent); border-radius: calc(1.25 * var(--radius-lg)); overflow: hidden; text-decoration: none; color: var(--color-text); transition: box-shadow .2s, transform .2s; }
+.post:hover { color: var(--color-text); box-shadow: var(--shadow-md); transform: translateY(-2px); }
+.post .cover { aspect-ratio: 16 / 6; display: flex; align-items: center; justify-content: center; position: relative; }
+.post .cover svg { width: 72px; height: 72px; position: relative; }
+.cover-lost { background: radial-gradient(circle at 20% 30%, color-mix(in srgb, var(--color-accent) 22%, #fff) 0 18%, transparent 19%), radial-gradient(circle at 85% 75%, color-mix(in srgb, var(--color-accent) 18%, #fff) 0 14%, transparent 15%), color-mix(in srgb, var(--color-accent) 12%, #fff); color: var(--color-accent-700); }
+.cover-found { background: radial-gradient(circle at 80% 25%, color-mix(in srgb, var(--color-accent-2) 26%, #fff) 0 18%, transparent 19%), radial-gradient(circle at 15% 80%, color-mix(in srgb, var(--color-accent-2) 20%, #fff) 0 14%, transparent 15%), color-mix(in srgb, var(--color-accent-2) 14%, #fff); color: var(--color-accent-2-800); }
+.post-body { padding: var(--space-5, 24px); display: flex; flex-direction: column; gap: 10px; flex: 1; }
+.post-meta { display: flex; align-items: center; gap: 10px; font-size: 13px; color: color-mix(in srgb, var(--color-text) 60%, transparent); }
+.post h3 { font-family: var(--font-heading); font-weight: var(--font-heading-weight); font-size: 22px; line-height: 1.2; margin: 0; }
+.post p { font-size: 15px; line-height: 1.6; margin: 0; flex: 1; color: color-mix(in srgb, var(--color-text) 75%, transparent); }
+.post .read { font-weight: 700; font-size: 14.5px; color: var(--color-accent-700); }
 footer { padding: var(--space-6) 0; font-size: 13px; color: color-mix(in srgb, var(--color-text) 65%, transparent); display: flex; justify-content: space-between; gap: var(--space-3); flex-wrap: wrap; }
 footer a { color: inherit; }
 </style>
@@ -150,11 +157,6 @@ footer a { color: inherit; }
     </div>
   </section>
 
-  <section class="steps">
-    <div class="step"><span class="num">1</span><div><h3>Report</h3><p>Add photos, a description and the area last seen. It takes a few minutes.</p></div></div>
-    <div class="step"><span class="num">2</span><div><h3>Checked</h3><p>A moderator reviews each listing before it goes public, keeping the map free of spam and duplicates.</p></div></div>
-    <div class="step"><span class="num">3</span><div><h3>Reunited</h3><p>People nearby can find it by city, area or postcode and get in touch.</p></div></div>
-  </section>
 
   <section class="map-feature" aria-label="Map of missing and found pets">
     <div id="map"></div>
@@ -186,6 +188,12 @@ footer a { color: inherit; }
     </aside>
 
     <div class="legend"><span><i style="background:var(--color-accent)"></i>Missing</span><span><i style="background:var(--color-accent-2)"></i>Found</span></div>
+  </section>
+
+  <section class="steps">
+    <div class="step"><span class="num">1</span><div><h3>Report</h3><p>Add photos, a description and the area last seen. It takes a few minutes.</p></div></div>
+    <div class="step"><span class="num">2</span><div><h3>Checked</h3><p>A moderator reviews each listing before it goes public, keeping the map free of spam and duplicates.</p></div></div>
+    <div class="step"><span class="num">3</span><div><h3>Reunited</h3><p>People nearby can find it by city, area or postcode and get in touch.</p></div></div>
   </section>
 
   <section class="why" aria-labelledby="why-title">
@@ -222,17 +230,34 @@ footer a { color: inherit; }
   </section>
 
 
-  <section class="patch">
-    <div class="patch-main">
-      <div>
-        <h3>Missing a pet right now?</h3>
-        <p>The sooner a listing is live, the sooner someone nearby can spot it.</p>
-      </div>
-      <a href="submit.html" class="btn btn-primary">Report now</a>
+  <section class="guides" aria-labelledby="guides-title">
+    <div class="guides-head">
+      <h2 id="guides-title">Helpful guides</h2>
+      <p>Practical steps for the moments that matter most.</p>
     </div>
-    <div class="patch-guides">
-      <a class="guide-btn" href="lost-pet-guide.html"><span>Lost a pet? Read the step-by-step guide</span><span class="arr" aria-hidden="true">→</span></a>
-      <a class="guide-btn" href="found-pet-guide.html"><span>Found a pet? See what to do</span><span class="arr" aria-hidden="true">→</span></a>
+    <div class="guides-grid">
+      <a class="post" href="lost-pet-guide.html">
+        <div class="cover cover-lost" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-6.5-5.6-6.5-11a6.5 6.5 0 0 1 13 0c0 5.4-6.5 11-6.5 11z"/><path d="M10.2 8.6a1.9 1.9 0 1 1 2.6 1.8c-.5.2-.8.6-.8 1.1v.4"/><path d="M12 14h.01"/></svg>
+        </div>
+        <div class="post-body">
+          <div class="post-meta"><span class="tag tag-accent">Guide</span><span>3 min read</span></div>
+          <h3>What to do if you lose your pet</h3>
+          <p>The first hours matter most. Where to search, who to call, including local vet clinics, and how to spread the word quickly.</p>
+          <span class="read">Read the guide →</span>
+        </div>
+      </a>
+      <a class="post" href="found-pet-guide.html">
+        <div class="cover cover-found" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20s-7-4.4-7-9.6A3.9 3.9 0 0 1 12 8a3.9 3.9 0 0 1 7 2.4C19 15.6 12 20 12 20z"/><path d="M9 12.5l2 2 4-4"/></svg>
+        </div>
+        <div class="post-body">
+          <div class="post-meta"><span class="tag tag-accent-2">Guide</span><span>3 min read</span></div>
+          <h3>What to do if you find a pet</h3>
+          <p>Found a dog or cat, or spotted one you could not catch? How to keep it safe, get the microchip checked and find the owner.</p>
+          <span class="read">Read the guide →</span>
+        </div>
+      </a>
     </div>
   </section>
 
