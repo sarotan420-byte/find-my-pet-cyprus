@@ -1,6 +1,21 @@
 // Greek translations. Keys are the English text exactly as written on the site.
 // {name}-style placeholders are filled in by the code. Add a line here when new English text is added.
 window.I18N_EL = {
+  // ---------- home: why use ----------
+  'Why use Find My Pet Cyprus': 'Γιατί να χρησιμοποιήσετε το Find My Pet Cyprus',
+  'Built to get lost pets home faster.': 'Φτιαγμένο για να γυρίζουν τα χαμένα κατοικίδια σπίτι πιο γρήγορα.',
+  'Every pet in one place': 'Όλα τα κατοικίδια σε ένα μέρος',
+  'Lost and found pets from across the island on one map, instead of scattered over dozens of Facebook groups.': 'Χαμένα και ευρεθέντα κατοικίδια από όλο το νησί σε έναν χάρτη, αντί να είναι σκορπισμένα σε δεκάδες ομάδες στο Facebook.',
+  'Browse missing pets →': 'Δείτε τα χαμένα κατοικίδια →',
+  'Search near you': 'Αναζήτηση κοντά σας',
+  'Enter a postcode or area and see pets lost or found within 1, 3, 5 or 10 km.': 'Γράψτε ταχυδρομικό κώδικα ή περιοχή και δείτε κατοικίδια που χάθηκαν ή βρέθηκαν σε ακτίνα 1, 3, 5 ή 10 χλμ.',
+  'Search the map →': 'Αναζήτηση στον χάρτη →',
+  'Posters in one click': 'Αφίσες με ένα κλικ',
+  'Turn any listing into a printable A4 poster or a ready-to-share social media image with a QR code.': 'Κάντε οποιαδήποτε αγγελία αφίσα A4 για εκτύπωση ή εικόνα έτοιμη για τα social media, με κωδικό QR.',
+  'Report a pet →': 'Δήλωση κατοικιδίου →',
+  'Made for vets too': 'Και για κτηνιάτρους',
+  'When a pet is brought in, clinics can check missing reports nearby, or post it as found so the owner can find it.': 'Όταν τους φέρνουν ένα ζώο, οι κλινικές μπορούν να δουν τις αναφορές χαμένων κατοικιδίων κοντά τους ή να το δηλώσουν ως ευρεθέν για να το βρει ο ιδιοκτήτης.',
+  'Post a found pet →': 'Δηλώστε ευρεθέν κατοικίδιο →',
   // ---------- navigation, footer, common ----------
   'Missing pets': 'Χαμένα κατοικίδια',
   'Found pets': 'Ευρεθέντα κατοικίδια',

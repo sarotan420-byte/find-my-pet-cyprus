@@ -83,6 +83,20 @@ a:hover { color: var(--color-accent-800); }
   .legend { top: 130px; bottom: auto; left: var(--space-2); }
 }
 
+.why { padding: calc(2 * var(--space-6)) 0 0; }
+.why-head h2 { font-family: var(--font-heading); font-weight: var(--font-heading-weight); font-size: clamp(24px, 2.6vw, 32px); line-height: 1.15; margin: 0; }
+.why-head p { font-size: 15.5px; line-height: 1.6; margin: 8px 0 0; color: color-mix(in srgb, var(--color-text) 75%, transparent); }
+.why-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-4); margin-top: var(--space-5, 24px); }
+@media (max-width: 1000px) { .why-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 560px) { .why-grid { grid-template-columns: 1fr; } }
+.why-card { background: #fff; border: 1px solid color-mix(in srgb, var(--color-text) 12%, transparent); box-shadow: 0 1px 2px rgba(0,0,0,.04); border-radius: var(--radius-lg); padding: var(--space-5, 24px); display: flex; flex-direction: column; gap: 8px; }
+.why-card .ico { width: 44px; height: 44px; border-radius: 12px; background: var(--color-accent-2-100); color: var(--color-accent-2-800); display: flex; align-items: center; justify-content: center; margin-bottom: 4px; }
+.why-card .ico svg { width: 24px; height: 24px; }
+.why-card h3 { font-family: var(--font-heading); font-weight: var(--font-heading-weight); font-size: 19px; margin: 0; }
+.why-card p { font-size: 14.5px; line-height: 1.6; margin: 0; flex: 1; color: color-mix(in srgb, var(--color-text) 75%, transparent); }
+.why-card a { font-weight: 700; font-size: 14.5px; color: var(--color-accent-2-800); text-decoration: none; }
+.why-card a:hover { text-decoration: underline; }
+
 .steps { padding: calc(2 * var(--space-6)) 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-6); }
 @media (max-width: 780px) { .steps { grid-template-columns: 1fr; } }
 .step { display: flex; gap: var(--space-3); }
@@ -153,6 +167,39 @@ footer a { color: inherit; }
     </aside>
 
     <div class="legend"><span><i style="background:var(--color-accent)"></i>Missing</span><span><i style="background:var(--color-accent-2)"></i>Found</span></div>
+  </section>
+
+  <section class="why" aria-labelledby="why-title">
+    <div class="why-head">
+      <h2 id="why-title">Why use Find My Pet Cyprus</h2>
+      <p>Built to get lost pets home faster.</p>
+    </div>
+    <div class="why-grid">
+      <div class="why-card">
+        <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2z"/><path d="M9 4v14M15 6v14"/></svg></span>
+        <h3>Every pet in one place</h3>
+        <p>Lost and found pets from across the island on one map, instead of scattered over dozens of Facebook groups.</p>
+        <a href="missing.html">Browse missing pets →</a>
+      </div>
+      <div class="why-card">
+        <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/><circle cx="11" cy="11" r="2"/></svg></span>
+        <h3>Search near you</h3>
+        <p>Enter a postcode or area and see pets lost or found within 1, 3, 5 or 10 km.</p>
+        <a href="#q" id="why-search">Search the map →</a>
+      </div>
+      <div class="why-card">
+        <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2"/><rect x="8" y="6" width="8" height="6" rx="1"/><path d="M8 15h8M8 18h5"/></svg></span>
+        <h3>Posters in one click</h3>
+        <p>Turn any listing into a printable A4 poster or a ready-to-share social media image with a QR code.</p>
+        <a href="submit.html">Report a pet →</a>
+      </div>
+      <div class="why-card">
+        <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s-7-4.5-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 11c0 5.5-7 10-7 10z"/><path d="M12 10v5M9.5 12.5h5"/></svg></span>
+        <h3>Made for vets too</h3>
+        <p>When a pet is brought in, clinics can check missing reports nearby, or post it as found so the owner can find it.</p>
+        <a href="submit.html?type=found">Post a found pet →</a>
+      </div>
+    </div>
   </section>
 
   <section class="steps">
@@ -408,6 +455,12 @@ API.ready.then(function(){
     var q0 = p0.get('near'), local = resolve(q0);
     if (local) go(local, q0); else API.geocode(q0).then(function(r){ if (r) go(r, q0); });
   }
+});
+</script>
+<script>
+document.getElementById('why-search').addEventListener('click', function(e){
+  e.preventDefault(); var q = document.getElementById('q');
+  q.scrollIntoView({ behavior: 'smooth', block: 'center' }); setTimeout(function(){ q.focus({ preventScroll: true }); }, 400);
 });
 </script>
 </body>
