@@ -2,6 +2,7 @@
 // {name}-style placeholders are filled in by the code. Add a line here when new English text is added.
 window.I18N_EL = {
   // ---------- supporters page ----------
+  'Health & wellbeing': 'Υγεία & ευεξία',
   'Thank you to our supporters': 'Ευχαριστούμε τους υποστηρικτές μας',
   'Find My Pet Cyprus is free for everyone. These businesses and people help keep it running.': 'Το Find My Pet Cyprus είναι δωρεάν για όλους. Αυτές οι επιχειρήσεις και αυτοί οι άνθρωποι βοηθούν να συνεχίσει να λειτουργεί.',
   'How sponsorship works': 'Πώς λειτουργούν οι χορηγίες',

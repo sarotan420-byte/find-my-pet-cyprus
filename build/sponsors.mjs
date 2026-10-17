@@ -6,7 +6,7 @@ import path from 'node:path';
 import { parseCsv } from './services.mjs';
 
 export const CATEGORIES = ['retail', 'insurance', 'food', 'relocation'];
-const CAT_LABEL = { retail: 'Pet retailer', insurance: 'Pet insurance', food: 'Pet food', relocation: 'Pet relocation', other: 'Partner' };
+const CAT_LABEL = { retail: 'Pet retailer', insurance: 'Pet insurance', food: 'Pet food', relocation: 'Pet relocation', wellbeing: 'Health & wellbeing', other: 'Partner' };
 export const DISTRICTS = ['nicosia', 'limassol', 'larnaca', 'paphos', 'famagusta', 'kyrenia'];
 const esc = (s) => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1);
@@ -46,7 +46,7 @@ export function loadSponsors({ root, file, today = new Date().toISOString().slic
       s.category = (r.category || 'other').toLowerCase();
       if (!CAT_LABEL[s.category]) { warn(`  ! ${line}: unknown category "${r.category}", shown as "other"`); s.category = 'other'; }
       const k = 'cat:' + s.category;
-      if (s.category !== 'other' && seen[k]) { warn(`  ! ${line}: two active Founding Partners in "${s.category}" (also ${seen[k]}); only the first is shown`); continue; }
+      if (CATEGORIES.includes(s.category) && seen[k]) { warn(`  ! ${line}: two active Founding Partners in "${s.category}" (also ${seen[k]}); only the first is shown`); continue; }
       seen[k] = r.name; out.founding.push(s);
     } else if (tier === 'district') {
       s.district = (r.district || '').toLowerCase();
@@ -66,8 +66,11 @@ const visit = (s, T, cls) => s.url ? `<a class="btn ${cls || 'btn-secondary'} sp
 const logo = (s, lang) => s.logo ? `<img src="/assets/sponsors/${encodeURIComponent(s.logo)}" alt="${nm(s, lang)}" loading="lazy" />` : `<span class="sp-noimg">${nm(s, lang)}</span>`;
 
 export function foundingHtml(data, lang, T) {
-  const byCat = Object.fromEntries(data.founding.filter((s) => s.category !== 'other').map((s) => [s.category, s]));
-  const cards = CATEGORIES.map((c) => byCat[c] ? card(byCat[c]) : wanted(c)).concat(data.founding.filter((s) => s.category === 'other').map(card));
+  const byCat = Object.fromEntries(data.founding.filter((s) => CATEGORIES.includes(s.category)).map((s) => [s.category, s]));
+  // active partners first (pet categories in order, then others), open pet categories after
+  const cards = CATEGORIES.filter((c) => byCat[c]).map((c) => card(byCat[c]))
+    .concat(data.founding.filter((s) => !CATEGORIES.includes(s.category)).map(card))
+    .concat(CATEGORIES.filter((c) => !byCat[c]).map(wanted));
   return cards.join('\n');
   function card(s) {
     return `<article class="sp-card sp-founding">
