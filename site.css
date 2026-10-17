@@ -50,3 +50,11 @@
 .nav .links a { white-space: nowrap; }
 @media (max-width: 1180px) { .nav .links a[href="index.html"] { display: none; } }
 @media (max-width: 900px) { .nav .links { display: none !important; } }
+
+/* "A community project by copacabana.space" band, under the footer on every page */
+.studio-band { background: #0b0b0c; color: #fff; }
+.studio-in { max-width: 1320px; margin: 0 auto; padding: 16px clamp(16px, 4vw, 48px); display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 6px 8px; font-size: 13.5px; letter-spacing: .01em; text-align: center; }
+.studio-dot { width: 8px; height: 8px; border-radius: 50%; background: #7c3aed; box-shadow: 0 0 0 4px rgba(124, 58, 237, .25); margin-right: 4px; }
+.studio-band a { color: #fff; font-weight: 700; text-decoration: none; border-bottom: 2px solid #7c3aed; padding-bottom: 1px; }
+.studio-band a:hover { color: #c4b5fd; border-color: #c4b5fd; }
+.studio-arr { color: #a78bfa; font-weight: 700; }

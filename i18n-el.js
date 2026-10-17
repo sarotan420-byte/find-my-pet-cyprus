@@ -1,6 +1,8 @@
 // Greek translations. Keys are the English text exactly as written on the site.
 // {name}-style placeholders are filled in by the code. Add a line here when new English text is added.
 window.I18N_EL = {
+  'A community project by': 'Ένα κοινοτικό έργο του',
+  'copacabana.space creative studio': 'δημιουργικού στούντιο copacabana.space',
   // ---------- vets & help ----------
   "Spotted a mistake, or know a vet, shelter or rescue group we're missing? Email": 'Βρήκατε κάποιο λάθος ή ξέρετε κτηνίατρο, καταφύγιο ή φιλοζωική ομάδα που λείπει; Στείλτε email στο',
   'Show all {n} places': 'Δείτε και τα {n} μέρη',
