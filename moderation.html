@@ -88,19 +88,6 @@ textarea.input { height: auto; min-height: 84px; border-radius: var(--radius-md)
 .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(20px); background: var(--color-text); color: var(--white); padding: 12px 18px; border-radius: 999px; font-size: 14px; opacity: 0; transition: opacity .2s, transform .2s; display: flex; gap: 14px; align-items: center; z-index: 200; }
 .toast.on { opacity: 1; transform: translateX(-50%) translateY(0); }
 .toast button { all: unset; cursor: pointer; font-weight: 700; text-decoration: underline; }
-.sugg-panel { margin: calc(2 * var(--space-6)) 0 var(--space-6); border-top: 1px solid var(--color-neutral-200); padding-top: var(--space-6); }
-.sugg-top { display: flex; justify-content: space-between; align-items: flex-end; gap: var(--space-4); flex-wrap: wrap; margin-bottom: var(--space-4); }
-.sugg-top h2 { font-family: var(--font-heading); font-weight: var(--font-heading-weight); font-size: 24px; margin: 0; }
-.sugg-top p { font-size: 14px; margin: 6px 0 0; max-width: 70ch; color: color-mix(in srgb, var(--color-text) 72%, transparent); }
-.sugg-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 12px; }
-.sugg { border: 1px solid var(--color-neutral-200); border-radius: var(--radius-lg); padding: 16px; font-size: 14px; display: flex; flex-direction: column; gap: 6px; }
-.sugg h3 { margin: 0; font-size: 16px; font-family: var(--font-heading); }
-.sugg .k { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--color-accent-700); }
-.sugg dl { display: grid; grid-template-columns: auto 1fr; gap: 3px 10px; margin: 4px 0; }
-.sugg dt { color: color-mix(in srgb, var(--color-text) 55%, transparent); }
-.sugg dd { margin: 0; word-break: break-word; }
-.sugg .acts { display: flex; gap: 8px; margin-top: 6px; }
-.sugg .acts .btn { min-height: 36px; padding: 0 14px; font-size: 13px; }
 </style>
 </head>
 <body>
@@ -138,18 +125,6 @@ textarea.input { height: auto; min-height: 84px; border-radius: var(--radius-md)
     <section class="review" id="review" aria-live="polite"></section>
   </div>
 
-  <section class="sugg-panel" id="sugg-panel" hidden>
-    <div class="sugg-top">
-      <div><h2>Place suggestions</h2>
-      <p>Suggestions for the Vets &amp; help page. To make a change, <a href="https://github.com/sarotan420-byte/find-my-pet-cyprus/edit/main/data/services.csv" target="_blank" rel="noopener">edit the list on GitHub</a> (the site updates within a few minutes), then mark the suggestion as done.</p></div>
-      <div class="tabs" role="tablist" id="sugg-tabs">
-        <button role="tab" type="button" data-s="open" aria-selected="true">Open</button>
-        <button role="tab" type="button" data-s="done" aria-selected="false">Done</button>
-        <button role="tab" type="button" data-s="dismissed" aria-selected="false">Dismissed</button>
-      </div>
-    </div>
-    <div id="sugg-list" class="sugg-list"></div>
-  </section>
 </div>
 
 <div class="toast" id="toast" role="status"><span id="toast-msg"></span><button type="button" id="undo">Undo</button></div>
@@ -313,29 +288,6 @@ textarea.input { height: auto; min-height: 84px; border-radius: var(--radius-md)
       age: p.age, lister: p.lister, fee: ''
     };
   }
-  // ---- place suggestions (Vets & help page) ----
-  var CATN = { vet: 'Vet clinic', shelter: 'Shelter', rescue: 'Rescue group', other: 'Other' };
-  function loadSuggestions(status){
-    $('sugg-panel').hidden = false;
-    $('sugg-tabs').querySelectorAll('button').forEach(function(b){ b.setAttribute('aria-selected', String(b.dataset.s === status)); });
-    $('sugg-list').innerHTML = '<div class="empty">Loading…</div>';
-    API.serviceSuggestions(status).then(function(rows){
-      var e = API.esc;
-      $('sugg-list').innerHTML = rows.length ? rows.map(function(r){
-        var f = [['Type', CATN[r.category] || r.category], ['District', r.district], ['Address', r.address], ['Phone', r.phone], ['Website', r.website], ['Note', r.note],
-                 ['From', r.contact_email ? '<a href="mailto:' + e(r.contact_email) + '">' + e(r.contact_email) + '</a>' : 'Not given'], ['Sent', new Date(r.created_at).toLocaleString('en-GB')]];
-        return '<div class="sugg"><span class="k">' + (r.kind === 'correction' ? 'Correction' : 'New place') + '</span><h3>' + e(r.name) + '</h3><dl>' +
-          f.filter(function(x){ return x[1]; }).map(function(x){ return '<dt>' + x[0] + '</dt><dd>' + (x[0] === 'From' ? x[1] : e(x[1])) + '</dd>'; }).join('') + '</dl><div class="acts">' +
-          (status === 'open' ? '<button class="btn btn-primary" data-id="' + r.id + '" data-to="done">Mark done</button><button class="btn btn-secondary" data-id="' + r.id + '" data-to="dismissed">Dismiss</button>'
-                             : '<button class="btn btn-secondary" data-id="' + r.id + '" data-to="open">Reopen</button>') + '</div></div>';
-      }).join('') : '<div class="empty">No ' + status + ' suggestions.</div>';
-      $('sugg-list').querySelectorAll('button[data-to]').forEach(function(b){
-        b.onclick = function(){ b.disabled = true; API.setSuggestionStatus(+b.dataset.id, b.dataset.to).then(function(){ loadSuggestions(status); }).catch(function(err){ alert(err.message); b.disabled = false; }); };
-      });
-    }).catch(function(err){ $('sugg-list').innerHTML = '<div class="empty">Could not load suggestions: ' + API.esc(err.message) + (/service_suggestions/.test(err.message) ? ' — run supabase/service-suggestions.sql first.' : '') + '</div>'; });
-  }
-  $('sugg-tabs').querySelectorAll('button').forEach(function(b){ b.onclick = function(){ loadSuggestions(b.dataset.s); }; });
-
   function gate(msg){ $('review').innerHTML = '<div class="empty" style="border:none;padding:80px 24px">' + msg + '</div>'; $('queue').innerHTML = ''; }
 
   if (!API.live) { render(); return; }
@@ -344,7 +296,6 @@ textarea.input { height: auto; min-height: 84px; border-radius: var(--radius-md)
     if (!u || u.is_anonymous) return gate('Please <a href="account.html">sign in</a> with a moderator account.');
     return API.isModerator().then(function(ok){
       if (!ok) return gate('Your account is not a moderator.');
-      loadSuggestions('open');
       return API.moderationQueue().then(function(rows){ ITEMS = rows.map(toItem); render(); });
     });
   }).catch(function(e){ gate('Could not load the queue: ' + API.esc(e.message)); });

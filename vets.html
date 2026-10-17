@@ -63,27 +63,8 @@ body { margin: 0; background: var(--white); text-wrap: pretty; overflow-x: clip;
   .mapbox { position: relative; top: 0; height: 52vh; min-height: 340px; }
 }
 
-.suggest-box { margin-top: var(--section, 64px); background: var(--color-accent-2-100); border-radius: calc(2 * var(--radius-lg)); padding: clamp(24px, 4vw, 48px); }
-.suggest-box h2 { font-family: var(--font-heading); font-weight: var(--font-heading-weight); font-size: clamp(22px, 2.4vw, 28px); margin: 0; }
-.suggest-box > p { font-size: 15px; line-height: 1.6; margin: 8px 0 0; max-width: 60ch; color: color-mix(in srgb, var(--color-text) 75%, transparent); }
-.suggest-box .open { margin-top: var(--space-4); min-height: 44px; padding-inline: var(--space-4); }
-.sform { display: none; margin-top: var(--space-4); background: #fff; border-radius: var(--radius-lg); padding: clamp(18px, 3vw, 28px); }
-.sform.on { display: block; }
-.sform .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 18px; }
-@media (max-width: 640px) { .sform .grid { grid-template-columns: 1fr; } }
-.sform .full { grid-column: 1 / -1; }
-.sform label { display: block; font-size: 13.5px; font-weight: 600; margin-bottom: 5px; }
-.sform label .opt { font-weight: 400; color: color-mix(in srgb, var(--color-text) 55%, transparent); }
-.sform input, .sform select, .sform textarea { width: 100%; box-sizing: border-box; font: inherit; font-size: 15px; padding: 10px 12px; border: 1px solid var(--color-neutral-300); border-radius: var(--radius-md); background: #fff; color: var(--color-text); }
-.sform textarea { min-height: 90px; resize: vertical; }
-.sform .seg { display: flex; gap: 8px; flex-wrap: wrap; }
-.sform .seg label { font-weight: 600; display: inline-flex; align-items: center; gap: 8px; padding: 9px 14px; border: 1px solid var(--color-neutral-300); border-radius: 999px; margin: 0; cursor: pointer; }
-.sform .seg input { width: auto; margin: 0; }
-.sform .note { font-size: 12.5px; color: color-mix(in srgb, var(--color-text) 60%, transparent); margin: 6px 0 0; }
-.sform .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-top: 18px; }
-.sform .err { color: #a8361f; font-size: 14px; display: none; } .sform .err.on { display: block; }
-.sent { display: none; margin-top: var(--space-4); background: #fff; border-radius: var(--radius-lg); padding: 18px 22px; font-size: 15px; }
-.sent.on { display: block; }
+.fix-note { margin: var(--space-6) 0 0; font-size: 14.5px; color: color-mix(in srgb, var(--color-text) 70%, transparent); }
+.fix-note a { color: var(--color-accent-700); }
 </style>
 </head>
 <body>
@@ -140,28 +121,7 @@ body { margin: 0; background: var(--white); text-wrap: pretty; overflow-x: clip;
     </div>
   </div>
 
-  <section class="suggest-box" id="suggest">
-    <h2>Know a place we're missing?</h2>
-    <p>Suggest a vet clinic, shelter or rescue group, or tell us about a mistake such as a wrong phone number or address. A moderator checks every suggestion.</p>
-    <button class="btn btn-primary open" id="open-form" type="button">Suggest a place</button>
-    <form class="sform" id="sform" novalidate>
-      <div class="grid">
-        <div class="full"><label>What would you like to do?</label>
-          <div class="seg"><label><input type="radio" name="kind" value="new" checked> Add a new place</label><label><input type="radio" name="kind" value="correction"> Correct a listing</label></div></div>
-        <div><label for="s-name">Name of the place</label><input id="s-name" maxlength="150" required /></div>
-        <div><label for="s-cat">Type</label><select id="s-cat"><option value="vet">Vet clinic</option><option value="shelter">Shelter</option><option value="rescue">Rescue group</option><option value="other">Other</option></select></div>
-        <div><label for="s-district">District</label><select id="s-district"><option value="Nicosia">Nicosia</option><option value="Limassol">Limassol</option><option value="Larnaca">Larnaca</option><option value="Paphos">Paphos</option><option value="Famagusta">Famagusta</option></select></div>
-        <div><label for="s-address">Address or area <span class="opt">(optional)</span></label><input id="s-address" maxlength="200" /></div>
-        <div><label for="s-phone">Phone <span class="opt">(optional)</span></label><input id="s-phone" type="tel" maxlength="40" /></div>
-        <div><label for="s-web">Website or Facebook page <span class="opt">(optional)</span></label><input id="s-web" maxlength="200" /></div>
-        <div class="full"><label for="s-note">Anything else? <span class="opt">(optional — for a correction, tell us what is wrong)</span></label><textarea id="s-note" maxlength="1000"></textarea></div>
-        <div class="full"><label for="s-email">Your email <span class="opt">(optional)</span></label><input id="s-email" type="email" maxlength="200" /><p class="note">Only used if we need to ask you about this suggestion. See our <a href="privacy.html">privacy policy</a>.</p></div>
-      </div>
-      <div class="row"><button class="btn btn-primary" type="submit" id="s-send">Send suggestion</button><button class="btn btn-ghost" type="button" id="s-cancel">Cancel</button></div>
-      <p class="err" id="s-err" role="alert"></p>
-    </form>
-    <div class="sent" id="sent" role="status"><b>Thank you!</b> A moderator will check your suggestion and update the list.</div>
-  </section>
+  <p class="fix-note">Spotted a mistake, or know a vet, shelter or rescue group we're missing? Email <a href="mailto:hello@findmypetcy.com">hello@findmypetcy.com</a>.</p>
 </div>
 
 <footer class="site-foot">
@@ -321,24 +281,6 @@ body { margin: 0; background: var(--white); text-wrap: pretty; overflow-x: clip;
   });
   $('clear').addEventListener('click', function(){ state.center = null; state.label = ''; state.limit = 12; if (here) { map.removeLayer(here); here = null; } $('q').value = ''; render(true); });
 
-  // suggest a place
-  $('open-form').addEventListener('click', function(){ $('sform').classList.add('on'); this.hidden = true; $('sent').classList.remove('on'); $('s-name').focus(); });
-  $('s-cancel').addEventListener('click', function(){ $('sform').classList.remove('on'); $('open-form').hidden = false; });
-  $('sform').addEventListener('submit', function(e){
-    e.preventDefault();
-    var err = $('s-err'); err.classList.remove('on');
-    var name = $('s-name').value.trim(), email = $('s-email').value.trim();
-    if (!name) { err.textContent = t('Please enter the name of the place.'); err.classList.add('on'); $('s-name').focus(); return; }
-    if (email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { err.textContent = t('Please check your email address.'); err.classList.add('on'); return; }
-    var btn = $('s-send'); btn.disabled = true; btn.textContent = t('Sending…');
-    API.suggestService({
-      kind: document.querySelector('input[name="kind"]:checked').value, name: name, category: $('s-cat').value, district: $('s-district').value,
-      address: $('s-address').value.trim(), phone: $('s-phone').value.trim(), website: $('s-web').value.trim(), note: $('s-note').value.trim(), contact_email: email
-    }).then(function(){
-      $('sform').reset(); $('sform').classList.remove('on'); $('sent').classList.add('on'); $('open-form').hidden = false;
-    }).catch(function(e2){ err.textContent = (e2 && e2.message) || t('Something went wrong. Please try again.'); err.classList.add('on'); })
-      .then(function(){ btn.disabled = false; btn.textContent = t('Send suggestion'); });
-  });
 })();
 </script>
 </body>

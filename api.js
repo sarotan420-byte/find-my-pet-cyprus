@@ -205,28 +205,13 @@ window.API = (function(){
       if (!u) throw new Error(t('Please sign in first.'));
       return Promise.all([
         sb.from('listings').select('*, listing_contacts(name, phone, email)').eq('owner_id', u.id),
-        sb.from('saved_views').select('label, url, created_at').eq('user_id', u.id),
-        sb.from('service_suggestions').select('*').eq('user_id', u.id)
+        sb.from('saved_views').select('label, url, created_at').eq('user_id', u.id)
       ]).then(function(res){
         if (res[0].error) throw err(res[0].error);
         return { exported_at: new Date().toISOString(), account: { id: u.id, email: u.email || null, created_at: u.created_at, guest: !!u.is_anonymous },
-                 listings: res[0].data, saved_searches: (res[1].data || []), place_suggestions: (res[2] && res[2].data) || [] };
+                 listings: res[0].data, saved_searches: (res[1].data || []) };
       });
     });
-  }
-  // 'Suggest a place' on the vets page: goes to the moderators.
-  function suggestService(s){
-    if (!live) return new Promise(function(r){ setTimeout(function(){ r({ demo: true }); }, 400); });
-    return ensureUser().then(function(){
-      return sb.from('service_suggestions').insert(s).then(function(r){ if (r.error) throw err(r.error); return true; });
-    });
-  }
-  function serviceSuggestions(status){
-    return sb.from('service_suggestions').select('*').eq('status', status || 'open').order('created_at', { ascending: false }).limit(200)
-      .then(function(r){ if (r.error) throw err(r.error); return r.data; });
-  }
-  function setSuggestionStatus(id, status){
-    return sb.from('service_suggestions').update({ status: status }).eq('id', id).then(function(r){ if (r.error) throw err(r.error); });
   }
   // GDPR: remove photos, then the account (listings, contacts and saved searches go with it).
   function deleteMyAccount(){
@@ -353,7 +338,6 @@ window.API = (function(){
     getListing: getListing, revealContact: revealContact, submitListing: submitListing,
     myListings: myListings, closeListing: closeListing, deleteListing: deleteListing, exportMyData: exportMyData, deleteMyAccount: deleteMyAccount,
     savedViews: savedViews, saveView: saveView, removeView: removeView,
-    moderationQueue: moderationQueue, moderate: moderate,
-    suggestService: suggestService, serviceSuggestions: serviceSuggestions, setSuggestionStatus: setSuggestionStatus
+    moderationQueue: moderationQueue, moderate: moderate
   };
 })();

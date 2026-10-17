@@ -10,7 +10,6 @@ const url = (fs.readFileSync(new URL('../config.js', import.meta.url), 'utf8').m
 const h = { apikey: key, Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' };
 const rpc = async (fn) => { const r = await fetch(`${url}/rest/v1/rpc/${fn}`, { method: 'POST', headers: h, body: '{}' }); if (!r.ok) throw new Error(fn + ': ' + r.status + ' ' + await r.text()); return r.json(); };
 console.log('Retention:', JSON.stringify(await rpc('cleanup_old_data')));
-try { console.log('Old place suggestions deleted:', await rpc('cleanup_old_suggestions')); } catch (e) { console.log('Place suggestions clean-up skipped (' + e.message.slice(0, 80) + ')'); }
 const orphans = await rpc('orphan_photo_paths');
 if (orphans.length) {
   const r = await fetch(`${url}/storage/v1/object/listing-photos`, { method: 'DELETE', headers: h, body: JSON.stringify({ prefixes: orphans }) });
