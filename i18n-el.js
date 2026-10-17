@@ -1,6 +1,12 @@
 // Greek translations. Keys are the English text exactly as written on the site.
 // {name}-style placeholders are filled in by the code. Add a line here when new English text is added.
 window.I18N_EL = {
+  // ---------- homepage layout refresh ----------
+  'Lost a pet? Read the step-by-step guide': 'Χάσατε κατοικίδιο; Διαβάστε τον οδηγό βήμα προς βήμα',
+  'Found a pet? See what to do': 'Βρήκατε κατοικίδιο; Δείτε τι να κάνετε',
+  'See all {n} listings': 'Δείτε και τις {n} αγγελίες',
+  'Postcode, town or area': 'Τ.Κ., πόλη ή περιοχή',
+  '© 2026 Find My Pet Cyprus · No advertising or tracking cookies · This site does not replace reporting to a vet.': '© 2026 Find My Pet Cyprus · Χωρίς διαφημίσεις ή cookies παρακολούθησης · Η ιστοσελίδα δεν αντικαθιστά την ενημέρωση κτηνιάτρου.',
   // ---------- found pet guide ----------
   'What to do if you find a pet': 'Τι να κάνετε αν βρείτε ένα κατοικίδιο',
   'Thank you for helping. Most found pets have a family looking for them, and a few simple steps can get them home quickly.': 'Σας ευχαριστούμε που βοηθάτε. Τα περισσότερα ζώα που βρίσκονται έχουν μια οικογένεια που τα ψάχνει και λίγα απλά βήματα μπορούν να τα φέρουν γρήγορα σπίτι.',

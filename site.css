@@ -11,3 +11,15 @@
 .site-foot .foot-note { grid-column: 1 / -1; margin: 0; font-size: 12.5px; border-top: 1px solid var(--color-neutral-100); padding-top: var(--space-3); }
 /* Greek: buttons and small labels read better in the body font (the Greek display face is for large headings) */
 :lang(el) .btn, :lang(el) .chip, :lang(el) .seg button { font-family: var(--font-body); font-weight: 700; letter-spacing: 0; }
+
+/* Header on small phones: keep brand on one line, shorter report button, hide 'Sign in' (it's in the footer) */
+.nav-cta .short { display: none; }
+.nav .nav-brand { white-space: nowrap; }
+.nav-cta { white-space: nowrap; }
+@media (max-width: 480px) {
+  .nav { gap: var(--space-2, 8px); }
+  .nav .nav-brand { font-size: 16px; }
+  .nav .actions { gap: var(--space-2, 8px); }
+  .nav .actions > a[href$="account.html"]:not(.btn) { display: none; }
+  .nav-cta .full { display: none; } .nav-cta .short { display: inline; }
+}
