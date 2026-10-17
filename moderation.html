@@ -196,7 +196,7 @@ textarea.input { height: auto; min-height: 84px; border-radius: var(--radius-md)
         (f.length ? '<span class="flags">' + f.map(function(x){ return '<span class="flag' + (x[0] === 'bad' ? ' warn' : '') + '">' + x[1].split(/[.(]/)[0].trim() + '</span>'; }).join('') + '</span>' : '') +
         '</span></button>';
     }).join('') : '<div class="empty">Nothing here. ' + (tab === 'pending' ? 'The queue is clear.' : '') + '</div>';
-    $('queue').querySelectorAll('.qitem').forEach(function(b){ b.onclick = function(){ sel = b.dataset.id; render(); }; });
+    $('queue').querySelectorAll('.qitem').forEach(function(b){ b.onclick = function(){ var it = ITEMS.find(function(i){ return String(i.id) === b.dataset.id; }); if (it) sel = it.id; render(); }; });
   }
 
   function renderReview(it){
