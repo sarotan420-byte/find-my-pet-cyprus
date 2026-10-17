@@ -122,6 +122,7 @@ textarea.input::placeholder { line-height: 1.5; }
   <div id="intro">
     <h1 class="title">Report a missing or found pet</h1>
     <p class="lede">This takes a few minutes. A moderator checks every listing before it goes public. The more detail you add, the easier it is for someone to recognise the pet.</p>
+    <p class="lede guides">Not sure what to do? <a href="lost-pet-guide.html">Lost a pet</a> · <a href="found-pet-guide.html">Found a pet</a></p>
     <div class="progress" id="progress"></div>
   </div>
 
@@ -318,7 +319,7 @@ textarea.input::placeholder { line-height: 1.5; }
       <a href="account.html" class="btn btn-primary">Go to my account</a>
       <a href="missing.html" class="btn btn-secondary" id="browse-link">Browse listings</a>
     </div>
-    <p id="guide-note"><a href="lost-pet-guide.html">What to do next: our lost pet guide</a></p>
+    <p id="guide-note"><a id="guide-link" href="lost-pet-guide.html">What to do next: our lost pet guide</a></p>
   </div>
 </div>
 
@@ -330,7 +331,7 @@ textarea.input::placeholder { line-height: 1.5; }
       <li><a href="area/paphos.html">Paphos</a></li><li><a href="area/famagusta.html">Famagusta</a></li><li><a href="area/kyrenia.html">Kyrenia</a></li>
     </ul></nav>
     <nav aria-label="Site links"><h2>Find My Pet Cyprus</h2><ul>
-      <li><a href="submit.html">Report a missing or found pet</a></li><li><a href="lost-pet-guide.html">What to do if you lose your pet</a></li><li><a href="adopt.html">Pets for adoption</a></li>
+      <li><a href="submit.html">Report a missing or found pet</a></li><li><a href="lost-pet-guide.html">What to do if you lose your pet</a></li><li><a href="found-pet-guide.html">What to do if you find a pet</a></li><li><a href="adopt.html">Pets for adoption</a></li>
       <li><a href="privacy.html">Privacy policy</a></li><li><a href="terms.html">Terms of use</a></li><li><a href="account.html">Your account</a></li>
     </ul></nav>
     <p class="foot-note">© 2026 Find My Pet Cyprus · No advertising or tracking cookies · This site does not replace reporting to the police, your municipality or a vet.</p>
@@ -386,6 +387,9 @@ textarea.input::placeholder { line-height: 1.5; }
       $('date').max = new Date().toISOString().slice(0, 10);
     }
     $('browse-link').href = '/' + lp(ad ? 'adopt.html' : missing ? 'missing.html' : 'found.html');
+    $('guide-note').style.display = ad ? 'none' : '';
+    $('guide-link').href = '/' + lp(missing ? 'lost-pet-guide.html' : 'found-pet-guide.html');
+    $('guide-link').textContent = t(missing ? 'What to do next: our lost pet guide' : 'What to do next: our found pet guide');
   }
   document.querySelectorAll('input[name="status"], input[name="species"]').forEach(function(r){ r.addEventListener('change', syncType); });
   $('colours').addEventListener('change', function(){ $('colour-err').classList.remove('on'); });

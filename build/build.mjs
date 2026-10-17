@@ -42,6 +42,8 @@ const PAGES = {
                    el: ['Δήλωση Χαμένου ή Ευρεθέντος Κατοικιδίου (Δωρεάν) | Find My Pet Cyprus', 'Δηλώστε σε λίγα λεπτά έναν χαμένο ή ευρεθέντα σκύλο, γάτα ή άλλο κατοικίδιο σε όλη την Κύπρο. Προσθέστε φωτογραφίες και περιοχή και μοιραστείτε αφίσα. Δωρεάν.'] },
   'lost-pet-guide.html': { en: ['Lost Your Pet in Cyprus? What to Do – Step-by-Step Guide | Find My Pet Cyprus', 'Lost a dog or cat in Cyprus? Follow these steps: search nearby, report on the map, call local vet clinics, check the microchip, make posters and watch for scams.'],
                             el: ['Χάθηκε το Κατοικίδιό σας; Τι να Κάνετε – Οδηγός | Find My Pet Cyprus', 'Χάθηκε ο σκύλος ή η γάτα σας στην Κύπρο; Ψάξτε κοντά, δηλώστε το στον χάρτη, τηλεφωνήστε στις κτηνιατρικές κλινικές, ελέγξτε το microchip, φτιάξτε αφίσες και προσοχή στις απάτες.'], guide: true },
+  'found-pet-guide.html': { en: ['Found a Lost Dog or Cat in Cyprus? What to Do | Find My Pet Cyprus', 'Found a pet in Cyprus? Check for a tag, get the microchip scanned at a vet, report it on the map, tell local clinics and check the person is the real owner before handing it over.'],
+                             el: ['Βρήκατε Χαμένο Σκύλο ή Γάτα στην Κύπρο; Τι να Κάνετε | Find My Pet Cyprus', 'Βρήκατε κατοικίδιο στην Κύπρο; Ελέγξτε για ταυτότητα, σκανάρετε το microchip σε κτηνίατρο, δηλώστε το στον χάρτη, ενημερώστε τις κλινικές και βεβαιωθείτε για τον ιδιοκτήτη.'] },
   'privacy.html': { en: ['Privacy Policy | Find My Pet Cyprus', 'How Find My Pet Cyprus collects, uses and protects personal data, and how to download or delete your data.'],
                     el: ['Πολιτική Απορρήτου | Find My Pet Cyprus', 'Πώς το Find My Pet Cyprus συλλέγει, χρησιμοποιεί και προστατεύει προσωπικά δεδομένα και πώς μπορείτε να τα κατεβάσετε ή να τα διαγράψετε.'] },
   'terms.html': { en: ['Terms of Use | Find My Pet Cyprus', 'Rules for posting lost, found and adoption listings on Find My Pet Cyprus, and tips for staying safe.'],
@@ -85,7 +87,7 @@ function headTags({ lang, title, desc, enPath, elPath, image, noindex, jsonld, t
 }
 
 // ---------- HTML transforms ----------
-const PAGE_RE = /^(index|missing|found|adopt|submit|listing|account|poster|privacy|terms|search|lost-pet-guide)\.html([?#].*)?$/;
+const PAGE_RE = /^(index|missing|found|adopt|submit|listing|account|poster|privacy|terms|search|lost-pet-guide|found-pet-guide)\.html([?#].*)?$/;
 function localizeHref(href) {
   if (!href) return href;
   if (PAGE_RE.test(href) || /^(area|pet)\//.test(href)) return 'el/' + href;
