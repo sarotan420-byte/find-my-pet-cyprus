@@ -25,5 +25,30 @@
     a.href = other + location.search;
     a.addEventListener('click', function(){ try { localStorage.setItem('fmp-lang', lang === 'el' ? 'en' : 'el'); } catch (e) {} });
   }
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', fixSwitch); else fixSwitch();
+  // Phones/tablets: the header links and "Sign in" are hidden for space, so add a menu button that lists them.
+  function buildMenu(){
+    var nav = document.querySelector('.nav'), links = nav && nav.querySelector('.links'), actions = nav && nav.querySelector('.actions');
+    if (!links || !actions || nav.querySelector('.menu-btn')) return;
+    var items = [].slice.call(links.querySelectorAll('a'));
+    var acct = actions.querySelector('a[href$="account.html"]:not(.btn)');
+    if (acct) items.push(acct);
+    var btn = document.createElement('button');
+    btn.type = 'button'; btn.className = 'menu-btn';
+    btn.setAttribute('aria-label', window.t('Menu')); btn.setAttribute('aria-expanded', 'false'); btn.setAttribute('aria-controls', 'site-menu');
+    btn.innerHTML = '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>';
+    var panel = document.createElement('div');
+    panel.className = 'menu-panel'; panel.id = 'site-menu'; panel.hidden = true;
+    panel.innerHTML = items.map(function(a){
+      var cur = a.getAttribute('aria-current') === 'page' ? ' aria-current="page"' : '';
+      return '<a href="' + a.getAttribute('href') + '"' + cur + (a === acct ? ' class="menu-acct"' : '') + '>' + a.textContent + '</a>';
+    }).join('');
+    actions.appendChild(btn); nav.appendChild(panel);
+    function set(open){ panel.hidden = !open; btn.setAttribute('aria-expanded', String(open)); }
+    btn.addEventListener('click', function(e){ e.stopPropagation(); set(panel.hidden); });
+    document.addEventListener('click', function(e){ if (!panel.hidden && !panel.contains(e.target)) set(false); });
+    document.addEventListener('keydown', function(e){ if (e.key === 'Escape' && !panel.hidden) { set(false); btn.focus(); } });
+    window.addEventListener('resize', function(){ if (window.innerWidth > 900) set(false); });
+  }
+  function ready(){ fixSwitch(); buildMenu(); }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', ready); else ready();
 })();

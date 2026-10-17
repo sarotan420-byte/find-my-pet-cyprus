@@ -1,6 +1,7 @@
 // Greek translations. Keys are the English text exactly as written on the site.
 // {name}-style placeholders are filled in by the code. Add a line here when new English text is added.
 window.I18N_EL = {
+  'Menu': 'Μενού',
   // ---------- supporters page ----------
   'Health & wellbeing': 'Υγεία & ευεξία',
   'Thank you to our supporters': 'Ευχαριστούμε τους υποστηρικτές μας',
