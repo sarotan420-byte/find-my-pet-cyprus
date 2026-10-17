@@ -21,6 +21,8 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      HAS_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY != '' }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -28,10 +30,16 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
+      # Remembers looked-up vet/shelter addresses so each one is only looked up once
+      - uses: actions/cache@v4
+        with:
+          path: .cache
+          key: geocode-${{ hashFiles('data/services.csv') }}-${{ github.run_id }}
+          restore-keys: geocode-
       - name: Build site
         run: node build/build.mjs
       - name: Privacy clean-up (old listings, unused photos)
-        if: ${{ env.SUPABASE_SERVICE_ROLE_KEY != '' }}
+        if: ${{ env.HAS_SERVICE_KEY == 'true' }}
         env:
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: node build/cleanup.mjs

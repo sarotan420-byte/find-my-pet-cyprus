@@ -6,6 +6,7 @@
 //      DATA_FILE=x.json node build/...  (use listings from a file, for testing)
 import fs from 'fs';
 import path from 'path';
+import { buildServices } from './services.mjs';
 import vm from 'vm';
 import { parse } from 'node-html-parser';
 
@@ -13,7 +14,7 @@ const ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..')
 const OUT = path.join(ROOT, '_site');
 const SITE = 'https://www.findmypetcy.com';
 const TODAY = new Date().toISOString().slice(0, 10);
-const SKIP = new Set(['.git', '.github', 'node_modules', '_site', 'build', 'supabase', 'package.json', 'package-lock.json', 'BUILD.md', 'DESIGN-NOTES.md', 'README.md', '.gitignore']);
+const SKIP = new Set(['data', '.cache', '.git', '.github', 'node_modules', '_site', 'build', 'supabase', 'package.json', 'package-lock.json', 'BUILD.md', 'DESIGN-NOTES.md', 'README.md', '.gitignore']);
 
 // ---------- dictionary ----------
 const sandbox = { window: {} };
@@ -44,6 +45,8 @@ const PAGES = {
                             el: ['Χάθηκε το Κατοικίδιό σας; Τι να Κάνετε – Οδηγός | Find My Pet Cyprus', 'Χάθηκε ο σκύλος ή η γάτα σας στην Κύπρο; Ψάξτε κοντά, δηλώστε το στον χάρτη, τηλεφωνήστε στις κτηνιατρικές κλινικές, ελέγξτε το microchip, φτιάξτε αφίσες και προσοχή στις απάτες.'], guide: true },
   'found-pet-guide.html': { en: ['Found a Lost Dog or Cat in Cyprus? What to Do | Find My Pet Cyprus', 'Found a pet in Cyprus? Check for a tag, get the microchip scanned at a vet, report it on the map, tell local clinics and check the person is the real owner before handing it over.'],
                              el: ['Βρήκατε Χαμένο Σκύλο ή Γάτα στην Κύπρο; Τι να Κάνετε | Find My Pet Cyprus', 'Βρήκατε κατοικίδιο στην Κύπρο; Ελέγξτε για ταυτότητα, σκανάρετε το microchip σε κτηνίατρο, δηλώστε το στον χάρτη, ενημερώστε τις κλινικές και βεβαιωθείτε για τον ιδιοκτήτη.'] },
+  'vets.html': { en: ['Vets, Animal Shelters & Rescue Groups in Cyprus – Map | Find My Pet Cyprus', 'Find vet clinics, animal shelters and rescue groups near you in Nicosia, Limassol, Larnaca, Paphos and Famagusta to call when a pet is lost or found.'],
+                  el: ['Κτηνίατροι, Καταφύγια & Φιλοζωικές στην Κύπρο – Χάρτης | Find My Pet Cyprus', 'Βρείτε κτηνιατρικές κλινικές, καταφύγια ζώων και φιλοζωικές ομάδες κοντά σας σε Λευκωσία, Λεμεσό, Λάρνακα, Πάφο και Αμμόχωστο για να τηλεφωνήσετε όταν χαθεί ή βρεθεί ένα ζώο.'] },
   'privacy.html': { en: ['Privacy Policy | Find My Pet Cyprus', 'How Find My Pet Cyprus collects, uses and protects personal data, and how to download or delete your data.'],
                     el: ['Πολιτική Απορρήτου | Find My Pet Cyprus', 'Πώς το Find My Pet Cyprus συλλέγει, χρησιμοποιεί και προστατεύει προσωπικά δεδομένα και πώς μπορείτε να τα κατεβάσετε ή να τα διαγράψετε.'] },
   'terms.html': { en: ['Terms of Use | Find My Pet Cyprus', 'Rules for posting lost, found and adoption listings on Find My Pet Cyprus, and tips for staying safe.'],
@@ -87,7 +90,7 @@ function headTags({ lang, title, desc, enPath, elPath, image, noindex, jsonld, t
 }
 
 // ---------- HTML transforms ----------
-const PAGE_RE = /^(index|missing|found|adopt|submit|listing|account|poster|privacy|terms|search|lost-pet-guide|found-pet-guide)\.html([?#].*)?$/;
+const PAGE_RE = /^(index|missing|found|adopt|submit|listing|account|poster|privacy|terms|search|lost-pet-guide|found-pet-guide|vets)\.html([?#].*)?$/;
 function localizeHref(href) {
   if (!href) return href;
   if (PAGE_RE.test(href) || /^(area|pet)\//.test(href)) return 'el/' + href;
@@ -293,6 +296,10 @@ const listings = await loadListings();
 fs.rmSync(OUT, { recursive: true, force: true });
 fs.mkdirSync(OUT, { recursive: true });
 copyTree(ROOT, OUT);
+
+// vets, shelters and rescue groups for the 'Vets & help' map
+const services = await buildServices({ root: ROOT, cacheFile: path.join(ROOT, '.cache', 'geocode.json'), lookup: process.env.GEOCODE !== '0' });
+write('services.json', JSON.stringify(services));
 
 const sitemap = [];
 const addUrl = (en, el, lastmod, prio) => sitemap.push({ en, el, lastmod: lastmod || TODAY, prio });

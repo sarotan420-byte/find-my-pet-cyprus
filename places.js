@@ -1,0 +1,55 @@
+// Cities, towns and areas used for search suggestions and as approximate map positions.
+// "aka" lists other spellings found in addresses. Used by the homepage, the vets page and the build.
+window.FMP_PLACES = [
+  { name: 'Nicosia', gr: 'Λευκωσία', kind: 'City', lat: 35.1725, lng: 33.365, z: 12 },
+  { name: 'Limassol', gr: 'Λεμεσός', kind: 'City', lat: 34.6841, lng: 33.0379, z: 12 },
+  { name: 'Larnaca', gr: 'Λάρνακα', kind: 'City', lat: 34.9229, lng: 33.6233, z: 12 },
+  { name: 'Paphos', gr: 'Πάφος', kind: 'City', lat: 34.7754, lng: 32.4245, z: 12 },
+  { name: 'Paralimni', gr: 'Παραλίμνι', kind: 'Town', lat: 35.0375, lng: 33.9833, z: 13 },
+  { name: 'Ayia Napa', gr: 'Αγία Νάπα', kind: 'Town', lat: 34.9823, lng: 34.0, z: 13 },
+  { name: 'Strovolos', gr: 'Στρόβολος', kind: 'Area · Nicosia', lat: 35.1446, lng: 33.3199, z: 14 },
+  { name: 'Lakatamia', gr: 'Λακατάμια', kind: 'Area · Nicosia', lat: 35.1167, lng: 33.3167, z: 14 },
+  { name: 'Engomi', gr: 'Έγκωμη', kind: 'Area · Nicosia', lat: 35.1617, lng: 33.3317, z: 14, aka: ['Egkomi', 'Nea Engomi'] },
+  { name: 'Germasogeia', gr: 'Γερμασόγεια', kind: 'Area · Limassol', lat: 34.7167, lng: 33.0833, z: 14 },
+  { name: 'Agios Nikolaos', gr: 'Άγιος Νικόλαος', kind: 'Area · Limassol', lat: 34.684, lng: 33.045, z: 15 },
+  { name: 'Mesa Geitonia', gr: 'Μέσα Γειτονιά', kind: 'Area · Limassol', lat: 34.7036, lng: 33.0436, z: 14 },
+  { name: 'Finikoudes', gr: 'Φοινικούδες', kind: 'Area · Larnaca', lat: 34.9137, lng: 33.6375, z: 15 },
+  { name: 'Aradippou', gr: 'Αραδίππου', kind: 'Area · Larnaca', lat: 34.9517, lng: 33.5917, z: 14 },
+  { name: 'Kato Paphos', gr: 'Κάτω Πάφος', kind: 'Area · Paphos', lat: 34.7564, lng: 32.4136, z: 14 },
+  { name: 'Peyia', gr: 'Πέγεια', kind: 'Area · Paphos', lat: 34.8833, lng: 32.3833, z: 14, aka: ['Pegeia'] },
+  { name: 'Polis Chrysochous', gr: 'Πόλη Χρυσοχούς', kind: 'Town', lat: 35.0333, lng: 32.4167, z: 13, aka: ['Polis'] },
+  // Nicosia district
+  { name: 'Agios Dometios', gr: 'Άγιος Δομέτιος', kind: 'Area · Nicosia', lat: 35.172, lng: 33.328, z: 14 },
+  { name: 'Aglantzia', gr: 'Αγλαντζιά', kind: 'Area · Nicosia', lat: 35.1475, lng: 33.392, z: 14 },
+  { name: 'Latsia', gr: 'Λατσιά', kind: 'Area · Nicosia', lat: 35.098, lng: 33.374, z: 14 },
+  { name: 'Kaimakli', gr: 'Καϊμακλί', kind: 'Area · Nicosia', lat: 35.181, lng: 33.38, z: 14 },
+  { name: 'Makedonitissa', gr: 'Μακεδονίτισσα', kind: 'Area · Nicosia', lat: 35.158, lng: 33.311, z: 14 },
+  { name: 'Geri', gr: 'Γέρι', kind: 'Area · Nicosia', lat: 35.105, lng: 33.42, z: 14 },
+  { name: 'Akaki', gr: 'Ακάκι', kind: 'Village · Nicosia', lat: 35.13, lng: 33.13, z: 14 },
+  { name: 'Astromeritis', gr: 'Αστρομερίτης', kind: 'Village · Nicosia', lat: 35.145, lng: 33.04, z: 14 },
+  // Limassol district
+  { name: 'Kato Polemidia', gr: 'Κάτω Πολεμίδια', kind: 'Area · Limassol', lat: 34.693, lng: 32.999, z: 14 },
+  { name: 'Agia Fylaxis', gr: 'Αγία Φύλαξη', kind: 'Area · Limassol', lat: 34.697, lng: 33.02, z: 15 },
+  { name: 'Agia Zoni', gr: 'Αγία Ζώνη', kind: 'Area · Limassol', lat: 34.688, lng: 33.025, z: 15 },
+  { name: 'Neapoli', gr: 'Νεάπολη', kind: 'Area · Limassol', lat: 34.698, lng: 33.033, z: 15 },
+  { name: 'Ypsonas', gr: 'Ύψωνας', kind: 'Area · Limassol', lat: 34.688, lng: 32.958, z: 14 },
+  { name: 'Erimi', gr: 'Ερήμη', kind: 'Village · Limassol', lat: 34.675, lng: 32.92, z: 14 },
+  { name: 'Kolossi', gr: 'Κολόσσι', kind: 'Village · Limassol', lat: 34.667, lng: 32.933, z: 14 },
+  { name: 'Episkopi', gr: 'Επισκοπή', kind: 'Village · Limassol', lat: 34.67, lng: 32.9, z: 14 },
+  { name: 'Avdimou', gr: 'Αυδήμου', kind: 'Village · Limassol', lat: 34.665, lng: 32.77, z: 14 },
+  { name: 'Moni', gr: 'Μονή', kind: 'Village · Limassol', lat: 34.723, lng: 33.193, z: 14 },
+  // Larnaca district
+  { name: 'Ormideia', gr: 'Ορμήδεια', kind: 'Village · Larnaca', lat: 34.99, lng: 33.78, z: 14 },
+  { name: 'Kiti', gr: 'Κίτι', kind: 'Village · Larnaca', lat: 34.848, lng: 33.57, z: 14 },
+  { name: 'Kofinou', gr: 'Κοφίνου', kind: 'Village · Larnaca', lat: 34.824, lng: 33.392, z: 14 },
+  // Paphos district
+  { name: 'Kissonerga', gr: 'Κισσόνεργα', kind: 'Village · Paphos', lat: 34.82, lng: 32.4, z: 14 },
+  { name: 'Mesogi', gr: 'Μεσόγη', kind: 'Village · Paphos', lat: 34.802, lng: 32.45, z: 14 },
+  { name: 'Empa', gr: 'Έμπα', kind: 'Village · Paphos', lat: 34.808, lng: 32.422, z: 14 },
+  { name: 'Acheleia', gr: 'Αχέλεια', kind: 'Village · Paphos', lat: 34.738, lng: 32.467, z: 14 },
+  { name: 'Agia Marina Chrysochous', gr: 'Αγία Μαρίνα Χρυσοχούς', kind: 'Village · Paphos', lat: 35.005, lng: 32.515, z: 14 },
+  // Famagusta district
+  { name: 'Deryneia', gr: 'Δερύνεια', kind: 'Town', lat: 35.064, lng: 33.959, z: 14 },
+  { name: 'Frenaros', gr: 'Φρέναρος', kind: 'Village · Famagusta', lat: 35.039, lng: 33.918, z: 14 },
+  { name: 'Protaras', gr: 'Πρωταράς', kind: 'Area · Famagusta', lat: 35.013, lng: 34.057, z: 14 }
+];

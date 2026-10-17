@@ -6,7 +6,7 @@
 <title>Report a missing or found pet — Find My Pet Cyprus</title>
 <meta name="description" content="Report a missing or found pet anywhere in Cyprus. Listings are checked by a moderator before going public." />
 <script src="./ds-base.js"></script>
-<link rel="stylesheet" href="site.css?v=10" />
+<link rel="stylesheet" href="site.css?v=11" />
 <script src="i18n.js?v=9"></script>
 <link rel="stylesheet" href="vendor/leaflet/leaflet.css" />
 <script src="vendor/leaflet/leaflet.js"></script>
@@ -101,6 +101,7 @@ textarea.input::placeholder { line-height: 1.5; }
 .success h2 { font-family: var(--font-heading); font-weight: var(--font-heading-weight); font-size: 28px; margin: 0 0 8px; }
 .success p { font-size: 15px; line-height: 1.6; color: color-mix(in srgb, var(--color-text) 72%, transparent); max-width: 46ch; margin: 0 0 var(--space-4); }
 .success .row { display: flex; gap: var(--space-3); flex-wrap: wrap; }
+.nearby-svc { margin: var(--space-5, 24px) 0; max-width: 640px; }
 </style>
 </head>
 <body>
@@ -110,6 +111,7 @@ textarea.input::placeholder { line-height: 1.5; }
     <a href="missing.html">Missing pets</a>
     <a href="found.html">Found pets</a>
     <a href="adopt.html">Adopt</a>
+    <a href="vets.html">Vets &amp; help</a>
     <a href="index.html">Map</a>
   </span>
   <span class="actions">
@@ -319,6 +321,7 @@ textarea.input::placeholder { line-height: 1.5; }
       <a href="account.html" class="btn btn-primary">Go to my account</a>
       <a href="missing.html" class="btn btn-secondary" id="browse-link">Browse listings</a>
     </div>
+    <section class="nearby-svc" id="nearby-svc" hidden></section>
     <p id="guide-note"><a id="guide-link" href="lost-pet-guide.html">What to do next: our lost pet guide</a></p>
   </div>
 </div>
@@ -331,7 +334,7 @@ textarea.input::placeholder { line-height: 1.5; }
       <li><a href="area/paphos.html">Paphos</a></li><li><a href="area/famagusta.html">Famagusta</a></li><li><a href="area/kyrenia.html">Kyrenia</a></li>
     </ul></nav>
     <nav aria-label="Site links"><h2>Find My Pet Cyprus</h2><ul>
-      <li><a href="submit.html">Report a missing or found pet</a></li><li><a href="lost-pet-guide.html">What to do if you lose your pet</a></li><li><a href="found-pet-guide.html">What to do if you find a pet</a></li><li><a href="adopt.html">Pets for adoption</a></li>
+      <li><a href="submit.html">Report a missing or found pet</a></li><li><a href="lost-pet-guide.html">What to do if you lose your pet</a></li><li><a href="found-pet-guide.html">What to do if you find a pet</a></li><li><a href="vets.html">Vets, shelters and rescue groups</a></li><li><a href="adopt.html">Pets for adoption</a></li>
       <li><a href="privacy.html">Privacy policy</a></li><li><a href="terms.html">Terms of use</a></li><li><a href="account.html">Your account</a></li>
     </ul></nav>
     <p class="foot-note">© 2026 Find My Pet Cyprus · No advertising or tracking cookies · This site does not replace reporting to a vet.</p>
@@ -341,7 +344,8 @@ textarea.input::placeholder { line-height: 1.5; }
 <script src="vendor/supabase.js"></script>
 <script src="config.js?v=8"></script>
 <script src="data.js?v=8"></script>
-<script src="api.js?v=8"></script>
+<script src="api.js?v=9"></script>
+<script src="services.js?v=2"></script>
 <script>
 (function(){
   var $ = function(id){ return document.getElementById(id); };
@@ -609,6 +613,7 @@ textarea.input::placeholder { line-height: 1.5; }
       $('form').style.display = 'none';
       $('intro').style.display = 'none';
       $('success').style.display = 'block';
+      if (st !== 'adoption' && window.SERVICES) SERVICES.nearbyBlock($('nearby-svc'), { lat: +listing.lat, lng: +listing.lng, label: listing.area || t(listing.district) });
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }).catch(function(err){
       $('submit-err').textContent = (err && err.message) || t('Something went wrong. Please try again.');

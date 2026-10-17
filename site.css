@@ -23,3 +23,30 @@
   .nav .actions > a[href$="account.html"]:not(.btn) { display: none; }
   .nav-cta .full { display: none; } .nav-cta .short { display: inline; }
 }
+
+/* Vets, shelters and rescue groups */
+:root { --svc-vet: #2f6f8f; --svc-shelter: #7a5c99; --svc-rescue: #b7791f; }
+.svc { background: #fff; border: 1px solid color-mix(in srgb, var(--color-text) 12%, transparent); border-radius: var(--radius-lg); padding: 16px 18px; display: flex; flex-direction: column; gap: 8px; }
+.svc.active { border-color: var(--color-accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-accent) 18%, transparent); }
+.svc-head { display: flex; gap: 12px; align-items: flex-start; }
+.svc-dot { width: 12px; height: 12px; border-radius: 50%; flex: none; margin-top: 6px; }
+.cat-vet { background: var(--svc-vet); } .cat-shelter { background: var(--svc-shelter); } .cat-rescue { background: var(--svc-rescue); }
+.svc h3 { font-family: var(--font-heading); font-weight: var(--font-heading-weight); font-size: 17px; line-height: 1.25; margin: 0; }
+.svc-meta { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 13px; color: color-mix(in srgb, var(--color-text) 62%, transparent); margin-top: 3px; }
+.svc-24 { color: var(--svc-vet); font-weight: 700; }
+.svc-addr { font-size: 14px; line-height: 1.5; color: color-mix(in srgb, var(--color-text) 78%, transparent); padding-left: 24px; }
+.svc-approx { color: color-mix(in srgb, var(--color-text) 55%, transparent); font-style: italic; }
+.svc-actions { display: flex; flex-wrap: wrap; gap: 8px; padding-left: 24px; margin-top: 2px; }
+.svc-actions .btn { min-height: 38px; padding: 0 14px; font-size: 13.5px; }
+.svc-call .num { font-weight: 400; opacity: .9; margin-left: 4px; }
+.svc-none { font-size: 13px; color: color-mix(in srgb, var(--color-text) 55%, transparent); }
+.svc-list { display: grid; gap: 10px; }
+.svc-block-title { font-family: var(--font-heading); font-weight: var(--font-heading-weight); font-size: 21px; margin: 0 0 4px; }
+.svc-block-lede { font-size: 14.5px; line-height: 1.55; margin: 0 0 12px; color: color-mix(in srgb, var(--color-text) 72%, transparent); }
+.svc-more { display: inline-block; margin-top: 12px; font-weight: 700; font-size: 14.5px; color: var(--color-accent-700); }
+@media (max-width: 480px) { .svc-addr, .svc-actions { padding-left: 0; } .svc-call .num { display: none; } }
+.svc-pin { width: 16px; height: 16px; border-radius: 50%; border: 3px solid #fff; box-shadow: 0 2px 6px rgba(0,0,0,.3); }
+/* Header links: one line each; drop the duplicate "Map" link, then the whole row, as space runs out */
+.nav .links a { white-space: nowrap; }
+@media (max-width: 1180px) { .nav .links a[href="index.html"] { display: none; } }
+@media (max-width: 900px) { .nav .links { display: none !important; } }

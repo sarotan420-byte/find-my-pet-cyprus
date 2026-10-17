@@ -6,7 +6,7 @@
 <title>Find My Pet Cyprus — report and search missing &amp; found pets</title>
 <meta name="description" content="Search a live map of missing and found pets across Cyprus by city, area or postcode, or report a pet in minutes. Every listing is checked before it goes public." />
 <script src="./ds-base.js"></script>
-<link rel="stylesheet" href="site.css?v=10" />
+<link rel="stylesheet" href="site.css?v=11" />
 <script src="i18n.js?v=9"></script>
 <link rel="stylesheet" href="vendor/leaflet/leaflet.css" />
 <script src="vendor/leaflet/leaflet.js"></script>
@@ -117,7 +117,8 @@ a:hover { color: var(--color-accent-800); }
 .guides { margin-bottom: 0; }
 .guides-head h2 { font-family: var(--font-heading); font-weight: var(--font-heading-weight); font-size: clamp(24px, 2.6vw, 32px); line-height: 1.15; margin: 0; }
 .guides-head p { font-size: 15.5px; line-height: 1.6; margin: 8px 0 0; color: color-mix(in srgb, var(--color-text) 75%, transparent); }
-.guides-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-5, 24px); margin-top: var(--space-5, 24px); }
+.guides-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-5, 24px); margin-top: var(--space-5, 24px); }
+@media (max-width: 1000px) { .guides-grid { grid-template-columns: 1fr 1fr; } }
 @media (max-width: 720px) { .guides-grid { grid-template-columns: 1fr; } }
 .post { display: flex; flex-direction: column; background: #fff; border: 1px solid color-mix(in srgb, var(--color-text) 12%, transparent); border-radius: calc(1.25 * var(--radius-lg)); overflow: hidden; text-decoration: none; color: var(--color-text); transition: box-shadow .2s, transform .2s; }
 .post:hover { color: var(--color-text); box-shadow: var(--shadow-md); transform: translateY(-2px); }
@@ -125,6 +126,8 @@ a:hover { color: var(--color-accent-800); }
 .post .cover svg { width: 72px; height: 72px; position: relative; }
 .cover-lost { background: radial-gradient(circle at 20% 30%, color-mix(in srgb, var(--color-accent) 22%, #fff) 0 18%, transparent 19%), radial-gradient(circle at 85% 75%, color-mix(in srgb, var(--color-accent) 18%, #fff) 0 14%, transparent 15%), color-mix(in srgb, var(--color-accent) 12%, #fff); color: var(--color-accent-700); }
 .cover-found { background: radial-gradient(circle at 80% 25%, color-mix(in srgb, var(--color-accent-2) 26%, #fff) 0 18%, transparent 19%), radial-gradient(circle at 15% 80%, color-mix(in srgb, var(--color-accent-2) 20%, #fff) 0 14%, transparent 15%), color-mix(in srgb, var(--color-accent-2) 14%, #fff); color: var(--color-accent-2-800); }
+.cover-vets { background: radial-gradient(circle at 25% 75%, color-mix(in srgb, var(--svc-vet) 20%, #fff) 0 16%, transparent 17%), radial-gradient(circle at 82% 22%, color-mix(in srgb, var(--svc-vet) 16%, #fff) 0 13%, transparent 14%), color-mix(in srgb, var(--svc-vet) 11%, #fff); color: var(--svc-vet); }
+.tag-vets { background: color-mix(in srgb, var(--svc-vet) 14%, #fff); color: var(--svc-vet); }
 .post-body { padding: var(--space-5, 24px); display: flex; flex-direction: column; gap: 10px; flex: 1; }
 .post-meta { display: flex; align-items: center; gap: 10px; font-size: 13px; color: color-mix(in srgb, var(--color-text) 60%, transparent); }
 .post h3 { font-family: var(--font-heading); font-weight: var(--font-heading-weight); font-size: 22px; line-height: 1.2; margin: 0; }
@@ -141,6 +144,7 @@ footer a { color: inherit; }
     <a href="missing.html">Missing pets</a>
     <a href="found.html">Found pets</a>
   <a href="adopt.html">Adopt</a>
+    <a href="vets.html">Vets &amp; help</a>
   </span>
   <span class="actions">
     <a class="lang-switch" href="el/index.html" lang="el" hreflang="el" title="Ελληνικά">ΕΛ</a>
@@ -258,6 +262,17 @@ footer a { color: inherit; }
           <span class="read">Read the guide →</span>
         </div>
       </a>
+      <a class="post" href="vets.html">
+        <div class="cover cover-vets" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2z"/><path d="M9 4v14M15 6v14"/><path d="M12 10.5v3M10.5 12h3"/></svg>
+        </div>
+        <div class="post-body">
+          <div class="post-meta"><span class="tag tag-vets">Map</span><span>Tap to call</span></div>
+          <h3>Vets and shelters near you</h3>
+          <p>Find vet clinics, shelters and rescue groups near where a pet went missing or was found, and call them in one tap.</p>
+          <span class="read">Open the map →</span>
+        </div>
+      </a>
     </div>
   </section>
 
@@ -271,7 +286,7 @@ footer a { color: inherit; }
       <li><a href="area/paphos.html">Paphos</a></li><li><a href="area/famagusta.html">Famagusta</a></li><li><a href="area/kyrenia.html">Kyrenia</a></li>
     </ul></nav>
     <nav aria-label="Site links"><h2>Find My Pet Cyprus</h2><ul>
-      <li><a href="submit.html">Report a missing or found pet</a></li><li><a href="lost-pet-guide.html">What to do if you lose your pet</a></li><li><a href="found-pet-guide.html">What to do if you find a pet</a></li><li><a href="adopt.html">Pets for adoption</a></li>
+      <li><a href="submit.html">Report a missing or found pet</a></li><li><a href="lost-pet-guide.html">What to do if you lose your pet</a></li><li><a href="found-pet-guide.html">What to do if you find a pet</a></li><li><a href="vets.html">Vets, shelters and rescue groups</a></li><li><a href="adopt.html">Pets for adoption</a></li>
       <li><a href="privacy.html">Privacy policy</a></li><li><a href="terms.html">Terms of use</a></li><li><a href="account.html">Your account</a></li>
     </ul></nav>
     <p class="foot-note">© 2026 Find My Pet Cyprus · No advertising or tracking cookies · This site does not replace reporting to a vet.</p>
@@ -281,32 +296,15 @@ footer a { color: inherit; }
 <script src="vendor/supabase.js"></script>
 <script src="config.js?v=8"></script>
 <script src="data.js?v=8"></script>
-<script src="api.js?v=8"></script>
+<script src="api.js?v=9"></script>
+<script src="places.js?v=1"></script>
 <script>
 API.ready.then(function(){
-  // Demo gazetteer: cities, areas and postcode prefixes. Production would use a geocoder.
-  var PLACES = [
-    { name: 'Nicosia', gr: 'Λευκωσία', kind: 'City', lat: 35.1725, lng: 33.365, z: 12 },
-    { name: 'Limassol', gr: 'Λεμεσός', kind: 'City', lat: 34.6841, lng: 33.0379, z: 12 },
-    { name: 'Larnaca', gr: 'Λάρνακα', kind: 'City', lat: 34.9229, lng: 33.6233, z: 12 },
-    { name: 'Paphos', gr: 'Πάφος', kind: 'City', lat: 34.7754, lng: 32.4245, z: 12 },
-    { name: 'Paralimni', gr: 'Παραλίμνι', kind: 'Town', lat: 35.0375, lng: 33.9833, z: 13 },
-    { name: 'Ayia Napa', gr: 'Αγία Νάπα', kind: 'Town', lat: 34.9823, lng: 34.0, z: 13 },
-    { name: 'Strovolos', gr: 'Στρόβολος', kind: 'Area · Nicosia', lat: 35.1446, lng: 33.3199, z: 14 },
-    { name: 'Lakatamia', gr: 'Λακατάμια', kind: 'Area · Nicosia', lat: 35.1167, lng: 33.3167, z: 14 },
-    { name: 'Engomi', gr: 'Έγκωμη', kind: 'Area · Nicosia', lat: 35.1617, lng: 33.3317, z: 14 },
-    { name: 'Germasogeia', gr: 'Γερμασόγεια', kind: 'Area · Limassol', lat: 34.7167, lng: 33.0833, z: 14 },
-    { name: 'Agios Nikolaos', gr: 'Άγιος Νικόλαος', kind: 'Area · Limassol', lat: 34.684, lng: 33.045, z: 15 },
-    { name: 'Mesa Geitonia', gr: 'Μέσα Γειτονιά', kind: 'Area · Limassol', lat: 34.7036, lng: 33.0436, z: 14 },
-    { name: 'Finikoudes', gr: 'Φοινικούδες', kind: 'Area · Larnaca', lat: 34.9137, lng: 33.6375, z: 15 },
-    { name: 'Aradippou', gr: 'Αραδίππου', kind: 'Area · Larnaca', lat: 34.9517, lng: 33.5917, z: 14 },
-    { name: 'Kato Paphos', gr: 'Κάτω Πάφος', kind: 'Area · Paphos', lat: 34.7564, lng: 32.4136, z: 14 },
-    { name: 'Peyia', gr: 'Πέγεια', kind: 'Area · Paphos', lat: 34.8833, lng: 32.3833, z: 14 },
-    { name: 'Polis Chrysochous', gr: 'Πόλη Χρυσοχούς', kind: 'Town', lat: 35.0333, lng: 32.4167, z: 13 }
-  ];
+  // Places for search suggestions (shared list in places.js).
+  var PLACES = (window.FMP_PLACES || []).map(function(p){ return Object.assign({}, p); });
   var QUICK = ['Nicosia', 'Limassol', 'Larnaca', 'Paphos', 'Paralimni'];
   function norm(x){ return String(x || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase(); }
-  PLACES.forEach(function(p){ p.en = p.name; if (window.LANG === 'el' && p.gr) p.name = p.gr; p.keys = [norm(p.en), norm(p.gr)]; });
+  PLACES.forEach(function(p){ p.en = p.name; if (window.LANG === 'el' && p.gr) p.name = p.gr; p.keys = [norm(p.en), norm(p.gr)].concat((p.aka || []).map(norm)); });
   function kindLabel(k){ return String(k || 'Postcode').split(' · ').map(function(x){ return t(x); }).join(' · '); }
   function placeMatch(fn){ return PLACES.find(function(p){ return p.keys.some(fn); }); }
 

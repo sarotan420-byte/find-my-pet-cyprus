@@ -1,0 +1,345 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Vets, shelters and rescue groups near you — Find My Pet Cyprus</title>
+<meta name="description" content="Find vet clinics, animal shelters and rescue groups near you in Cyprus to call when a pet goes missing or is found." />
+<script src="./ds-base.js"></script>
+<link rel="stylesheet" href="site.css?v=11" />
+<script src="i18n.js?v=9"></script>
+<link rel="stylesheet" href="vendor/leaflet/leaflet.css" />
+<script src="vendor/leaflet/leaflet.js"></script>
+<style>
+:root { --edge: clamp(16px, 4vw, 48px); --white: #fff; }
+body { margin: 0; background: var(--white); text-wrap: pretty; overflow-x: clip; }
+.nav { padding-inline: max(var(--edge), calc((100% - 1320px) / 2 + var(--edge))); position: sticky; top: 0; z-index: 1000; background: rgba(255,255,255,.94); backdrop-filter: blur(6px); border-bottom: 1px solid var(--color-neutral-200); }
+.nav .links { display: flex; gap: var(--space-4); margin-right: auto; margin-left: var(--space-4); }
+.nav .links a, .nav .actions > a:not(.btn) { color: var(--color-text); text-decoration: none; }
+.nav .actions { display: flex; align-items: center; gap: var(--space-3); }
+@media (max-width: 720px) { .nav .links { display: none; } }
+.wrap { max-width: 1320px; margin: 0 auto; padding: 0 var(--edge); }
+.intro { padding: var(--space-6) 0 var(--space-4); }
+.intro h1 { font-family: var(--font-heading); font-weight: var(--font-heading-weight); font-size: clamp(28px, 3.4vw, 42px); line-height: 1.1; margin: 0; max-width: 24ch; }
+.intro p { font-size: 15.5px; line-height: 1.6; margin: 10px 0 0; max-width: 64ch; color: color-mix(in srgb, var(--color-text) 75%, transparent); }
+.intro p a { color: var(--color-accent-700); }
+
+.tools { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: var(--space-3); }
+.search { flex: 1 1 420px; display: flex; gap: 6px; background: #fff; border: 1px solid color-mix(in srgb, var(--color-text) 16%, transparent); border-radius: 999px; padding: 5px; position: relative; }
+.search input { flex: 1; min-width: 0; border: none; background: transparent; font: inherit; font-size: 16px; padding: 8px 14px; outline: none; color: var(--color-text); }
+.search .btn { min-height: 40px; padding-inline: var(--space-4); }
+.locate { min-height: 50px; padding-inline: var(--space-4); display: inline-flex; align-items: center; gap: 8px; }
+.locate svg { width: 18px; height: 18px; }
+.suggest { position: absolute; z-index: 1100; top: calc(100% + 6px); left: 0; width: min(420px, 100%); background: #fff; border-radius: var(--radius-lg); box-shadow: var(--shadow-lg); padding: 6px; display: none; flex-direction: column; }
+.suggest.on { display: flex; }
+.suggest button { all: unset; cursor: pointer; padding: 10px 12px; border-radius: var(--radius-md); font-size: 14.5px; display: flex; justify-content: space-between; gap: 12px; }
+.suggest button:hover, .suggest button.hl { background: var(--color-accent-100); }
+.suggest .kind { font-size: 12px; color: color-mix(in srgb, var(--color-text) 55%, transparent); }
+.quick { display: flex; flex-wrap: wrap; gap: 8px; margin: -2px 0 12px; }
+.quick button { all: unset; cursor: pointer; padding: 6px 13px; border-radius: 999px; font-size: 13px; font-weight: 600; border: 1px solid var(--color-neutral-300); }
+.quick button:hover { border-color: var(--color-accent); }
+.quick button.on { background: var(--color-text); color: #fff; border-color: var(--color-text); }
+.more { margin-top: 10px; width: 100%; min-height: 44px; }
+.filters { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: var(--space-4); }
+.filters .lbl { font-size: 13px; color: color-mix(in srgb, var(--color-text) 60%, transparent); margin-right: 2px; }
+.fchip { all: unset; cursor: pointer; display: inline-flex; align-items: center; gap: 7px; padding: 7px 14px; border-radius: 999px; font-size: 13.5px; font-weight: 600; background: var(--color-neutral-100); }
+.fchip[aria-pressed="true"] { background: var(--color-text); color: #fff; }
+.fchip:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
+.fchip i { width: 10px; height: 10px; border-radius: 50%; }
+.filters .sep { width: 1px; height: 24px; background: var(--color-neutral-200); margin: 0 4px; }
+
+.layout { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); gap: var(--space-5, 24px); align-items: start; }
+.mapbox { position: sticky; top: 76px; height: calc(100vh - 100px); min-height: 460px; max-height: 760px; border-radius: calc(1.5 * var(--radius-lg)); overflow: hidden; box-shadow: var(--shadow-md); background: var(--color-neutral-100); }
+#map { position: absolute; inset: 0; }
+.list-head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; margin-bottom: 10px; }
+.list-head .count { font-family: var(--font-heading); font-size: 19px; }
+.list-head .where { font-size: 13px; color: color-mix(in srgb, var(--color-text) 60%, transparent); }
+.list-head button { all: unset; cursor: pointer; font-size: 13.5px; font-weight: 700; color: var(--color-accent-700); }
+.empty { padding: var(--space-5, 24px); text-align: center; color: color-mix(in srgb, var(--color-text) 62%, transparent); font-size: 14.5px; border: 1px dashed var(--color-neutral-300); border-radius: var(--radius-lg); }
+.tip { margin-top: var(--space-4); background: color-mix(in srgb, var(--color-accent-2) 10%, #fff); border-radius: var(--radius-lg); padding: 14px 18px; font-size: 14px; line-height: 1.55; }
+.tip b { display: block; margin-bottom: 2px; }
+@media (max-width: 900px) {
+  .layout { grid-template-columns: 1fr; }
+  .mapbox { position: relative; top: 0; height: 52vh; min-height: 340px; }
+}
+
+.suggest-box { margin-top: var(--section, 64px); background: var(--color-accent-2-100); border-radius: calc(2 * var(--radius-lg)); padding: clamp(24px, 4vw, 48px); }
+.suggest-box h2 { font-family: var(--font-heading); font-weight: var(--font-heading-weight); font-size: clamp(22px, 2.4vw, 28px); margin: 0; }
+.suggest-box > p { font-size: 15px; line-height: 1.6; margin: 8px 0 0; max-width: 60ch; color: color-mix(in srgb, var(--color-text) 75%, transparent); }
+.suggest-box .open { margin-top: var(--space-4); min-height: 44px; padding-inline: var(--space-4); }
+.sform { display: none; margin-top: var(--space-4); background: #fff; border-radius: var(--radius-lg); padding: clamp(18px, 3vw, 28px); }
+.sform.on { display: block; }
+.sform .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 18px; }
+@media (max-width: 640px) { .sform .grid { grid-template-columns: 1fr; } }
+.sform .full { grid-column: 1 / -1; }
+.sform label { display: block; font-size: 13.5px; font-weight: 600; margin-bottom: 5px; }
+.sform label .opt { font-weight: 400; color: color-mix(in srgb, var(--color-text) 55%, transparent); }
+.sform input, .sform select, .sform textarea { width: 100%; box-sizing: border-box; font: inherit; font-size: 15px; padding: 10px 12px; border: 1px solid var(--color-neutral-300); border-radius: var(--radius-md); background: #fff; color: var(--color-text); }
+.sform textarea { min-height: 90px; resize: vertical; }
+.sform .seg { display: flex; gap: 8px; flex-wrap: wrap; }
+.sform .seg label { font-weight: 600; display: inline-flex; align-items: center; gap: 8px; padding: 9px 14px; border: 1px solid var(--color-neutral-300); border-radius: 999px; margin: 0; cursor: pointer; }
+.sform .seg input { width: auto; margin: 0; }
+.sform .note { font-size: 12.5px; color: color-mix(in srgb, var(--color-text) 60%, transparent); margin: 6px 0 0; }
+.sform .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-top: 18px; }
+.sform .err { color: #a8361f; font-size: 14px; display: none; } .sform .err.on { display: block; }
+.sent { display: none; margin-top: var(--space-4); background: #fff; border-radius: var(--radius-lg); padding: 18px 22px; font-size: 15px; }
+.sent.on { display: block; }
+</style>
+</head>
+<body>
+<nav class="nav">
+  <a class="nav-brand" href="index.html" style="text-decoration:none;color:inherit">Find My Pet Cyprus</a>
+  <span class="links">
+    <a href="missing.html">Missing pets</a>
+    <a href="found.html">Found pets</a>
+    <a href="adopt.html">Adopt</a>
+    <a href="vets.html">Vets &amp; help</a>
+    <a href="index.html">Map</a>
+  </span>
+  <span class="actions">
+    <a class="lang-switch" href="el/index.html" lang="el" hreflang="el" title="Ελληνικά">ΕΛ</a>
+    <a href="account.html">Sign in</a>
+    <a href="submit.html" class="btn btn-primary nav-cta"><span class="full">Report a pet</span><span class="short">Report</span></a>
+  </span>
+</nav>
+
+<div class="wrap">
+  <section class="intro">
+    <h1>Vets, shelters and rescue groups near you</h1>
+    <p>Lost or found a pet? Call the vet clinics and shelters near where it went missing. People often take found animals straight to the nearest vet. Read our guides for <a href="lost-pet-guide.html">lost pets</a> and <a href="found-pet-guide.html">found pets</a>.</p>
+  </section>
+
+  <div class="tools">
+    <form class="search" id="searchform" role="search" autocomplete="off">
+      <input id="q" type="search" placeholder="Postcode, town or area — e.g. 2013, Strovolos, Limassol" aria-label="Postcode, town or area" />
+      <button class="btn btn-primary" type="submit">Search</button>
+      <div class="suggest" id="sugg" role="listbox"></div>
+    </form>
+    <button class="btn btn-secondary locate" id="locate" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg><span>Use my location</span></button>
+  </div>
+
+  <div class="quick" id="quick"></div>
+
+  <div class="filters" role="group" aria-label="Filters">
+    <span class="lbl">Show</span>
+    <button class="fchip" type="button" data-cat="all" aria-pressed="true">All</button>
+    <button class="fchip" type="button" data-cat="vet" aria-pressed="false"><i class="cat-vet"></i>Vet clinics</button>
+    <button class="fchip" type="button" data-cat="shelter" aria-pressed="false"><i class="cat-shelter"></i>Shelters</button>
+    <button class="fchip" type="button" data-cat="rescue" aria-pressed="false"><i class="cat-rescue"></i>Rescue groups</button>
+    <span class="sep" id="r-sep" hidden></span>
+    <span class="lbl" id="r-lbl" hidden>Within</span>
+    <span id="radius" style="display:contents"></span>
+  </div>
+
+  <div class="layout">
+    <div class="mapbox"><div id="map" aria-label="Map of vets, shelters and rescue groups"></div></div>
+    <div>
+      <div class="list-head"><div><div class="count" id="count"></div><div class="where" id="where"></div></div><button type="button" id="clear" hidden>Clear</button></div>
+      <div class="svc-list" id="list"></div>
+      <div class="tip"><b>Before you call</b>Have a photo ready, plus the pet's description, and where and when it went missing or was found. Ask them to call you if anything changes.</div>
+    </div>
+  </div>
+
+  <section class="suggest-box" id="suggest">
+    <h2>Know a place we're missing?</h2>
+    <p>Suggest a vet clinic, shelter or rescue group, or tell us about a mistake such as a wrong phone number or address. A moderator checks every suggestion.</p>
+    <button class="btn btn-primary open" id="open-form" type="button">Suggest a place</button>
+    <form class="sform" id="sform" novalidate>
+      <div class="grid">
+        <div class="full"><label>What would you like to do?</label>
+          <div class="seg"><label><input type="radio" name="kind" value="new" checked> Add a new place</label><label><input type="radio" name="kind" value="correction"> Correct a listing</label></div></div>
+        <div><label for="s-name">Name of the place</label><input id="s-name" maxlength="150" required /></div>
+        <div><label for="s-cat">Type</label><select id="s-cat"><option value="vet">Vet clinic</option><option value="shelter">Shelter</option><option value="rescue">Rescue group</option><option value="other">Other</option></select></div>
+        <div><label for="s-district">District</label><select id="s-district"><option value="Nicosia">Nicosia</option><option value="Limassol">Limassol</option><option value="Larnaca">Larnaca</option><option value="Paphos">Paphos</option><option value="Famagusta">Famagusta</option></select></div>
+        <div><label for="s-address">Address or area <span class="opt">(optional)</span></label><input id="s-address" maxlength="200" /></div>
+        <div><label for="s-phone">Phone <span class="opt">(optional)</span></label><input id="s-phone" type="tel" maxlength="40" /></div>
+        <div><label for="s-web">Website or Facebook page <span class="opt">(optional)</span></label><input id="s-web" maxlength="200" /></div>
+        <div class="full"><label for="s-note">Anything else? <span class="opt">(optional — for a correction, tell us what is wrong)</span></label><textarea id="s-note" maxlength="1000"></textarea></div>
+        <div class="full"><label for="s-email">Your email <span class="opt">(optional)</span></label><input id="s-email" type="email" maxlength="200" /><p class="note">Only used if we need to ask you about this suggestion. See our <a href="privacy.html">privacy policy</a>.</p></div>
+      </div>
+      <div class="row"><button class="btn btn-primary" type="submit" id="s-send">Send suggestion</button><button class="btn btn-ghost" type="button" id="s-cancel">Cancel</button></div>
+      <p class="err" id="s-err" role="alert"></p>
+    </form>
+    <div class="sent" id="sent" role="status"><b>Thank you!</b> A moderator will check your suggestion and update the list.</div>
+  </section>
+</div>
+
+<footer class="site-foot">
+  <div class="foot-in">
+    <div><b>Find My Pet Cyprus</b><span>Free community website for lost, found and adoptable pets across Cyprus. Every listing is checked by a moderator.</span></div>
+    <nav aria-label="Pets by district"><h2>Pets by district</h2><ul>
+      <li><a href="area/nicosia.html">Nicosia</a></li><li><a href="area/limassol.html">Limassol</a></li><li><a href="area/larnaca.html">Larnaca</a></li>
+      <li><a href="area/paphos.html">Paphos</a></li><li><a href="area/famagusta.html">Famagusta</a></li><li><a href="area/kyrenia.html">Kyrenia</a></li>
+    </ul></nav>
+    <nav aria-label="Site links"><h2>Find My Pet Cyprus</h2><ul>
+      <li><a href="submit.html">Report a missing or found pet</a></li><li><a href="lost-pet-guide.html">What to do if you lose your pet</a></li><li><a href="found-pet-guide.html">What to do if you find a pet</a></li><li><a href="vets.html">Vets, shelters and rescue groups</a></li><li><a href="adopt.html">Pets for adoption</a></li>
+      <li><a href="privacy.html">Privacy policy</a></li><li><a href="terms.html">Terms of use</a></li><li><a href="account.html">Your account</a></li>
+    </ul></nav>
+    <p class="foot-note">© 2026 Find My Pet Cyprus · No advertising or tracking cookies · This site does not replace reporting to a vet.</p>
+  </div>
+</footer>
+
+<script src="vendor/supabase.js"></script>
+<script src="config.js?v=8"></script>
+<script src="data.js?v=8"></script>
+<script src="api.js?v=9"></script>
+<script src="places.js?v=1"></script>
+<script src="services.js?v=2"></script>
+<script>
+(function(){
+  var $ = function(id){ return document.getElementById(id); };
+  function norm(x){ return String(x || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase(); }
+  var PLACES = (window.FMP_PLACES || []).map(function(p){ p = Object.assign({}, p); p.en = p.name; if (window.LANG === 'el' && p.gr) p.name = p.gr; p.keys = [norm(p.en), norm(p.gr)].concat((p.aka || []).map(norm)); return p; });
+  var RADII = [3, 5, 10, 25];
+  var state = { cat: 'all', center: null, label: '', radius: 10, limit: 12 };
+  var QUICK = ['Nicosia', 'Limassol', 'Larnaca', 'Paphos', 'Paralimni'];
+  var all = [], markers = {};
+  if (window.innerWidth < 560) $('q').placeholder = t('Postcode, town or area');
+
+  var map = L.map('map', { scrollWheelZoom: false, zoomControl: true }).setView([35.0, 33.2], 9);
+  L.tileLayer(API.TILE_URL, API.TILE_OPTS).addTo(map);
+  var here = null;
+  var COLORS = { vet: 'var(--svc-vet)', shelter: 'var(--svc-shelter)', rescue: 'var(--svc-rescue)' };
+
+  SERVICES.load().then(function(list){
+    all = list;
+    var off = API.spread(list);
+    list.forEach(function(s){
+      var o = off[s.id] || [0, 0];
+      var m = L.marker([s.lat, s.lng], { icon: L.divIcon({ className: '', html: '<div class="svc-pin" style="background:' + COLORS[s.cat] + '"></div>', iconSize: [16, 16], iconAnchor: [8 - o[0], 8 - o[1]], popupAnchor: [o[0], o[1] - 8] }) });
+      m.bindPopup('<div style="font-family:var(--font-body);min-width:170px"><div style="font-family:var(--font-heading);font-size:15px">' + SERVICES.esc(s.name) + '</div><div style="font-size:12px;opacity:.7;margin:2px 0 6px">' + SERVICES.catLabel(s.cat) + (s.approx ? ' · ' + t('Approximate location') : '') + '</div>' + (s.phone ? '<a href="' + SERVICES.tel(s.phone) + '">' + t('Call') + ' ' + SERVICES.esc(s.phone) + '</a>' : '') + '</div>');
+      m.on('click', function(){ highlight(s.id, true); });
+      markers[s.id] = m;
+    });
+    var qs = new URLSearchParams(location.search);
+    if (['vet', 'shelter', 'rescue'].indexOf(qs.get('type')) > -1) state.cat = qs.get('type');
+    if (qs.get('lat') && qs.get('lng')) setCenter({ lat: +qs.get('lat'), lng: +qs.get('lng') }, qs.get('label') || t('the pet\'s location'), true);
+    else if (qs.get('near')) { $('q').value = qs.get('near'); search(qs.get('near')); }
+    else render(true);
+  });
+
+  function visible(){
+    return all.filter(function(s){ return state.cat === 'all' || s.cat === state.cat; });
+  }
+  function render(fit){
+    var rows = visible().map(function(s){ return { s: s, d: state.center ? SERVICES.dist(state.center, s) : null }; });
+    if (state.center) rows = rows.filter(function(r){ return r.d <= state.radius; }).sort(function(a, b){ return SERVICES.rank(a) - SERVICES.rank(b); });
+    else rows.sort(function(a, b){ return a.s.district.localeCompare(b.s.district) || (a.s.phone ? 0 : 1) - (b.s.phone ? 0 : 1) || (a.s.approx ? 1 : 0) - (b.s.approx ? 1 : 0) || a.s.name.localeCompare(b.s.name); });
+    var on = {}; rows.forEach(function(r){ on[r.s.id] = 1; });
+    Object.keys(markers).forEach(function(id){ var m = markers[id]; if (on[id]) { if (!map.hasLayer(m)) m.addTo(map); } else if (map.hasLayer(m)) map.removeLayer(m); });
+    $('count').textContent = t(rows.length === 1 ? '{n} place' : '{n} places', { n: rows.length });
+    $('where').textContent = state.center ? t('Within {r} km of {place}', { r: state.radius, place: state.label }) : t('All of Cyprus');
+    $('clear').hidden = !state.center;
+    $('r-sep').hidden = $('r-lbl').hidden = !state.center;
+    $('radius').innerHTML = state.center ? RADII.map(function(r){ return '<button class="fchip" type="button" data-r="' + r + '" aria-pressed="' + (r === state.radius) + '">' + r + ' km</button>'; }).join('') : '';
+    document.querySelectorAll('.fchip[data-cat]').forEach(function(b){ b.setAttribute('aria-pressed', String(b.dataset.cat === state.cat)); });
+    $('quick').innerHTML = QUICK.map(function(n){ var pl = PLACES.find(function(p){ return p.en === n; }); return pl ? '<button type="button" data-n="' + n + '"' + (state.label === pl.name ? ' class="on"' : '') + '>' + pl.name + '</button>' : ''; }).join('');
+    var shown = rows.slice(0, state.limit);
+    $('list').innerHTML = rows.length ? shown.map(function(r){ return SERVICES.card(r.s, r.d); }).join('') +
+        (rows.length > shown.length ? '<button type="button" class="btn btn-secondary more" id="more">' + t('Show all {n} places', { n: rows.length }) + '</button>' : '')
+      : '<div class="empty">' + t('Nothing within {r} km.', { r: state.radius }) + (state.radius < 25 ? ' <button type="button" class="fchip" data-r="' + RADII[RADII.indexOf(state.radius) + 1] + '">' + t('Search a wider area') + '</button>' : '') + '</div>';
+    $('list').querySelectorAll('.svc').forEach(function(el){
+      el.addEventListener('mouseenter', function(){ var m = markers[el.dataset.id]; if (m && window.innerWidth > 900) m.openPopup(); });
+    });
+    if (fit) {
+      if (state.center) {
+        var b = L.latLng(state.center.lat, state.center.lng).toBounds(state.radius * 2000);
+        map.fitBounds(b, { maxZoom: 14 });
+      } else map.setView([35.0, 33.2], window.innerWidth < 600 ? 8 : 9);
+    }
+  }
+  function highlight(id, scroll){
+    $('list').querySelectorAll('.svc').forEach(function(el){
+      var on = el.dataset.id === id; el.classList.toggle('active', on);
+      if (on && scroll) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    });
+  }
+  function setCenter(pt, label, fit){
+    state.center = { lat: pt.lat, lng: pt.lng }; state.label = label; state.limit = 12;
+    if (here) map.removeLayer(here);
+    here = L.circleMarker([pt.lat, pt.lng], { radius: 8, color: '#fff', weight: 3, fillColor: (getComputedStyle(document.documentElement).getPropertyValue('--color-accent').trim() || '#c67139'), fillOpacity: 1 }).addTo(map).bindTooltip(SERVICES.esc(label));
+    // Widen automatically if nothing is close
+    var near = visible().filter(function(s){ return SERVICES.dist(pt, s) <= state.radius; }).length;
+    if (!near) for (var i = 0; i < RADII.length; i++) { if (visible().some(function(s){ return SERVICES.dist(pt, s) <= RADII[i]; })) { state.radius = RADII[i]; break; } }
+    render(fit !== false);
+  }
+
+  // search
+  var sugItems = [], sugIdx = -1;
+  function search(q){
+    q = String(q || '').trim(); if (!q) return;
+    var nq = norm(q);
+    var p = PLACES.find(function(x){ return x.keys.some(function(k){ return k === nq; }); }) || PLACES.find(function(x){ return x.keys.some(function(k){ return k && k.indexOf(nq) === 0; }); });
+    if (p) { state.radius = /^(City|Town)/.test(p.kind) ? 10 : 5; setCenter(p, p.name); return; }
+    $('where').textContent = t('Searching…');
+    API.geocode(q).then(function(r){
+      if (r) { state.radius = r.exact ? 5 : 10; setCenter(r, r.name); }
+      else $('where').textContent = t('We could not find "{q}". Try a town, area or 4-digit postcode.', { q: q });
+    });
+  }
+  $('searchform').addEventListener('submit', function(e){ e.preventDefault(); closeSug(); search($('q').value); });
+  $('q').addEventListener('input', function(){
+    var nq = norm($('q').value.trim());
+    if (!nq || /^\d+$/.test(nq)) return closeSug();
+    sugItems = PLACES.filter(function(p){ return p.keys.some(function(k){ return k && k.indexOf(nq) > -1; }); }).slice(0, 6);
+    sugIdx = -1;
+    $('sugg').innerHTML = sugItems.map(function(p, i){ return '<button type="button" data-i="' + i + '"><span>' + p.name + '</span><span class="kind">' + String(p.kind).split(' · ').map(function(x){ return t(x); }).join(' · ') + '</span></button>'; }).join('');
+    $('sugg').classList.toggle('on', sugItems.length > 0);
+  });
+  $('q').addEventListener('keydown', function(e){
+    if (!sugItems.length || !$('sugg').classList.contains('on')) return;
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { e.preventDefault(); sugIdx = (sugIdx + (e.key === 'ArrowDown' ? 1 : -1) + sugItems.length) % sugItems.length; $('sugg').querySelectorAll('button').forEach(function(b, i){ b.classList.toggle('hl', i === sugIdx); }); }
+    else if (e.key === 'Enter' && sugIdx > -1) { e.preventDefault(); pick(sugIdx); }
+    else if (e.key === 'Escape') closeSug();
+  });
+  $('sugg').addEventListener('click', function(e){ var b = e.target.closest('button'); if (b) pick(+b.dataset.i); });
+  function pick(i){ var p = sugItems[i]; $('q').value = p.name; closeSug(); state.radius = /^(City|Town)/.test(p.kind) ? 10 : 5; setCenter(p, p.name); }
+  function closeSug(){ $('sugg').classList.remove('on'); sugItems = []; }
+  document.addEventListener('click', function(e){ if (!e.target.closest('.search')) closeSug(); });
+
+  $('locate').addEventListener('click', function(){
+    var b = this, label = b.querySelector('span');
+    if (!navigator.geolocation) { label.textContent = t('Location not available'); return; }
+    label.textContent = t('Finding you…'); b.disabled = true;
+    navigator.geolocation.getCurrentPosition(function(pos){
+      b.disabled = false; label.textContent = t('Use my location');
+      state.radius = 10; setCenter({ lat: pos.coords.latitude, lng: pos.coords.longitude }, t('your location'));
+    }, function(){ b.disabled = false; label.textContent = t('Use my location'); $('where').textContent = t('We could not get your location. Type a town or postcode instead.'); }, { timeout: 10000, maximumAge: 300000 });
+  });
+  document.querySelector('.filters').addEventListener('click', function(e){
+    var b = e.target.closest('.fchip'); if (!b) return;
+    if (b.dataset.cat) { state.cat = b.dataset.cat; state.limit = 12; render(false); }
+    if (b.dataset.r) { state.radius = +b.dataset.r; state.limit = 12; render(true); }
+  });
+  $('list').addEventListener('click', function(e){
+    if (e.target.closest('#more')) { state.limit = 1e9; render(false); return; }
+    var b = e.target.closest('.fchip[data-r]'); if (b) { state.radius = +b.dataset.r; state.limit = 12; render(true); }
+  });
+  $('quick').addEventListener('click', function(e){
+    var b = e.target.closest('button'); if (!b) return;
+    var pl = PLACES.find(function(p){ return p.en === b.dataset.n; }); $('q').value = pl.name; state.radius = 10; setCenter(pl, pl.name);
+  });
+  $('clear').addEventListener('click', function(){ state.center = null; state.label = ''; state.limit = 12; if (here) { map.removeLayer(here); here = null; } $('q').value = ''; render(true); });
+
+  // suggest a place
+  $('open-form').addEventListener('click', function(){ $('sform').classList.add('on'); this.hidden = true; $('sent').classList.remove('on'); $('s-name').focus(); });
+  $('s-cancel').addEventListener('click', function(){ $('sform').classList.remove('on'); $('open-form').hidden = false; });
+  $('sform').addEventListener('submit', function(e){
+    e.preventDefault();
+    var err = $('s-err'); err.classList.remove('on');
+    var name = $('s-name').value.trim(), email = $('s-email').value.trim();
+    if (!name) { err.textContent = t('Please enter the name of the place.'); err.classList.add('on'); $('s-name').focus(); return; }
+    if (email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { err.textContent = t('Please check your email address.'); err.classList.add('on'); return; }
+    var btn = $('s-send'); btn.disabled = true; btn.textContent = t('Sending…');
+    API.suggestService({
+      kind: document.querySelector('input[name="kind"]:checked').value, name: name, category: $('s-cat').value, district: $('s-district').value,
+      address: $('s-address').value.trim(), phone: $('s-phone').value.trim(), website: $('s-web').value.trim(), note: $('s-note').value.trim(), contact_email: email
+    }).then(function(){
+      $('sform').reset(); $('sform').classList.remove('on'); $('sent').classList.add('on'); $('open-form').hidden = false;
+    }).catch(function(e2){ err.textContent = (e2 && e2.message) || t('Something went wrong. Please try again.'); err.classList.add('on'); })
+      .then(function(){ btn.disabled = false; btn.textContent = t('Send suggestion'); });
+  });
+})();
+</script>
+</body>
+</html>
