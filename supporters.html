@@ -1,0 +1,308 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Our supporters — Find My Pet Cyprus</title>
+<meta name="description" content="The businesses and people who help keep Find My Pet Cyprus free for everyone." />
+<script src="./ds-base.js"></script>
+<link rel="stylesheet" href="site.css?v=12" />
+<script src="i18n.js?v=9"></script>
+<style>
+:root { --edge: clamp(16px, 4vw, 48px); --white: #fff; --section: clamp(48px, 6vw, 80px); }
+body { margin: 0; background: var(--white); text-wrap: pretty; overflow-x: clip; }
+.nav { padding-inline: max(var(--edge), calc((100% - 1320px) / 2 + var(--edge))); position: sticky; top: 0; z-index: 1000; background: rgba(255,255,255,.94); backdrop-filter: blur(6px); border-bottom: 1px solid var(--color-neutral-200); }
+.nav .links { display: flex; gap: var(--space-4); margin-right: auto; margin-left: var(--space-4); }
+.nav .links a, .nav .actions > a:not(.btn) { color: var(--color-text); text-decoration: none; }
+.nav .actions { display: flex; align-items: center; gap: var(--space-3); }
+.wrap { max-width: 1120px; margin: 0 auto; padding: 0 var(--edge); }
+.intro { padding: calc(1.5 * var(--space-6)) 0 0; }
+.intro h1 { font-family: var(--font-heading); font-weight: var(--font-heading-weight); font-size: clamp(30px, 4vw, 46px); line-height: 1.1; margin: 0; }
+.intro p { font-size: 17px; line-height: 1.6; margin: 12px 0 0; max-width: 60ch; color: color-mix(in srgb, var(--color-text) 75%, transparent); }
+section.block { margin-top: var(--section); }
+.block > h2 { font-family: var(--font-heading); font-weight: var(--font-heading-weight); font-size: clamp(24px, 2.6vw, 32px); line-height: 1.15; margin: 0; }
+.block > .lede { font-size: 15.5px; line-height: 1.6; margin: 8px 0 0; color: color-mix(in srgb, var(--color-text) 72%, transparent); max-width: 64ch; }
+
+.promise { margin-top: var(--space-6); background: var(--color-accent-2-100); border-radius: calc(2 * var(--radius-lg)); padding: clamp(24px, 4vw, 48px); }
+.promise h2 { font-family: var(--font-heading); font-weight: var(--font-heading-weight); font-size: clamp(22px, 2.4vw, 28px); margin: 0 0 var(--space-4); }
+.promise ul { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-4); }
+@media (max-width: 820px) { .promise ul { grid-template-columns: 1fr; } }
+.promise li { background: #fff; border-radius: var(--radius-lg); padding: 18px 20px; font-size: 15px; line-height: 1.5; display: flex; gap: 12px; align-items: flex-start; }
+.promise li svg { width: 22px; height: 22px; flex: none; color: var(--color-accent-2-800); margin-top: 1px; }
+
+.sp-grid { display: grid; gap: var(--space-4); margin-top: var(--space-5, 24px); }
+.sp-founding-grid { grid-template-columns: 1fr 1fr; }
+.sp-district-grid { grid-template-columns: repeat(3, 1fr); }
+@media (max-width: 960px) { .sp-district-grid { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 720px) { .sp-founding-grid { grid-template-columns: 1fr; } }
+@media (max-width: 560px) { .sp-district-grid { grid-template-columns: 1fr; } }
+.sp-card { background: #fff; border: 1px solid color-mix(in srgb, var(--color-text) 12%, transparent); border-radius: var(--radius-lg); padding: 24px; display: flex; flex-direction: column; gap: 10px; color: var(--color-text); text-decoration: none; }
+.sp-founding { display: grid; grid-template-columns: 120px 1fr; gap: 20px; align-items: start; }
+@media (max-width: 420px) { .sp-founding { grid-template-columns: 1fr; } }
+.sp-logo { width: 120px; height: 120px; border-radius: 20px; border: 1px solid var(--color-neutral-200); display: flex; align-items: center; justify-content: center; padding: 12px; box-sizing: border-box; background: #fff; }
+.sp-logo img { max-width: 100%; max-height: 100%; object-fit: contain; }
+.sp-logo-sm { width: 100%; height: 88px; }
+.sp-noimg { font-family: var(--font-heading); font-size: 15px; text-align: center; }
+.sp-body { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.sp-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.sp-cat { font-size: 12.5px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--color-accent-700); }
+.sp-label { font-size: 11.5px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; padding: 3px 9px; border-radius: 999px; background: var(--color-neutral-100); color: color-mix(in srgb, var(--color-text) 70%, transparent); }
+.sp-card h3 { font-family: var(--font-heading); font-weight: var(--font-heading-weight); font-size: 21px; line-height: 1.2; margin: 0; }
+.sp-blurb { font-size: 15px; line-height: 1.55; margin: 0; color: color-mix(in srgb, var(--color-text) 75%, transparent); }
+.sp-offer { font-size: 14px; font-weight: 600; margin: 0; padding: 8px 12px; border-radius: 12px; background: var(--color-accent-100); color: var(--color-accent-800); align-self: flex-start; }
+.sp-visit { align-self: flex-start; min-height: 44px; padding-inline: 18px; margin-top: 4px; }
+.sp-wanted { border-style: dashed; border-color: var(--color-neutral-300); background: #fff; justify-content: center; min-height: 170px; }
+.sp-wanted:hover { border-color: var(--color-accent); color: var(--color-text); }
+.sp-wanted p { font-size: 14.5px; line-height: 1.5; margin: 0; color: color-mix(in srgb, var(--color-text) 68%, transparent); }
+.sp-wanted .read, .sp-link { font-weight: 700; font-size: 14.5px; color: var(--color-accent-700); text-decoration: none; }
+.sp-link { min-height: 44px; display: inline-flex; align-items: center; }
+.sp-district h3 { font-size: 19px; }
+.sp-open { border-style: dashed; border-color: var(--color-neutral-300); }
+.sp-avail { margin: 0; font-size: 14.5px; color: color-mix(in srgb, var(--color-text) 60%, transparent); }
+.sp-name { margin: 0; font-weight: 700; font-size: 15px; }
+
+.thanks ul { list-style: none; padding: 0; margin: var(--space-4) 0 0; columns: 3 220px; column-gap: var(--space-6); }
+.thanks li { break-inside: avoid; padding: 8px 0; border-bottom: 1px solid var(--color-neutral-100); font-size: 15px; line-height: 1.45; }
+.sp-who { font-weight: 700; }
+.sp-note { display: block; font-size: 13.5px; color: color-mix(in srgb, var(--color-text) 62%, transparent); }
+.thanks .thanks-h, .thanks ul { display: none; }
+.thanks.has-list .thanks-h, .thanks.has-list ul { display: block; }
+.thanks.has-list .sp-invite { display: none; }
+.sp-invite { font-size: 16px; margin: 0; padding: 22px 24px; border: 1px dashed var(--color-neutral-300); border-radius: var(--radius-lg); }
+.sp-invite a { color: var(--color-accent-700); font-weight: 700; }
+
+.support { display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap; border: 1px solid color-mix(in srgb, var(--color-text) 12%, transparent); border-radius: var(--radius-lg); padding: 24px 28px; }
+.support[hidden] { display: none; }
+.support p { margin: 0; font-size: 16px; line-height: 1.5; }
+.support small { display: block; margin-top: 6px; font-size: 12.5px; color: color-mix(in srgb, var(--color-text) 60%, transparent); }
+.support .btn { min-height: 44px; padding-inline: 22px; }
+
+.become { background: #fff; border: 1px solid color-mix(in srgb, var(--color-text) 12%, transparent); box-shadow: var(--shadow-sm); border-radius: calc(2 * var(--radius-lg)); padding: clamp(24px, 4vw, 48px); }
+.become form { margin-top: var(--space-5, 24px); display: grid; gap: var(--space-3); max-width: 720px; }
+.become .field-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-3); }
+@media (max-width: 560px) { .become .field-grid { grid-template-columns: 1fr; } }
+.become .field > label { display: block; font-size: 13.5px; margin-bottom: 6px; font-weight: 600; }
+.become .hint { font-weight: 400; font-size: 12.5px; color: color-mix(in srgb, var(--color-text) 60%, transparent); }
+.become .input { background: #fff; border-color: var(--color-neutral-300); width: 100%; box-sizing: border-box; min-height: 46px; }
+.become select.input { appearance: auto; }
+.become textarea.input { min-height: 130px; border-radius: 20px; padding: 12px 16px; line-height: 1.5; resize: vertical; font: inherit; }
+.become .count { font-size: 12px; color: color-mix(in srgb, var(--color-text) 55%, transparent); text-align: right; margin-top: 4px; }
+.become .check { display: flex; align-items: flex-start; gap: 10px; font-size: 14.5px; line-height: 1.45; cursor: pointer; min-height: 44px; padding-top: 4px; }
+.become .check input { width: 20px; height: 20px; accent-color: var(--color-accent); flex: none; margin: 1px 0 0; }
+.become .check a { color: var(--color-accent-700); }
+.become .send { justify-self: start; min-height: 46px; padding-inline: 26px; }
+.become .err { display: none; color: #a8361f; font-size: 14.5px; margin: 0; }
+.become .err.on { display: block; }
+.become .err a, .fallback a { color: var(--color-accent-700); }
+.hp { position: absolute; left: -10000px; width: 1px; height: 1px; overflow: hidden; }
+.thanks-msg { display: none; margin-top: var(--space-5, 24px); background: var(--color-accent-2-100); border-radius: var(--radius-lg); padding: 22px 24px; font-size: 16px; }
+.thanks-msg.on { display: block; }
+.fallback { margin: var(--space-4) 0 0; font-size: 14.5px; color: color-mix(in srgb, var(--color-text) 70%, transparent); }
+</style>
+</head>
+<body>
+<nav class="nav">
+  <a class="nav-brand" href="index.html" style="text-decoration:none;color:inherit">Find My Pet Cyprus</a>
+  <span class="links">
+    <a href="missing.html">Missing pets</a>
+    <a href="found.html">Found pets</a>
+    <a href="adopt.html">Adopt</a>
+    <a href="vets.html">Vets &amp; help</a>
+    <a href="index.html">Map</a>
+  </span>
+  <span class="actions">
+    <a class="lang-switch" href="el/index.html" lang="el" hreflang="el" title="Ελληνικά">ΕΛ</a>
+    <a href="account.html">Sign in</a>
+    <a href="submit.html" class="btn btn-primary nav-cta"><span class="full">Report a pet</span><span class="short">Report</span></a>
+  </span>
+</nav>
+
+<main class="wrap">
+  <section class="intro">
+    <h1>Thank you to our supporters</h1>
+    <p>Find My Pet Cyprus is free for everyone. These businesses and people help keep it running.</p>
+  </section>
+
+  <section class="promise" aria-labelledby="promise-h">
+    <h2 id="promise-h">How sponsorship works</h2>
+    <ul>
+      <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><span>Sponsors never change which pets you see or their order.</span></li>
+      <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><span>The Vets &amp; help list stays neutral. Nobody can pay to be listed first.</span></li>
+      <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><span>No ads that follow you, and no tracking.</span></li>
+    </ul>
+  </section>
+
+  <section class="block" aria-labelledby="founding-h">
+    <h2 id="founding-h">Founding Partners</h2>
+    <p class="lede">The businesses that make Find My Pet Cyprus possible, one in each category.</p>
+    <div class="sp-grid sp-founding-grid" id="sp-founding" data-noi18n>
+<a class="sp-card sp-wanted" href="#become" data-interest="founding">
+  <span class="sp-cat">Pet retailer</span>
+  <h3>Partner wanted: pet retailer</h3>
+  <p>This Founding Partner spot is open. Get in touch if your business is a good fit.</p>
+  <span class="read">Become a Founding Partner →</span>
+</a>
+<a class="sp-card sp-wanted" href="#become" data-interest="founding">
+  <span class="sp-cat">Pet insurance</span>
+  <h3>Partner wanted: pet insurance</h3>
+  <p>This Founding Partner spot is open. Get in touch if your business is a good fit.</p>
+  <span class="read">Become a Founding Partner →</span>
+</a>
+<a class="sp-card sp-wanted" href="#become" data-interest="founding">
+  <span class="sp-cat">Pet food</span>
+  <h3>Partner wanted: pet food</h3>
+  <p>This Founding Partner spot is open. Get in touch if your business is a good fit.</p>
+  <span class="read">Become a Founding Partner →</span>
+</a>
+<a class="sp-card sp-wanted" href="#become" data-interest="founding">
+  <span class="sp-cat">Pet relocation</span>
+  <h3>Partner wanted: pet relocation</h3>
+  <p>This Founding Partner spot is open. Get in touch if your business is a good fit.</p>
+  <span class="read">Become a Founding Partner →</span>
+</a>
+</div>
+  </section>
+
+  <section class="block" aria-labelledby="district-h">
+    <h2 id="district-h">District Partners</h2>
+    <p class="lede">Local businesses supporting the site in their district.</p>
+    <div class="sp-grid sp-district-grid" id="sp-district" data-noi18n>
+<div class="sp-card sp-district sp-open">
+  <h3>Nicosia</h3>
+  <p class="sp-avail">Available</p>
+  <a class="sp-link" href="#become" data-interest="district" data-district="Nicosia">Become a District Partner →</a>
+</div>
+<div class="sp-card sp-district sp-open">
+  <h3>Limassol</h3>
+  <p class="sp-avail">Available</p>
+  <a class="sp-link" href="#become" data-interest="district" data-district="Limassol">Become a District Partner →</a>
+</div>
+<div class="sp-card sp-district sp-open">
+  <h3>Larnaca</h3>
+  <p class="sp-avail">Available</p>
+  <a class="sp-link" href="#become" data-interest="district" data-district="Larnaca">Become a District Partner →</a>
+</div>
+<div class="sp-card sp-district sp-open">
+  <h3>Paphos</h3>
+  <p class="sp-avail">Available</p>
+  <a class="sp-link" href="#become" data-interest="district" data-district="Paphos">Become a District Partner →</a>
+</div>
+<div class="sp-card sp-district sp-open">
+  <h3>Famagusta</h3>
+  <p class="sp-avail">Available</p>
+  <a class="sp-link" href="#become" data-interest="district" data-district="Famagusta">Become a District Partner →</a>
+</div>
+<div class="sp-card sp-district sp-open">
+  <h3>Kyrenia</h3>
+  <p class="sp-avail">Available</p>
+  <a class="sp-link" href="#become" data-interest="district" data-district="Kyrenia">Become a District Partner →</a>
+</div>
+</div>
+  </section>
+
+  <section class="block thanks" id="sp-thanks-wrap" aria-label="Supporters">
+    <h2 class="thanks-h">Supporters</h2>
+    <ul id="sp-thanks"></ul>
+    <p class="sp-invite">Our thank-you list is waiting for its first name. <a href="#become" data-interest="supporter">Be the first to support Find My Pet Cyprus →</a></p>
+  </section>
+
+  <section class="block support support-link" id="support" hidden>
+    <div><p>Like the site? Help cover hosting and running costs.</p><small>This is a voluntary payment to the people who run Find My Pet Cyprus. It is not a charity donation.</small></div>
+    <a class="btn btn-primary" href="#" target="_blank" rel="noopener">Support the site</a>
+  </section>
+
+  <section class="block become" id="become" aria-labelledby="become-h">
+    <h2 id="become-h">Become a supporter</h2>
+    <p class="lede">Interested in supporting Find My Pet Cyprus? Tell us a little about yourself and we'll send you our sponsor pack.</p>
+    <form id="eform" novalidate>
+      <div class="field-grid">
+        <div class="field"><label for="e-name">Your name</label><input class="input" id="e-name" maxlength="100" autocomplete="name" required /></div>
+        <div class="field"><label for="e-biz">Business name <span class="hint">(optional)</span></label><input class="input" id="e-biz" maxlength="150" autocomplete="organization" /></div>
+        <div class="field"><label for="e-email">Email</label><input class="input" id="e-email" type="email" maxlength="200" autocomplete="email" required /></div>
+        <div class="field"><label for="e-phone">Phone <span class="hint">(optional)</span></label><input class="input" id="e-phone" type="tel" maxlength="40" autocomplete="tel" /></div>
+        <div class="field"><label for="e-interest">I'm interested in</label>
+          <select class="input" id="e-interest" required>
+            <option value="">Please choose…</option>
+            <option value="founding">Founding Partner</option>
+            <option value="district">District Partner</option>
+            <option value="supporter">Supporter</option>
+            <option value="in_kind">Help in kind</option>
+            <option value="other">Something else</option>
+          </select></div>
+        <div class="field" id="e-district-row" hidden><label for="e-district">District <span class="hint">(optional)</span></label>
+          <select class="input" id="e-district">
+            <option value="">Any district</option>
+            <option value="Nicosia">Nicosia</option><option value="Limassol">Limassol</option><option value="Larnaca">Larnaca</option>
+            <option value="Paphos">Paphos</option><option value="Famagusta">Famagusta</option><option value="Kyrenia">Kyrenia</option>
+          </select></div>
+      </div>
+      <div class="field"><label for="e-msg">Message</label><textarea class="input" id="e-msg" maxlength="1000" required></textarea><div class="count" id="e-count">0 / 1000</div></div>
+      <div class="hp" aria-hidden="true"><label for="e-website">Website</label><input id="e-website" name="website" tabindex="-1" autocomplete="off" /></div>
+      <label class="check"><input type="checkbox" id="e-consent" required /> <span>I agree that Find My Pet Cyprus can use these details to reply to me. <a href="privacy.html" target="_blank">Privacy policy</a></span></label>
+      <p class="err" id="e-err" role="alert"></p>
+      <button class="btn btn-primary send" type="submit" id="e-send">Send</button>
+    </form>
+    <div class="thanks-msg" id="e-thanks" role="status" tabindex="-1">Thanks! We'll reply within a few days.</div>
+    <p class="fallback">Or email <a href="mailto:hello@findmypetcy.com">hello@findmypetcy.com</a></p>
+  </section>
+</main>
+
+<footer class="site-foot">
+  <div class="foot-in">
+    <div><b>Find My Pet Cyprus</b><span>Free community website for lost, found and adoptable pets across Cyprus. Every listing is checked by a moderator.</span></div>
+    <nav aria-label="Pets by district"><h2>Pets by district</h2><ul>
+      <li><a href="area/nicosia.html">Nicosia</a></li><li><a href="area/limassol.html">Limassol</a></li><li><a href="area/larnaca.html">Larnaca</a></li>
+      <li><a href="area/paphos.html">Paphos</a></li><li><a href="area/famagusta.html">Famagusta</a></li><li><a href="area/kyrenia.html">Kyrenia</a></li>
+    </ul></nav>
+    <nav aria-label="Site links"><h2>Find My Pet Cyprus</h2><ul>
+      <li><a href="submit.html">Report a missing or found pet</a></li><li><a href="lost-pet-guide.html">What to do if you lose your pet</a></li><li><a href="found-pet-guide.html">What to do if you find a pet</a></li><li><a href="vets.html">Vets, shelters and rescue groups</a></li><li><a href="supporters.html">Supporters</a></li><li class="support-link" hidden><a href="supporters.html#support" target="_blank" rel="noopener">Support the site</a></li><li><a href="adopt.html">Pets for adoption</a></li>
+      <li><a href="privacy.html">Privacy policy</a></li><li><a href="terms.html">Terms of use</a></li><li><a href="account.html">Your account</a></li>
+    </ul></nav>
+    <p class="foot-note">© 2026 Find My Pet Cyprus · No advertising or tracking cookies · This site does not replace reporting to a vet.</p>
+  </div>
+</footer>
+<div class="studio-band"><div class="studio-in"><span class="studio-dot" aria-hidden="true"></span><span>A community project by</span> <a href="https://www.copacabana.space" target="_blank" rel="noopener">copacabana.space creative studio</a><span class="studio-arr" aria-hidden="true">↗</span></div></div>
+<script src="vendor/supabase.js"></script>
+<script src="config.js?v=9"></script>
+<script src="data.js?v=8"></script>
+<script src="api.js?v=10"></script>
+<script>
+(function(){
+  var $ = function(id){ return document.getElementById(id); };
+  var LIMIT_RE = /limit of 3 enquiries/i;
+  function syncDistrict(){ $('e-district-row').hidden = $('e-interest').value !== 'district'; }
+  $('e-interest').addEventListener('change', syncDistrict);
+  // "Partner wanted" / "Available" cards pre-fill the form
+  document.addEventListener('click', function(e){
+    var a = e.target.closest('a[href="#become"][data-interest]'); if (!a) return;
+    $('e-interest').value = a.dataset.interest; syncDistrict();
+    if (a.dataset.district) $('e-district').value = a.dataset.district;
+    setTimeout(function(){ $('e-name').focus({ preventScroll: true }); }, 400);
+  });
+  $('e-msg').addEventListener('input', function(){ $('e-count').textContent = this.value.length + ' / 1000'; });
+  function fail(msg){ var el = $('e-err'); el.innerHTML = msg; el.classList.add('on'); }
+  $('eform').addEventListener('submit', function(e){
+    e.preventDefault();
+    $('e-err').classList.remove('on');
+    var name = $('e-name').value.trim(), email = $('e-email').value.trim(), interest = $('e-interest').value, msg = $('e-msg').value.trim();
+    if (!name) { fail(t('Please enter your name.')); $('e-name').focus(); return; }
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { fail(t('Please enter a valid email address.')); $('e-email').focus(); return; }
+    if (!interest) { fail(t('Please choose what you are interested in.')); $('e-interest').focus(); return; }
+    if (!msg) { fail(t('Please write a short message.')); $('e-msg').focus(); return; }
+    if (!$('e-consent').checked) { fail(t('Please tick the box so we can reply to you.')); return; }
+    function done(){ $('eform').style.display = 'none'; $('e-thanks').classList.add('on'); $('e-thanks').focus(); }
+    if ($('e-website').value) { done(); return; } // honeypot: bots fill hidden fields; drop silently
+    var btn = $('e-send'); btn.disabled = true; btn.textContent = t('Sending…');
+    API.sendEnquiry({
+      name: name, business: $('e-biz').value.trim(), email: email, phone: $('e-phone').value.trim(), interest: interest,
+      district: interest === 'district' ? ($('e-district').value || null) : null, message: msg, lang: window.LANG
+    }).then(done).catch(function(err){
+      fail(err && LIMIT_RE.test(err.raw || '') ? SERVICES_ESC(t('You have reached the limit of 3 enquiries per day. Please try again tomorrow.'))
+        : t('Sorry, that didn\'t send. Please email <a href="mailto:hello@findmypetcy.com">hello@findmypetcy.com</a>.'));
+    }).then(function(){ btn.disabled = false; btn.textContent = t('Send'); });
+  });
+  function SERVICES_ESC(s){ return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;'); }
+})();
+</script>
+</body>
+</html>

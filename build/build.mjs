@@ -7,6 +7,7 @@
 import fs from 'fs';
 import path from 'path';
 import { buildServices } from './services.mjs';
+import { loadSponsors, foundingHtml, districtHtml, supportersHtml, publicJson } from './sponsors.mjs';
 import vm from 'vm';
 import { parse } from 'node-html-parser';
 
@@ -47,6 +48,8 @@ const PAGES = {
                              el: ['Βρήκατε Χαμένο Σκύλο ή Γάτα στην Κύπρο; Τι να Κάνετε | Find My Pet Cyprus', 'Βρήκατε κατοικίδιο στην Κύπρο; Ελέγξτε για ταυτότητα, σκανάρετε το microchip σε κτηνίατρο, δηλώστε το στον χάρτη, ενημερώστε τις κλινικές και βεβαιωθείτε για τον ιδιοκτήτη.'] },
   'vets.html': { en: ['Vets, Animal Shelters & Rescue Groups in Cyprus – Map | Find My Pet Cyprus', 'Find vet clinics, animal shelters and rescue groups near you in Nicosia, Limassol, Larnaca, Paphos and Famagusta to call when a pet is lost or found.'],
                   el: ['Κτηνίατροι, Καταφύγια & Φιλοζωικές στην Κύπρο – Χάρτης | Find My Pet Cyprus', 'Βρείτε κτηνιατρικές κλινικές, καταφύγια ζώων και φιλοζωικές ομάδες κοντά σας σε Λευκωσία, Λεμεσό, Λάρνακα, Πάφο και Αμμόχωστο για να τηλεφωνήσετε όταν χαθεί ή βρεθεί ένα ζώο.'] },
+  'supporters.html': { en: ['Our Supporters & Sponsors | Find My Pet Cyprus', 'Find My Pet Cyprus is free for everyone. Meet the businesses and people who help keep it running, and find out how to become a supporter.'],
+                       el: ['Οι Υποστηρικτές & Χορηγοί μας | Find My Pet Cyprus', 'Το Find My Pet Cyprus είναι δωρεάν για όλους. Γνωρίστε τις επιχειρήσεις και τους ανθρώπους που το στηρίζουν και μάθετε πώς να γίνετε υποστηρικτής.'] },
   'privacy.html': { en: ['Privacy Policy | Find My Pet Cyprus', 'How Find My Pet Cyprus collects, uses and protects personal data, and how to download or delete your data.'],
                     el: ['Πολιτική Απορρήτου | Find My Pet Cyprus', 'Πώς το Find My Pet Cyprus συλλέγει, χρησιμοποιεί και προστατεύει προσωπικά δεδομένα και πώς μπορείτε να τα κατεβάσετε ή να τα διαγράψετε.'] },
   'terms.html': { en: ['Terms of Use | Find My Pet Cyprus', 'Rules for posting lost, found and adoption listings on Find My Pet Cyprus, and tips for staying safe.'],
@@ -90,7 +93,7 @@ function headTags({ lang, title, desc, enPath, elPath, image, noindex, jsonld, t
 }
 
 // ---------- HTML transforms ----------
-const PAGE_RE = /^(index|missing|found|adopt|submit|listing|account|poster|privacy|terms|search|lost-pet-guide|found-pet-guide|vets)\.html([?#].*)?$/;
+const PAGE_RE = /^(index|missing|found|adopt|submit|listing|account|poster|privacy|terms|search|lost-pet-guide|found-pet-guide|vets|supporters)\.html([?#].*)?$/;
 function localizeHref(href) {
   if (!href) return href;
   if (PAGE_RE.test(href) || /^(area|pet)\//.test(href)) return 'el/' + href;
@@ -119,6 +122,7 @@ function translateTree(node) {
     return;
   }
   if (node.tagName && /^(SCRIPT|STYLE|SVG|svg)$/.test(node.tagName)) return;
+  if (node.getAttribute && node.getAttribute('data-noi18n') != null) return; // filled per language later by the build
   if (node.attributes) {
     for (const a of ['placeholder', 'aria-label', 'title', 'alt']) {
       const v = node.getAttribute && node.getAttribute(a);
@@ -155,7 +159,24 @@ function render(file, { lang, enPath, elPath, seo, extraHead, mutate }) {
   }
   langSwitch(root, lang, enPath, elPath);
   if (mutate) mutate(root, lang);
+  applySupportLink(root);
   return '<!doctype html>\n' + root.toString().replace(/^<!doctype html>\s*/i, '');
+}
+
+// "Support the site": shown only when config.js has a supportUrl
+const SUPPORT_URL = (() => {
+  const m = fs.readFileSync(path.join(ROOT, 'config.js'), 'utf8').match(/supportUrl:\s*'([^']*)'/);
+  const u = m ? m[1].trim() : '';
+  if (u && !/^https:\/\/[^\s"'<>]+$/.test(u)) { console.warn('  ! config.js supportUrl must start with https:// — support link stays hidden'); return ''; }
+  return u;
+})();
+function applySupportLink(root) {
+  if (!SUPPORT_URL) return;
+  root.querySelectorAll('.support-link').forEach((el) => {
+    el.removeAttribute('hidden');
+    const a = el.tagName === 'A' ? el : el.querySelector('a');
+    if (a) { a.setAttribute('href', SUPPORT_URL); a.setAttribute('target', '_blank'); a.setAttribute('rel', 'noopener'); }
+  });
 }
 
 function write(rel, html) {
@@ -297,9 +318,26 @@ fs.rmSync(OUT, { recursive: true, force: true });
 fs.mkdirSync(OUT, { recursive: true });
 copyTree(ROOT, OUT);
 
+// sponsors (data/sponsors.csv) for the supporters page
+const SPONSORS = loadSponsors({ root: ROOT, file: process.env.SPONSORS_FILE, today: process.env.TODAY || new Date().toISOString().slice(0, 10) });
+console.log(`Sponsors: ${SPONSORS.founding.length} founding, ${SPONSORS.district.length} district, ${SPONSORS.supporters.length} supporters active` + (SUPPORT_URL ? ', support link on' : ', support link hidden'));
+const spMissing = new Set();
+const spT = (lang) => (s, v) => { if (lang === 'el' && EL[s] == null) spMissing.add(s); return T(lang, s, v); };
+const PAGE_MUTATE = {
+  'supporters.html': (root, lang) => {
+    const t = spT(lang);
+    root.querySelector('#sp-founding').set_content(foundingHtml(SPONSORS, lang, t));
+    root.querySelector('#sp-district').set_content(districtHtml(SPONSORS, lang, t));
+    const list = supportersHtml(SPONSORS, lang, t);
+    root.querySelector('#sp-thanks').set_content(list);
+    if (list) root.querySelector('#sp-thanks-wrap').classList.add('has-list');
+  }
+};
+
 // vets, shelters and rescue groups for the 'Vets & help' map
 const services = await buildServices({ root: ROOT, cacheFile: path.join(ROOT, '.cache', 'geocode.json'), lookup: process.env.GEOCODE !== '0' });
 write('services.json', JSON.stringify(services));
+write('sponsors.json', publicJson(SPONSORS));
 
 const sitemap = [];
 const addUrl = (en, el, lastmod, prio) => sitemap.push({ en, el, lastmod: lastmod || TODAY, prio });
@@ -309,8 +347,8 @@ for (const [file, cfg] of Object.entries(PAGES)) {
   const jsonld = cfg.home ? [{ '@context': 'https://schema.org', ...ORG }, { '@context': 'https://schema.org', '@type': 'WebSite', name: 'Find My Pet Cyprus', alternateName: 'Χαμένα Κατοικίδια Κύπρος', url: SITE + '/', inLanguage: ['en', 'el'], publisher: { '@id': SITE + '/#org' } }] : null;
   const enPathPublic = file === 'index.html' ? '' : file;
   const elPathPublic = file === 'index.html' ? 'el/' : elPath;
-  write(file, render(file, { lang: 'en', enPath: enPathPublic, elPath: elPathPublic, seo: { title: cfg.en[0], desc: cfg.en[1], noindex: cfg.noindex, jsonld } }));
-  if (elPath) write(elPath, render(file, { lang: 'el', enPath: enPathPublic, elPath: elPathPublic, seo: { title: cfg.el[0], desc: cfg.el[1], noindex: cfg.noindex, jsonld } }));
+  write(file, render(file, { lang: 'en', enPath: enPathPublic, elPath: elPathPublic, seo: { title: cfg.en[0], desc: cfg.en[1], noindex: cfg.noindex, jsonld }, mutate: PAGE_MUTATE[file] }));
+  if (elPath) write(elPath, render(file, { lang: 'el', enPath: enPathPublic, elPath: elPathPublic, seo: { title: cfg.el[0], desc: cfg.el[1], noindex: cfg.noindex, jsonld }, mutate: PAGE_MUTATE[file] }));
   if (!cfg.noindex) addUrl(enPathPublic, elPath ? elPathPublic : null, null, file === 'index.html' ? '1.0' : '0.8');
 }
 write('el/search.html', fs.readFileSync(path.join(ROOT, 'search.html'), 'utf8').replace('<html lang="en">', '<html lang="el">'));
@@ -351,6 +389,7 @@ write('site.webmanifest', JSON.stringify({ name: 'Find My Pet Cyprus', short_nam
 
 // 404 page: forward old and not-yet-built links
 console.log(`Built ${Object.keys(PAGES).length} pages ×2 languages, ${listings.length} pets, ${DISTRICTS.length} districts, ${sitemap.length} sitemap entries.`);
+spMissing.forEach((s) => missing.add(s));
 if (missing.size) {
   console.log(`\nUntranslated text (${missing.size}):`);
   [...missing].sort().forEach((s) => console.log('  - ' + JSON.stringify(s)));

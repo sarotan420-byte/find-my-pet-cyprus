@@ -205,11 +205,22 @@ window.API = (function(){
       if (!u) throw new Error(t('Please sign in first.'));
       return Promise.all([
         sb.from('listings').select('*, listing_contacts(name, phone, email)').eq('owner_id', u.id),
-        sb.from('saved_views').select('label, url, created_at').eq('user_id', u.id)
+        sb.from('saved_views').select('label, url, created_at').eq('user_id', u.id),
+        sb.rpc('my_support_enquiries')
       ]).then(function(res){
         if (res[0].error) throw err(res[0].error);
         return { exported_at: new Date().toISOString(), account: { id: u.id, email: u.email || null, created_at: u.created_at, guest: !!u.is_anonymous },
-                 listings: res[0].data, saved_searches: (res[1].data || []) };
+                 listings: res[0].data, saved_searches: (res[1].data || []), sponsorship_enquiries: (res[2] && !res[2].error && res[2].data) || [] };
+      });
+    });
+  }
+  // Supporters page: business enquiry. Saved for moderators, who are emailed by a database trigger.
+  function sendEnquiry(e){
+    if (!live) return new Promise(function(r){ setTimeout(function(){ r({ demo: true }); }, 400); });
+    return ensureUser().then(function(){
+      return sb.from('support_enquiries').insert(e).then(function(r){
+        if (r.error) { var x = err(r.error); x.raw = r.error.message || ''; throw x; }
+        return true;
       });
     });
   }
@@ -338,6 +349,6 @@ window.API = (function(){
     getListing: getListing, revealContact: revealContact, submitListing: submitListing,
     myListings: myListings, closeListing: closeListing, deleteListing: deleteListing, exportMyData: exportMyData, deleteMyAccount: deleteMyAccount,
     savedViews: savedViews, saveView: saveView, removeView: removeView,
-    moderationQueue: moderationQueue, moderate: moderate
+    moderationQueue: moderationQueue, moderate: moderate, sendEnquiry: sendEnquiry
   };
 })();

@@ -10,6 +10,9 @@ create or replace function public.delete_my_account()
 returns void language plpgsql security definer set search_path = public, auth as $$
 begin
   if auth.uid() is null then raise exception 'Please sign in first.'; end if;
+  if to_regclass('public.support_enquiries') is not null then   -- supporters page enquiries
+    execute 'delete from public.support_enquiries where user_id = $1' using auth.uid();
+  end if;
   delete from auth.users where id = auth.uid();
 end $$;
 revoke execute on function public.delete_my_account() from public, anon;
@@ -18,6 +21,7 @@ grant execute on function public.delete_my_account() to authenticated;
 -- Retention rules (see the privacy policy):
 --  * closed or rejected listings are deleted 12 months after they were closed / reviewed
 --  * guest (anonymous) accounts with no listings are deleted after 30 days
+--  * supporters page enquiries are deleted 12 months after they arrive
 -- Returns how many rows were removed. Called daily by the website's GitHub job.
 alter table public.listings add column if not exists closed_at timestamptz;
 
@@ -32,8 +36,13 @@ create trigger listings_closed_at before update of closed on public.listings
 
 create or replace function public.cleanup_old_data()
 returns jsonb language plpgsql security definer set search_path = public, auth as $$
-declare n_listings int; n_guests int;
+declare n_listings int; n_guests int; n_enquiries int := 0;
 begin
+  if to_regclass('public.support_enquiries') is not null then   -- supporters page enquiries: kept 12 months
+    execute 'delete from public.support_enquiries where created_at < now() - interval ''12 months''';
+    get diagnostics n_enquiries = row_count;
+  end if;
+
   delete from public.listings
   where (closed and coalesce(closed_at, reviewed_at, created_at) < now() - interval '12 months')
      or (moderation_status = 'rejected' and coalesce(reviewed_at, created_at) < now() - interval '12 months');
@@ -45,7 +54,7 @@ begin
     and not exists (select 1 from public.listings l where l.owner_id = u.id);
   get diagnostics n_guests = row_count;
 
-  return jsonb_build_object('listings_deleted', n_listings, 'guest_accounts_deleted', n_guests);
+  return jsonb_build_object('listings_deleted', n_listings, 'guest_accounts_deleted', n_guests, 'enquiries_deleted', n_enquiries);
 end $$;
 revoke execute on function public.cleanup_old_data() from public, anon, authenticated;
 
