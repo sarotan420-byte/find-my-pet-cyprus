@@ -97,8 +97,11 @@ a:hover { color: var(--color-accent-800); }
 .why-card a { font-weight: 700; font-size: 14.5px; color: var(--color-accent-2-800); text-decoration: none; }
 .why-card a:hover { text-decoration: underline; }
 
-.steps { padding: calc(2 * var(--space-6)) 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-6); }
-@media (max-width: 780px) { .steps { grid-template-columns: 1fr; } }
+.steps { padding: var(--space-2, 8px) 0 var(--space-5, 24px); display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-6); }
+@media (max-width: 780px) { .steps { grid-template-columns: repeat(3, 1fr); gap: var(--space-2, 8px); padding: 0 0 var(--space-4); }
+  .step { flex-direction: column; align-items: center; text-align: center; gap: 4px; }
+  .step h3 { font-size: 15px; margin: 0; }
+  .step p { display: none; } }
 .step { display: flex; gap: var(--space-3); }
 .step .num { width: 34px; height: 34px; border-radius: 50%; background: var(--color-accent-2-100); color: var(--color-accent-2-800); display: flex; align-items: center; justify-content: center; font-family: var(--font-heading); flex: none; }
 .step h3 { font-family: var(--font-heading); font-weight: var(--font-heading-weight); font-size: 19px; margin: 4px 0 6px; }
@@ -135,6 +138,12 @@ footer a { color: inherit; }
       <p>Search by city, area or postcode. Every listing is checked by a moderator before it appears on the map.</p>
     </div>
     <a href="submit.html" class="btn btn-secondary">Report missing or found</a>
+  </section>
+
+  <section class="steps">
+    <div class="step"><span class="num">1</span><div><h3>Report</h3><p>Add photos, a description and the area last seen. It takes a few minutes.</p></div></div>
+    <div class="step"><span class="num">2</span><div><h3>Checked</h3><p>A moderator reviews each listing before it goes public, keeping the map free of spam and duplicates.</p></div></div>
+    <div class="step"><span class="num">3</span><div><h3>Reunited</h3><p>People nearby can find it by city, area or postcode and get in touch.</p></div></div>
   </section>
 
   <section class="map-feature" aria-label="Map of missing and found pets">
@@ -202,11 +211,6 @@ footer a { color: inherit; }
     </div>
   </section>
 
-  <section class="steps">
-    <div class="step"><span class="num">1</span><div><h3>Report</h3><p>Add photos, a description and the area last seen. It takes a few minutes.</p></div></div>
-    <div class="step"><span class="num">2</span><div><h3>Checked</h3><p>A moderator reviews each listing before it goes public, keeping the map free of spam and duplicates.</p></div></div>
-    <div class="step"><span class="num">3</span><div><h3>Reunited</h3><p>People nearby can find it by city, area or postcode and get in touch.</p></div></div>
-  </section>
 
   <section class="patch">
     <div>
