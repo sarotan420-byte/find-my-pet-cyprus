@@ -227,13 +227,22 @@ window.API = (function(){
   // GDPR: remove photos, then the account (listings, contacts and saved searches go with it).
   function deleteMyAccount(){
     if (!live) return Promise.resolve();
+    var paths = [];
     return getUser().then(function(u){
       if (!u) throw new Error(t('Please sign in first.'));
+      // 1. note which photos are theirs, 2. delete the account (listings go with it),
+      // 3. then remove the photos. Photos are only touched once the account is really gone;
+      //    any that can't be removed here are cleared by the daily clean-up job.
       return sb.storage.from('listing-photos').list(u.id, { limit: 1000 }).then(function(r){
-        var paths = (r.data || []).map(function(f){ return u.id + '/' + f.name; });
-        return paths.length ? sb.storage.from('listing-photos').remove(paths) : null;
-      }).then(function(){ return sb.rpc('delete_my_account'); })
-        .then(function(r){ if (r.error) throw err(r.error); return sb.auth.signOut(); });
+        paths = (r.data || []).map(function(f){ return u.id + '/' + f.name; });
+        return sb.rpc('delete_my_account');
+      }).then(function(r){
+        if (r.error) {
+          if (/delete_my_account|schema cache|does not exist/i.test(r.error.message || '')) throw new Error(t('Deleting accounts is not available right now. Please email privacy@findmypetcy.com and we will delete your account for you.'));
+          throw err(r.error);
+        }
+        return paths.length ? sb.storage.from('listing-photos').remove(paths).catch(function(){}) : null;
+      }).then(function(){ return sb.auth.signOut(); });
     });
   }
 

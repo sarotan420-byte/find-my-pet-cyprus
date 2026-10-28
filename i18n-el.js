@@ -1,6 +1,7 @@
 // Greek translations. Keys are the English text exactly as written on the site.
 // {name}-style placeholders are filled in by the code. Add a line here when new English text is added.
 window.I18N_EL = {
+  'Deleting accounts is not available right now. Please email privacy@findmypetcy.com and we will delete your account for you.': 'Η διαγραφή λογαριασμού δεν είναι διαθέσιμη αυτή τη στιγμή. Στείλτε email στο privacy@findmypetcy.com και θα διαγράψουμε τον λογαριασμό σας εμείς.',
   'Menu': 'Μενού',
   // ---------- supporters page ----------
   'Health & wellbeing': 'Υγεία & ευεξία',
